@@ -4,16 +4,16 @@
   /* ── Buttons ─────────────────────────────────────── */
 
   .btn-primary {
-    @apply bg-ultraviolet text-text-primary font-body font-semibold
-           px-6 py-3 rounded-pill transition-all duration-300 ease-brand
+    @apply bg-ultraviolet text-text-primary font-mono font-semibold
+           px-6 py-3 rounded-card transition-all duration-300 ease-brand uppercase
            hover:bg-violet-light hover:shadow-glow
            active:bg-violet-dark
            animate-pulseGlow;
   }
 
   .btn-outline {
-    @apply border border-ultraviolet text-text-primary font-body font-semibold
-           px-6 py-3 rounded-pill transition-all duration-300 ease-brand
+    @apply border border-ultraviolet text-text-primary font-mono font-semibold
+           px-6 py-3 rounded-card transition-all duration-300 ease-brand uppercase
            hover:bg-ultraviolet/10 hover:shadow-glow;
   }
 
@@ -33,9 +33,9 @@
 
   .card-sponsor {
     @apply bg-surface border border-border rounded-card shadow-card
-           transition-transform ease-brand hover:-translate-y-1 hover:shadow-glow
+           transition-all duration-300 ease-brand hover:-translate-y-1 hover:shadow-glow
            flex items-center justify-center p-8
-           grayscale hover:grayscale-0 transition-all duration-300;
+           grayscale hover:grayscale-0;
   }
 
   /* ── Layout ──────────────────────────────────────── */
@@ -45,11 +45,11 @@
   }
 
   .section-title {
-    @apply font-display text-section text-text-primary mb-2;
+    @apply font-display font-bold text-section text-text-primary mb-2;
   }
 
   .section-subtitle {
-    @apply font-body text-text-secondary text-lg mb-10;
+    @apply font-body text-text-secondary text-base mb-10;
   }
 
   /* ── Navbar ──────────────────────────────────────── */
@@ -63,18 +63,18 @@
   }
 
   .navbar-link {
-    @apply font-body text-text-secondary hover:text-text-primary
+    @apply font-mono text-text-secondary hover:text-text-primary
            transition-colors duration-200 ease-brand;
   }
 
   /* ── Timer ───────────────────────────────────────── */
 
   .timer-digit {
-    @apply font-mono text-4xl text-ultraviolet tabular-nums;
+    @apply font-mono text-5xl text-text-primary tabular-nums;
   }
 
   .timer-label {
-    @apply font-body text-xs text-text-muted uppercase tracking-widest mt-1;
+    @apply font-mono text-xs text-ultraviolet uppercase tracking-widest mt-1;
   }
 
   /* ── FAQ Accordion ───────────────────────────────── */
@@ -85,7 +85,7 @@
   }
 
   .faq-question {
-    @apply w-full text-left px-6 py-4 font-body font-semibold
+    @apply w-full text-left px-6 py-4 font-mono font-semibold
            text-text-primary flex justify-between items-center
            hover:bg-surface/60 transition-colors duration-200;
   }
@@ -111,11 +111,12 @@
   /* ── Marquee (Sponsor Carousel) ──────────────────── */
 
   .marquee-track {
-    @apply flex gap-12 animate-marquee whitespace-nowrap;
+    @apply flex gap-12 animate-marquee whitespace-nowrap w-max;
   }
 
   .marquee-wrapper {
-    @apply overflow-hidden relative;
+    @apply overflow-hidden relative py-8;
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
   }
 
   .marquee-wrapper:hover .marquee-track {

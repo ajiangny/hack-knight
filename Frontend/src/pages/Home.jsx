@@ -9,27 +9,29 @@ import TeamSection from '../components/TeamSection';         // team member grid
 import SponsorsCarousel from '../components/SponsorsCarousel'; // sponsor logo carousel + link to full sponsors page
 
 export default function Home() {
-    return (
-      <main>                                          {/* <main> is the semantic HTML wrapper for the page's primary content */}
-  
-        <Hero />                                      {/* section 1: title, dates, description, countdown, CTA buttons */}
-  
-        <SponsorsCarousel />                          {/* section 2: sponsor logos carousel + "View All Sponsors" link */}
-  
-        <PhotoGallery />                              {/* section 3: photo gallery of past events */}
-  
-        <SchedulePreview />                           {/* section 4: schedule preview grid + "View Full Schedule" link */}
-  
-        <section id="team">                           {/* id="team" is the scroll target for the navbar's href="/#team" */}
-          <TeamSection />                             {/* section 5: team member grid */}
-        </section>
-  
-        <section id="faq">                            {/* id="faq" is the scroll target for the navbar's href="/#faq" */}
-          <FAQ />                                     {/* section 6: FAQ accordion */}
-        </section>
-  
-        <Footer />                                    {/* section 7: footer */}
-  
-      </main>
-    );
-  }
+  return (
+    <main>                                          {/* <main> is the semantic HTML wrapper for the page's primary content */}
+
+      <Hero />                                      {/* section 1: title, dates, description, countdown, CTA buttons */}
+
+      <section id="sponsors">                       {/* id="sponsors" is the scroll target for the navbar's href="/#sponsors" */}
+        <SponsorsCarousel />                          {/* section 2: sponsor logos carousel*/}
+      </section>
+
+      <PhotoGallery />                              {/* section 3: photo gallery of past events */}
+
+      <section id="schedule">                       {/* id="schedule" is the scroll target for the navbar's href="/#schedule" */}
+        <SchedulePreview />                           {/* section 4: schedule preview grid */}
+      </section>
+
+      <section id="team">                           {/* id="team" is the scroll target for the navbar's href="/#team" */}
+        <TeamSection />                             {/* section 5: team member grid */}
+      </section>
+
+      <section id="faq">                            {/* id="faq" is the scroll target for the navbar's href="/#faq" */}
+        <FAQ />                                     {/* section 6: FAQ accordion */}
+      </section>
+
+    </main>
+  );
+}

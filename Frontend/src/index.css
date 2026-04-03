@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk[wght].woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "./styles/components.css";
 
 /* Base resets */
@@ -15,6 +23,11 @@
 
   h1, h2, h3 {
     @apply font-display;
+    font-feature-settings: "ss01";
+  }
+
+  .font-display {
+    font-feature-settings: "ss01";
   }
 
   /* Accessibility: disable animations for users who prefer it */

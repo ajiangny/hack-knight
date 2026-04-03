@@ -3,30 +3,25 @@ import { scheduleEvents } from '../data/schedule';  // import schedule data from
 
 export default function SchedulePreview() {
   return (
-    <section>                                       {/* section wrapper for this block */}
-      <h2>Schedule</h2>                             {/* section heading */}
-      <p>October 17th - 19th, 2026</p>             {/* event date range */}
+    <section className="section-wrapper py-24">                                       {/* section wrapper for this block */}
+      <h2 className="section-title text-center">Schedule Preview</h2>                             {/* section heading */}
+      <p className="section-subtitle text-center">October 17th - 19th, 2026</p>             {/* event date range */}
 
-      <div>                                         {/* grid container — teammate adds CSS grid styling */}
-
-        {/* Column headers for the three days */}
-        <div>                                       {/* header row */}
-          <span>Fri 10/17</span>                   {/* Friday column label */}
-          <span>Sat 10/18</span>                   {/* Saturday column label */}
-          <span>Sun 10/19</span>                   {/* Sunday column label */}
+      <div className="schedule-grid-wrapper max-w-4xl mx-auto my-10 bg-surface/40">                                         {/* grid container — teammate adds CSS grid styling */}
+        <div className="flex flex-col gap-2 p-6">
+          {/* Loop over schedule events and render a row for each */}
+          {scheduleEvents.map((event, index) => (     // .map() loops over the array; event = current item, index = its position
+            <div key={index} className="flex justify-between p-4 border border-border rounded-card bg-surface hover:bg-surface/80 transition-colors">                         {/* key is required by React when rendering a list */}
+              <span className="font-mono text-ultraviolet font-bold">{event.day}</span>                {/* which day the event falls on */}
+              <span className="font-body text-text-primary">{event.label}</span>              {/* the event name */}
+            </div>
+          ))}
         </div>
-
-        {/* Loop over schedule events and render a row for each */}
-        {scheduleEvents.map((event, index) => (     // .map() loops over the array; event = current item, index = its position
-          <div key={index}>                         {/* key is required by React when rendering a list */}
-            <span>{event.day}</span>                {/* which day the event falls on */}
-            <span>{event.label}</span>              {/* the event name */}
-          </div>
-        ))}
-
       </div>
 
-      <Link to="/schedule">View Full Schedule</Link> {/* navigates to the dedicated /schedule page */}
+      <div className="text-center">
+        <Link to="/schedule" className="btn-outline">View Full Schedule</Link> {/* navigates to the dedicated /schedule page */}
+      </div>
     </section>
   );
 }

@@ -11,15 +11,16 @@ export default function PhotoGallery() {
     ];
   
     return (
-      <section>                                       {/* section wrapper for the gallery block */}
-        <h2>Photo Gallery of Past Events</h2>         {/* section heading — matches the screenshot */}
+      <section className="section-wrapper py-24">                                       {/* section wrapper for the gallery block */}
+        <h2 className="section-title text-center">Photo Gallery of Past Events</h2>         {/* section heading — matches the screenshot */}
   
-        <div>                                         {/* gallery grid container — teammate adds CSS grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-10">                                         {/* gallery grid container — teammate adds CSS grid */}
           {photos.map((photo, index) => (             // loop over each photo object
             <img                                      // render an image element for each photo
               key={index}                             // key is required by React when rendering a list
               src={photo.src}                         // file path to the image
               alt={photo.alt}                         // alt text is required for accessibility (screen readers)
+              className="w-full h-48 md:h-64 object-cover rounded-card hover:opacity-80 transition-opacity cursor-pointer border border-border bg-surface"
             />
           ))}
         </div>
