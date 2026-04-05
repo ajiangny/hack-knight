@@ -1,23 +1,61 @@
 // Displays the team member grid on the homepage.
 // Imports team data from data/team.js
 
-import { teamMembers } from '../data/team';         // import the teamMembers array from the data folder
+import { teamMembers } from '../data/team';
 
 export default function TeamSection() {
   return (
-    <div className="section-wrapper">               {/* wrapper for the team section */}
-      <h2 className="section-title text-center">Meet The Team</h2>                        {/* section heading */}
+    <div className="section-wrapper">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">   {/* grid container */}
-        {teamMembers.map((member, index) => (       // .map() loops over each team member object
-          <div key={index} className="card-team">   {/* card wrapper for one member; key required by React for lists */}
-            <div className="w-24 h-24 rounded-full bg-border flex items-center justify-center text-text-muted text-xs overflow-hidden">
-               <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
+      {/* ── Section Header ── */}
+      <h2 className="font-display font-bold text-text-primary text-center text-5xl md:text-6xl mb-12">
+        Meet The Team
+      </h2>
+
+      {/* ── Team Grid ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        {teamMembers.map((member, index) => (
+
+          // Each member gets its own column. No card background here —
+          // the image IS the visual block, and the text sits below it.
+          <div key={index} className="flex flex-col gap-3">
+
+            {/* ── Photo Block ── */}
+            {/* 
+              `relative` here is KEY — it makes this div the "anchor" for the badge.
+              Any child with `absolute` positioning will be placed relative to THIS div.
+            */}
+            <div className="relative rounded-xl overflow-hidden aspect-square bg-border">
+
+              {/* The member's photo — fills the entire square */}
+              <img
+                src={member.photo}
+                alt={member.name}
+                className="w-full h-full object-cover"
+              />
+
+              {/* ── Character Badge ──
+                `absolute` pulls it out of normal flow and pins it to the parent.
+                `bottom-2 right-2` places it 8px from the bottom-right corner.
+                `w-16 h-16` controls the badge size — adjust to taste.
+              */}
+              <img
+                src={member.badge}
+                alt="character badge"
+                className="absolute bottom-2 right-2 w-16 h-16 object-contain"
+              />
             </div>
+
+            {/* ── Name & Title — sit BELOW the photo, outside the image block ── */}
             <div>
-              <p className="font-display text-base text-text-primary">{member.name}</p>                    {/* member's name */}
-              <p className="font-body text-xs text-ultraviolet">{member.title}</p>                   {/* member's role/title */}
+              <p className="font-display font-bold text-base text-text-primary">
+                {member.name}
+              </p>
+              <p className="font-body text-sm text-ultraviolet">
+                {member.title}
+              </p>
             </div>
+
           </div>
         ))}
       </div>
