@@ -16,7 +16,7 @@ export default function Hero() {
       </p>                                          {/* event description paragraph */}
 
       <div className="flex gap-4 my-12">                                         {/* wrapper to group the two side-by-side buttons */}
-        <button className="btn-primary">Register Now</button>               {/* primary CTA — no functionality yet */}
+        <Link to="/register" className="btn-primary">Register Now</Link>     {/* Change from button to link temporarily*/}
         <Link to="/schedule" className="btn-outline">View Schedule</Link>   {/* navigates to the full /schedule page */}
       </div>
 

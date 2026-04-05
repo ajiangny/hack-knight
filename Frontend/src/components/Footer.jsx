@@ -28,16 +28,16 @@ export default function Footer() {
         {/* Social links column */}
         <div className="flex flex-col">
           <h4 className="font-display text-text-primary mb-4">Follow Us</h4>                          {/* column heading */}
-          <a href="#" className="navbar-link mb-2 text-sm">Code For All Instagram</a>      {/* placeholder href — replace with real URL later */}
-          <a href="#" className="navbar-link mb-2 text-sm">Hack Knight Instagram</a>       {/* placeholder href */}
-          <a href="#" className="navbar-link mb-2 text-sm">Hack Knight Server</a>          {/* placeholder href */}
-          <a href="#" className="navbar-link mb-2 text-sm">Code for All Server</a>         {/* placeholder href */}
+          <a href="https://www.instagram.com/codeforall_qc/" className="navbar-link mb-2 text-sm">Code For All Instagram</a>      {/* placeholder href — replace with real URL later */}
+          <a href="https://www.instagram.com/hack.qc/" className="navbar-link mb-2 text-sm">Hack Knight Instagram</a>       {/* placeholder href */}
+          <a href="https://discord.gg/z2AN2nuGx3" className="navbar-link mb-2 text-sm">Hack Knight Server</a>          {/* placeholder href */}
+          <a href="https://discord.gg/fhDhVRPU7w" className="navbar-link mb-2 text-sm">Code for All Server</a>         {/* placeholder href */}
         </div>
 
         {/* Legal column */}
         <div className="flex flex-col">
           <h4 className="font-display text-text-primary mb-4">Legal</h4>                              {/* column heading */}
-          <a href="#" className="navbar-link mb-2 text-sm">MLH Code of Conduct</a>         {/* placeholder href — replace with real MLH link later */}
+          <a href="https://github.com/MLH/mlh-policies/blob/main/code-of-conduct.md" className="navbar-link mb-2 text-sm">MLH Code of Conduct</a>         {/* placeholder href — replace with real MLH link later */}
         </div>
       </div>
 

@@ -30,7 +30,7 @@ export default function Navbar() {
 
       </ul>
 
-      <button className="btn-primary">Register</button>                        {/* placeholder Register button — no functionality yet */}
+      <Link to="/register" className="btn-primary">Register</Link>                        {/* placeholder Register button — TEMPORARY */}
 
     </nav>
   );
