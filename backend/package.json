@@ -1,7 +1,7 @@
 {
   "name": "hack-knight-backend",
   "version": "1.0.0",
-  "description": "Backend API for the Queens College Hack Knight Website",
+  "description": "",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
@@ -9,7 +9,7 @@
     "start": "node dist/index.js"
   },
   "keywords": [],
-  "author": "CFA Team",
+  "author": "",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
