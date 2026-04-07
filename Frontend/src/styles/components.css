@@ -286,4 +286,25 @@
   .schedule-event-title {
     @apply font-body font-bold text-white leading-tight text-sm wrap-break-word line-clamp-2;
   }
+
+  /* ── Hero Section ─────────────────────────────────── */
+
+  /* Castle Tower — height set dynamically via ResizeObserver to match left column */
+  .tower-hero {
+    width: auto;
+    object-fit: contain;
+    opacity: 1;
+  }
+
+  /* Knights — gentle floating hover animation */
+  .knights-float {
+    animation: knightsFloat 4s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+
+  @keyframes knightsFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-10px); }
+  }
 }
+
