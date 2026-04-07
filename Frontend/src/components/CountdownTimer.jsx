@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 export default function CountdownTimer() {
 
   // ── Target date: the hackathon start date ──
-  const targetDate = new Date("2026-10-17T00:00:00").getTime();
+  const targetDate = new Date("2026-10-09T00:00:00").getTime();
 
   // ── Calculates the time remaining between now and the target date ──
   function calculateTimeLeft() {
@@ -12,9 +12,9 @@ export default function CountdownTimer() {
 
     if (difference > 0) {
       return {
-        months:  Math.floor(difference / (1000 * 60 * 60 * 24 * 30)),
-        days:    Math.floor((difference % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24)),
-        hours:   Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        months: Math.floor(difference / (1000 * 60 * 60 * 24 * 30)),
+        days: Math.floor((difference % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
         minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
         seconds: Math.floor((difference % (1000 * 60)) / 1000),
       };
@@ -44,8 +44,7 @@ export default function CountdownTimer() {
 
       {/* ── Pill container: rounded card with purple border and dark background ── */}
       <div
-        className="border border-ultraviolet rounded-[2rem] px-12 py-8 w-full"
-        style={{ backgroundColor: "#343439" }}
+        className="border border-ultraviolet rounded-[2rem] px-12 py-8 w-full bg-void/80"
       >
 
         {/* ── Inner row: evenly spaces the five time units + separators ── */}

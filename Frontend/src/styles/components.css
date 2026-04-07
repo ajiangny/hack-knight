@@ -296,6 +296,25 @@
     opacity: 1;
   }
 
+  /* ── Mascot ──────────────────────────────────────── */
+
+  /* Wrapper — absolutely positioned inside the tower window */
+  .mascot {
+    @apply absolute pointer-events-none select-none;
+  }
+
+  /* Base helmet image fills the wrapper */
+  .mascot-base {
+    @apply block w-full h-full object-contain pointer-events-none;
+  }
+
+  /* Pupil outer wrapper — position/translate driven by JS mouse tracking */
+  .mascot-pupil {
+    @apply absolute pointer-events-none;
+    width: 18.75%;
+    height: 13.75%;
+  }
+
   /* Knights — gentle floating hover animation */
   .knights-float {
     animation: knightsFloat 4s ease-in-out infinite;

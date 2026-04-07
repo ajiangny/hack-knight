@@ -14,7 +14,7 @@ export default function Home() {
 
       <Hero />                                      {/* section 1: title, dates, description, countdown, CTA buttons */}
 
-      <section id="sponsors" className="scroll-mt-36">                       {/* id="sponsors" is the scroll target for the navbar's href="/#sponsors" */}
+      <section id="sponsors" className="scroll-mt-64 bg-void border-t border-void pb-24">                       {/* id="sponsors" is the scroll target for the navbar's href="/#sponsors" */}
         <SponsorsCarousel />                          {/* section 2: sponsor logos carousel*/}
       </section>
 
@@ -22,7 +22,7 @@ export default function Home() {
         <PhotoGallery />                              {/* section 3: photo gallery of past events */}
       </section>
 
-      <section id="schedule" className="scroll-mt-36">                       {/* id="schedule" is the scroll target for the navbar's href="/#schedule" */}
+      <section id="schedule" className="scroll-mt-5">                       {/* id="schedule" is the scroll target for the navbar's href="/#schedule" */}
         <SchedulePreview />                           {/* section 4: schedule preview grid */}
       </section>
 
