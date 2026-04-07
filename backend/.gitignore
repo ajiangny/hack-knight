@@ -1,24 +1,27 @@
 # Dependencies
+backend/node_modules/
 node_modules/
 
-# Build output
-dist/
-
 # Environment variables
+backend/.env
 .env
 
-# Database file - ephemeral, will get created on startup
+# Database files
+backend/*.db
+backend/*.db-wal
+backend/*.db-shm
+backend/*.db-journal
 *.db
+*.db-wal
+*.db-shm
 *.db-journal
+
+# Build output
+backend/dist/
 
 # OS garbage
 .DS_Store
 Thumbs.db
 
 # Logs
-logs/
 *.log
-
-# IDE
-.vscode/
-.idea/
