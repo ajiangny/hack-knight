@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import db from "./db/database.js";
 import authRouter from "./routes/auth.js";
+import { authenticateAdmin } from "./middleware/auth.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
