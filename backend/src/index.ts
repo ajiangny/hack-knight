@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import morgan from "morgan";
 import db from "./db/database.js";
+import authRouter from "./routes/auth.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,10 +11,13 @@ const PORT = process.env.PORT || 3000;
 app.use(morgan("dev"));
 app.use(express.json());
 
-// Health check for database
+// Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
+
+// Routes
+app.use("/auth", authRouter);
 
 // Start server
 app.listen(PORT, () => {
