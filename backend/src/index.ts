@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import db from "./db/database.js";
 import authRouter from "./routes/auth.js";
+import scheduleRouter from "./routes/schedule.js";
 import { authenticateAdmin } from "./middleware/auth.js";
 
 const app = express();
@@ -13,12 +14,13 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // Health check
-app.get("/health", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
 // Routes
-app.use("/auth", authRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/schedule", scheduleRouter);
 
 // Start server
 app.listen(PORT, () => {
