@@ -10,6 +10,9 @@ export default {
         surface: "#12121a",        // cards, panels, navbar
         border: "#71717A",         // subtle borders and dividers
         ultraviolet: "#A855F7",    // primary accent / CTA
+        cyberTeal: "#2DD4BF",      // hacking / workshops accent
+        signalYellow: "#FBBF24",   // food / logistics accent
+        electricBlue: "#3B82F6",   // check-in / admin accent
         violet: {
           light: "#C084FC",        // hover state for primary
           dark: "#7C3AED",         // pressed/active state

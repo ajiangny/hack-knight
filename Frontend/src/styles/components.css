@@ -131,11 +131,11 @@
   /* ── Layout ──────────────────────────────────────── */
 
   .section-wrapper {
-    @apply py-section px-container max-w-7xl mx-auto;
+    @apply py-section px-container max-w-7xl mx-auto scroll-mt-24;
   }
 
   .section-title {
-    @apply font-display font-bold text-section text-text-primary mb-2;
+    @apply font-display font-bold text-4xl md:text-6xl text-text-primary mb-4;
   }
 
   .section-subtitle {
@@ -188,7 +188,7 @@
   /* ── Schedule Tabs ───────────────────────────────── */
 
   .schedule-tab {
-    @apply font-body font-semibold px-6 py-2 rounded-pill
+    @apply font-mono font-semibold px-6 py-2 rounded-card uppercase
            border border-border text-text-secondary
            transition-all duration-200 ease-brand
            hover:border-ultraviolet hover:text-text-primary;
@@ -216,51 +216,114 @@
   /* ── Schedule Calendar Grid ───────────────────────── */
 
   .schedule-grid-wrapper {
-    @apply border border-border rounded-card overflow-auto;
+    @apply border border-border rounded-card overflow-hidden;
   }
 
   .schedule-grid {
-    @apply bg-void min-w-max;
+    @apply bg-void w-full relative;
     display: grid;
-    grid-auto-rows: 2.5rem;
   }
 
   .schedule-grid-corner {
-    @apply bg-surface border-b border-r border-border;
+    @apply bg-surface/40 border-b border-r border-border;
   }
 
   .schedule-day-header {
-    @apply bg-surface border-b border-r border-border
-           font-mono text-sm font-semibold text-text-primary
-           flex items-center justify-center py-3;
+    @apply bg-surface/40 border-b border-r border-border
+           font-display text-sm font-bold text-text-primary
+           flex items-center justify-center py-4 uppercase tracking-widest;
   }
 
   .schedule-time-label {
-    @apply bg-surface/50 border-b border-r border-border
-           font-mono text-xs text-text-muted
-           flex items-end justify-end pb-1 pr-2;
+    @apply bg-surface/20 border-b border-r border-border/40
+           font-mono text-sm text-text-primary
+           flex items-center justify-end pr-4
+           sticky left-0 z-10;
   }
 
   .schedule-cell {
-    @apply border-b border-r border-border/40 bg-surface/20;
+    @apply border-r border-border/40 bg-transparent;
   }
 
+  /* ── Event blocks (Multi-Lane Flex) ───────────────── */
+
   .schedule-event {
-    @apply bg-ultraviolet/85 border-l-2 border-violet-light
-           font-body text-xs text-text-primary
-           px-2 py-1 overflow-hidden cursor-pointer
-           hover:bg-ultraviolet
-           transition-colors duration-200 ease-brand
-           flex flex-col gap-0.5;
-    position: relative;
-    z-index: 1;
+    @apply rounded-sm shadow-card p-1.5
+           flex flex-col gap-0.5 overflow-hidden transition-all duration-300
+           hover:-translate-y-1 hover:brightness-110 hover:z-50;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left-width: 4px;
+  }
+
+  /* Primary Ultraviolet - Opening/Closing*/
+  .schedule-event.color-violet {
+    @apply bg-ultraviolet/50 border-ultraviolet/30 border-l-ultraviolet;
+    &:hover { @apply shadow-[0_0_15px_rgba(168,85,247,0.4)]; }
+  }
+
+  /* Electric Blue - Check-in/Check-out*/
+  .schedule-event.color-cyan {
+    @apply bg-electricBlue/50 border-electricBlue/30 border-l-electricBlue;
+    &:hover { @apply shadow-[0_0_15px_rgba(59,130,246,0.4)]; }
+  }
+
+  /* Cyber Teal - Workshops*/
+  .schedule-event.color-green {
+    @apply bg-cyberTeal/50 border-cyberTeal/30 border-l-cyberTeal;
+    &:hover { @apply shadow-[0_0_15px_rgba(45,212,191,0.4)]; }
+  }
+
+  /* Signal Yellow - Meals*/
+  .schedule-event.color-orange {
+    @apply bg-signalYellow/50 border-signalYellow/30 border-l-signalYellow;
+    &:hover { @apply shadow-[0_0_15px_rgba(251,191,36,0.4)]; }
   }
 
   .schedule-event-time {
-    @apply font-mono text-xs text-violet-light opacity-80;
+    @apply font-mono text-xs font-bold text-white/70 uppercase whitespace-nowrap;
   }
 
   .schedule-event-title {
-    @apply font-body font-semibold leading-tight;
+    @apply font-body font-bold text-white leading-tight text-sm wrap-break-word line-clamp-2;
+  }
+
+  /* ── Hero Section ─────────────────────────────────── */
+
+  /* Castle Tower — height set dynamically via ResizeObserver to match left column */
+  .tower-hero {
+    width: auto;
+    object-fit: contain;
+    opacity: 1;
+  }
+
+  /* ── Mascot ──────────────────────────────────────── */
+
+  /* Wrapper — absolutely positioned inside the tower window */
+  .mascot {
+    @apply absolute pointer-events-none select-none;
+  }
+
+  /* Base helmet image fills the wrapper */
+  .mascot-base {
+    @apply block w-full h-full object-contain pointer-events-none;
+  }
+
+  /* Pupil outer wrapper — position/translate driven by JS mouse tracking */
+  .mascot-pupil {
+    @apply absolute pointer-events-none;
+    width: 18.75%;
+    height: 13.75%;
+  }
+
+  /* Knights — gentle floating hover animation */
+  .knights-float {
+    animation: knightsFloat 4s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+
+  @keyframes knightsFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-10px); }
   }
 }
+

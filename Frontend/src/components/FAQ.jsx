@@ -46,7 +46,7 @@ function FAQItem({ faq }) {
 
 export default function FAQ() {
   return (
-    <div className="section-wrapper max-w-3xl mx-auto">
+    <div className="section-wrapper max-w-5xl mx-auto">
       <h2 className="section-title text-center">Frequently Asked Questions</h2>
 
       <div className="mt-8 flex flex-col gap-4">

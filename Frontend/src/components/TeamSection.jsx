@@ -8,7 +8,7 @@ export default function TeamSection() {
     <div className="section-wrapper">
 
       {/* ── Section Header ── */}
-      <h2 className="font-display font-bold text-text-primary text-center text-5xl md:text-6xl mb-12">
+      <h2 className="section-title text-center">
         Meet The Team
       </h2>
 
