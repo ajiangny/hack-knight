@@ -91,5 +91,28 @@ scheduleRouter.put(
     }
   },
 );
+scheduleRouter.delete(
+  "/:id",
+  authenticateAdmin,
+  (req: Request<{ id: string }>, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ message: "Invalid ID" });
+      return;
+    }
+    try {
+      const stmt = db.prepare("DELETE FROM events WHERE id = ?");
+      const result = stmt.run(id);
 
+      if (result.changes === 0) {
+        res.status(404).json({ message: "Event not found." });
+        return;
+      }
+
+      res.status(204).send();
+    } catch {
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+);
 export default scheduleRouter;
