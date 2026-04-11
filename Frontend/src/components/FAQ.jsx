@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { faqs } from '../data/faq';
 
-function FAQItem({ faq }) {
-  const [isOpen, setIsOpen] = useState(false);
+function FAQItem({ faq }) { // this is the FAQ item component
+  const [isOpen, setIsOpen] = useState(false); // this state is used to store whether the FAQ item is open or not
 
   return (
-    <div className={`border rounded-card bg-surface overflow-hidden transition-all duration-300 ${isOpen ? 'border-ultraviolet shadow-glow' : 'border-border/30 hover:border-border/60'}`}>
-      <button
+    <div className={`border rounded-card bg-void/60 overflow-hidden transition-all duration-300 ${isOpen ? 'border-ultraviolet shadow-glow' : 'border-border/30 hover:border-border/60'}`}>
+      <button // this is the button that is clicked to open and close the FAQ item
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex justify-between items-start sm:items-center px-6 py-5 text-left transition-colors duration-300 ${isOpen ? 'text-ultraviolet border-b border-ultraviolet/30 bg-ultraviolet/5' : 'text-text-primary border-b border-transparent hover:text-white'}`}
       >
@@ -44,16 +44,19 @@ function FAQItem({ faq }) {
   );
 }
 
-export default function FAQ() {
+export default function FAQ() { // this is the FAQ component
   return (
-    <div className="section-wrapper max-w-5xl mx-auto">
+    <div className="section-wrapper">
       <h2 className="section-title text-center">Frequently Asked Questions</h2>
 
-      <div className="mt-8 flex flex-col gap-4">
-        {faqs.map((faq, index) => (
-          <FAQItem key={index} faq={faq} />
-        ))}
-      </div>
+      {/* Surface card — matches carousel / other sections */}
+      <div className="bg-surface rounded-3xl py-8 sm:py-12 px-6 sm:px-12 mt-6 sm:mt-10">
+        <div className="flex flex-col gap-4">
+          {faqs.map((faq, index) => (
+            <FAQItem key={index} faq={faq} />
+          ))}
+        </div>
+      </div>{/* end surface card */}
 
     </div>
   );

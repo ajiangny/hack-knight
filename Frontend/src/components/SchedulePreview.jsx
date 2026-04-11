@@ -91,12 +91,12 @@ export default function SchedulePreview() { // Component to display the schedule
 
   return (
     <section className="section-wrapper py-24" id="schedule">
-      <div className="text-center mb-12">
+      <div className="text-center mb-8">
         <h2 className="section-title">Event Schedule</h2>
       </div>
 
-      {/* Day tab switcher */}
-      <div className="flex justify-center gap-3 flex-wrap mb-8">
+      {/* Day tab switcher — outside the card */}
+      <div className="flex justify-center gap-3 flex-wrap mb-6">
         {scheduleDays.map(day => (
           <button
             key={day.key}
@@ -109,30 +109,23 @@ export default function SchedulePreview() { // Component to display the schedule
         ))}
       </div>
 
+      {/* Surface card — wraps just the schedule grid */}
+      <div className="bg-surface rounded-3xl py-6 sm:py-10 px-4 sm:px-8 mt-2">
       {/* Single-day grid */}
-      <div className="schedule-grid-wrapper max-w-3xl mx-auto">
+      <div className="schedule-grid-wrapper max-w-5xl mx-auto">
         <div
           className="schedule-grid"
           style={{
             gridTemplateColumns: '5rem 1fr',
-            gridTemplateRows: `3.5rem repeat(${totalSlots}, 1.8rem)`,
+            gridTemplateRows: `repeat(${totalSlots}, 1.8rem)`,
           }}
         >
-          {/* Header */}
-          <div className="schedule-grid-corner" />
-          <div
-            className="schedule-day-header"
-            style={{ gridColumn: 2, gridRow: 1 }}
-          >
-            {scheduleDays.find(d => d.key === activeDay)?.label}
-          </div>
-
-          {/* Time sidebar */}
+          {/* Time sidebar — row indices now start at 1 (no header row) */}
           {Array.from({ length: maxHour - minHour + 1 }, (_, i) => minHour + i).map(hour => (
             <div
               key={`label-${hour}`}
               className="schedule-time-label"
-              style={{ gridRow: `${getRow(hour)} / span 2`, gridColumn: 1 }}
+              style={{ gridRow: `${getRow(hour) - 1} / span 2`, gridColumn: 1 }}
             >
               {formatHour(hour)}
             </div>
@@ -144,7 +137,7 @@ export default function SchedulePreview() { // Component to display the schedule
               key={`bg-${slot}`}
               className="schedule-cell"
               style={{
-                gridRow: slot + 2,
+                gridRow: slot + 1,
                 gridColumn: 2,
                 borderBottom:
                   slot % 2 === 0
@@ -157,8 +150,8 @@ export default function SchedulePreview() { // Component to display the schedule
           {/* Events */}
           {packed.map((item, pIdx) => {
             const { event, laneIdx, totalLanes } = item;
-            const startRow = getRow(event.startHour);
-            const endRow = getRow(event.endHour);
+            const startRow = getRow(event.startHour) - 1;
+            const endRow = getRow(event.endHour) - 1;
             const span = Math.max(endRow - startRow, 1);
             return (
               <div
@@ -184,7 +177,7 @@ export default function SchedulePreview() { // Component to display the schedule
 
           {packed.length === 0 && (
             <div
-              style={{ gridRow: '2 / span 4', gridColumn: 2 }}
+              style={{ gridRow: '1 / span 4', gridColumn: 2 }}
               className="flex items-center justify-center font-mono text-sm text-text-muted"
             >
               No events scheduled yet.
@@ -192,8 +185,9 @@ export default function SchedulePreview() { // Component to display the schedule
           )}
         </div>
       </div>
+      </div>{/* end surface card */}
 
-      <div className="text-center mt-12">
+      <div className="text-center mt-8">
         <Link to="/schedule" className="btn-outline">
           View Full Schedule
         </Link>

@@ -12,6 +12,12 @@ export default function SponsorsPage() {
 
   return (
     <main className="section-wrapper">
+      {/* Back button */}
+      <div className="mb-12">
+        <a href="/" className="inline-flex items-center gap-2 font-mono uppercase text-sm text-text-secondary hover:text-ultraviolet hover:-translate-x-1 transition-all duration-300">
+          <span>&larr;</span> Back to Home
+        </a>
+      </div>
 
       {/* Page heading */}
       <h1 className="section-title text-center">Our Sponsors</h1>

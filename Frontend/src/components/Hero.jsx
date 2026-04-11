@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'motion/react';
 import CountdownTimer from './CountdownTimer';
@@ -9,110 +9,144 @@ import knightsSvg from '../assets/knights1.svg';
 import towerSvg from '../assets/tower.svg';
 
 export default function Hero() {
-  const leftColRef = useRef(null);
-  const [towerHeight, setTowerHeight] = useState(null);
-
-  // ── Motion scroll tracking ─────────────────────────────────────────────
-  // useScroll returns scrollY as a live MotionValue — no event listeners needed.
   const { scrollY } = useScroll();
+  const hillsGroupY = useTransform(scrollY, (v) => v * 0.30);
+  const contentY = useTransform(scrollY, (v) => v * 0.90);
 
-  // Each layer gets its own MotionValue derived from scrollY.
-  // The multiplier controls how fast each layer scrolls (parallax speed).
-  const hillsGroupY = useTransform(scrollY, (v) => v * 0.90); // back hill + knights
-  const contentY = useTransform(scrollY, (v) => v * 0.40);    // left col + tower
+  const leftColRef = useRef(null);
+  const [towerHeight, setTowerHeight] = useState(undefined);
 
-  // ── ResizeObserver — sync tower height to left column ─────────────────
-  useEffect(() => {
-    if (!leftColRef.current) return;
-    const observer = new ResizeObserver(([entry]) =>
-      setTowerHeight(entry.contentRect.height)
-    );
-    observer.observe(leftColRef.current);
-    return () => observer.disconnect();
+  const containerVariants = { // this is the container variant for the left column
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = { // this is the item variant for the left column
+    hidden: { opacity: 0, y: -50 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        type: "spring",
+        stiffness: 400,
+        damping: 15,
+        mass: 1.2
+      } 
+    }
+  };
+
+  const towerVariants = { // this is the tower variant for the left column
+    hidden: { opacity: 0, y: -100 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        type: "spring",
+        stiffness: 300,
+        damping: 20,
+        delay: 0.6
+      } 
+    }
+  };
+
+  useEffect(() => { // this effect is used to get the height of the tower
+    const el = leftColRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setTowerHeight(entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   return (
     <section
       id="hero"
-      className="relative overflow-hidden min-h-screen flex items-center"
+      className="hero-section relative overflow-hidden flex flex-col pt-24 lg:pt-32 pb-8 lg:pb-32 2xl:pb-[22vh]"
       style={{ isolation: 'isolate' }}
     >
-      {/* z:0 — Back hill + Knights (grouped, move together) */}
+      {/* z:0 — Back hill + Knights, slow parallax (hidden on mobile) */}
       <motion.div
-        className="absolute left-0 w-full"
-        style={{ bottom: '0%', zIndex: 0, y: hillsGroupY }}
+        className="hero-hills absolute left-0 h-full w-full pointer-events-none"
+        style={{ bottom: 0, zIndex: 0, y: hillsGroupY }}
       >
         <img src={hillsBgSvg} alt="" aria-hidden="true"
-          className="absolute left-0 w-full pointer-events-none select-none"
-          style={{ bottom: 0, opacity: 0.35 }}
+          className="absolute left-0 bottom-[8dvh] lg:bottom-0 w-full h-auto pointer-events-none select-none"
+          style={{ opacity: 0.35 }}
         />
         <img src={knightsSvg} alt="" aria-hidden="true"
-          className="absolute left-0 w-full pointer-events-none select-none knights-float"
-          style={{ bottom: 0 }}
+          className="absolute left-0 bottom-[8dvh] lg:bottom-0 w-full h-auto pointer-events-none select-none knights-float"
         />
       </motion.div>
 
-      {/* z:3 — Front hill — static, always pinned to section bottom */}
+      {/* z:10 — Front hill, static at viewport bottom (hidden on mobile), sits above content */}
       <img
         src={hillsSvg} alt="" aria-hidden="true"
-        className="absolute left-0 w-full pointer-events-none select-none"
-        style={{ bottom: 0, zIndex: 5 }}
+        className="hero-hills absolute left-0 bottom-0 w-full h-auto pointer-events-none select-none"
+        style={{ zIndex: 10 }}
       />
 
-      {/*
-        ── Two-column content row ──────────────────────────────────────────
-        The wrapper itself has NO transform — no stacking context is created.
-        Left col (z:4) and tower col (z:2) each transform independently so
-        the front hill (z:3) can sit between them in the section's stacking ctx.
-      */}
-      <div className="w-full flex md:flex-row items-start gap-12 relative pt-24 pb-16 pl-6 md:pt-40 md:pb-32 md:pl-40 max-w-[1600px] mx-auto">
+      <div className="hero-content-wrapper w-full grid grid-cols-1 lg:grid-cols-[auto_auto] justify-center justify-items-center lg:justify-items-start items-center lg:items-start gap-8 lg:gap-8 xl:gap-8 relative px-6 my-auto z-4 max-w-[2560px] mx-auto">
 
-        {/* z:4 — Left content */}
+        {/* z:4 — Left column */}
         <motion.div
           ref={leftColRef}
-          className="flex flex-col items-start text-left"
+          className="hero-left-col w-full min-w-0 max-w-xl md:max-w-max"
           style={{ position: 'relative', zIndex: 4, y: contentY }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <h1 className="font-display font-bold text-5xl md:text-hero text-text-primary mb-4 leading-none">
+          <motion.h1 variants={itemVariants} className="font-display font-bold text-4xl sm:text-5xl md:text-6xl xl:text-[clamp(2.5rem,5vw,8rem)] text-text-primary mb-2 leading-none xl:whitespace-nowrap">
             <span className="text-ultraviolet">HackKnight</span> 2026
-          </h1>
+          </motion.h1>
 
-          <p className="font-body text-text-primary text-2xl mb-6">
+          <motion.p variants={itemVariants} className="font-body text-text-primary text-base sm:text-lg md:text-xl xl:text-[clamp(1.25rem,2.5vw,3.5rem)] mb-4 sm:mb-6">
             October 9th – 11th, 2026
-          </p>
+          </motion.p>
 
-          <p className="section-subtitle max-w-xl mb-10">
+          <motion.p variants={itemVariants} className="font-body text-text-secondary text-sm sm:text-base md:text-[clamp(1rem,1.5vw,1.25rem)] max-w-xl lg:max-w-2xl mb-6 lg:mb-4 leading-relaxed">
             HackKnight is a 48-hour hackathon where students come together to create
             innovative projects. We are a student run organization dedicated to providing
             a great event for students to learn and grow. Join us for a weekend of coding,
             learning, and fun!
-          </p>
+          </motion.p>
 
-          <div className="flex gap-4 mb-12">
-            <Link to="/register" className="btn-primary">Register Now</Link>
-            <Link to="/schedule" className="btn-outline">View Schedule</Link>
-          </div>
+          <motion.div variants={itemVariants} className="hero-buttons flex gap-3 mb-6 w-full flex-wrap">
+            <Link to="/register" className="btn-primary text-sm px-5 py-2.5 sm:text-base sm:px-6 sm:py-3">Apply Now</Link>
+            <Link to="/schedule" className="btn-outline text-sm px-5 py-2.5 sm:text-base sm:px-6 sm:py-3">View Schedule</Link>
+          </motion.div>
 
-          <CountdownTimer />
+          <motion.div variants={itemVariants}>
+            <CountdownTimer />
+          </motion.div>
         </motion.div>
 
-        {/* z:2 — Tower column — hidden below md breakpoint */}
+        {/* z:2 — Tower, matches left column height */}
         <motion.div
-          className="max-md:hidden flex shrink-0 items-start justify-center"
+          className="hero-tower-col shrink-0 w-fit items-start justify-center"
           style={{ position: 'relative', zIndex: 2, y: contentY }}
+          variants={towerVariants}
+          initial="hidden"
+          animate="visible"
         >
           <div className="relative">
             <img
               src={towerSvg}
               alt="Castle Tower"
               className="tower-hero select-none pointer-events-none"
-              style={towerHeight ? { height: `${towerHeight * 1.25}px`, width: 'auto' } : {}}
+              style={{
+                height: towerHeight ? `${towerHeight * 1.15}px` : 'clamp(380px, 30vw, 1000px)',
+                maxHeight: '1300px',
+                width: 'auto',
+              }}
             />
-            {/*
-              Mascot overlay — positioned so the helmet eyes align with the tower arch window.
-              Tower window: center-x ≈ 57.3%, center-y ≈ 24.5% of tower.
-              Mascot eye region: 66.7% down the logo.
-            */}
             <MascotEyes
               style={{
                 position: 'absolute',

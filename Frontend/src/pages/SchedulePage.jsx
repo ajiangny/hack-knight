@@ -92,6 +92,12 @@ export default function SchedulePage() {
 
   return (
     <main className="py-section">
+      {/* Back button */}
+      <div className="px-container max-w-7xl mx-auto mb-8">
+        <a href="/" className="inline-flex items-center gap-2 font-mono uppercase text-sm text-text-secondary hover:text-ultraviolet hover:-translate-x-1 transition-all duration-300">
+          <span>&larr;</span> Back to Home
+        </a>
+      </div>
 
       {/* ── PAGE HEADER (matches SponsorsPage style) ─────────────────────── */}
       <div className="text-center mb-12 px-container max-w-7xl mx-auto">
@@ -190,7 +196,7 @@ export default function SchedulePage() {
         {/* Bottom CTA */}
         <div className="text-center mt-12">
           <a href="/register" className="btn-primary">
-            Register Now
+            Apply Now
           </a>
         </div>
       </div>
