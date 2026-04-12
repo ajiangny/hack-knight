@@ -1,6 +1,6 @@
 # HackKnight Frontend — Setup Changelog
 
-> Documents all changes made to the `Frontend/` directory during initial CSS system setup.
+> Documents all changes made to the `frontend/` directory during initial CSS system setup.
 > Branch: `main` | Date: 2026-04-02
 
 ---
