@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import logoUrl from '../assets/logoprimary.svg';
+import logoUrl from '../assets/brand/logoprimary.svg';
 
 // Flip to true when MLH approves the badge
 const SHOW_MLH_BADGE = false;
@@ -84,7 +84,7 @@ export default function Navbar() {
         {/* On mobile: absolutely centered icon only. On desktop: normal flow with ml to clear badge */}
         <a
           href="/#hero"
-          className="navbar-logo flex items-center gap-2 font-display text-text-primary text-xl hover:scale-105 transition-transform duration-300"
+          className="navbar-logo flex items-center gap-1 font-display text-text-primary text-xl hover:scale-105 transition-transform duration-300"
         >
           <img src={logoUrl} alt="HackKnight Logo" className="w-12 h-12" />
           <span className="navbar-wordmark font-display font-bold text-text-primary text-2xl leading-none pt-1">HackKnight</span>
