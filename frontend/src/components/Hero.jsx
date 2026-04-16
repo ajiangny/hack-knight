@@ -69,7 +69,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="hero-section relative overflow-hidden flex flex-col pt-24 lg:pt-32 pb-8 lg:pb-32 2xl:pb-[22vh]"
+      className="hero-section relative overflow-hidden flex flex-col pt-24 lg:pt-32 pb-8 lg:pb-32 2xl:pb-[22vh] bg-void"
       style={{ isolation: 'isolate' }}
     >
       {/* z:0 — Back hill + Knights, slow parallax (hidden on mobile) */}
