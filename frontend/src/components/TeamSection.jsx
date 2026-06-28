@@ -30,7 +30,7 @@ export default function TeamSection() {
                 `relative` here is KEY — it makes this div the "anchor" for the badge.
                 Any child with `absolute` positioning will be placed relative to THIS div.
               */}
-              <div className="relative rounded-xl overflow-hidden aspect-square bg-border">
+              <div className="relative rounded-xl overflow-hidden aspect-square bg-white">
 
                 {/* The member's photo — fills the entire square */}
                 <img
@@ -71,4 +71,4 @@ export default function TeamSection() {
 
     </div>
   );
-}
+}

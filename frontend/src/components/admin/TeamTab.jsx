@@ -1,10 +1,7 @@
-// Team admin tab — list / add / delete members with photo upload.
-// Minimal styling; functional baseline for a teammate to restyle later.
-
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiGet, apiDelete, apiUpload, compressImage } from "../../lib/api";
 
-const EMPTY_MEMBER = { name: "", title: "" };
+const EMPTY_MEMBER = { name: "", title: "", sort_order: 0 };
 
 export default function TeamTab() {
   const [members, setMembers] = useState([]);
@@ -13,6 +10,14 @@ export default function TeamTab() {
   const [badge, setBadge] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // edit modal state
+  const [editing, setEditing] = useState(null); 
+  const [editForm, setEditForm] = useState(EMPTY_MEMBER);
+  const [editPhoto, setEditPhoto] = useState(null);
+  const [editBadge, setEditBadge] = useState(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  const addFormRef = useRef(null);
 
   async function load() {
     try {
@@ -48,7 +53,7 @@ export default function TeamTab() {
       setForm(EMPTY_MEMBER);
       setPhoto(null);
       setBadge(null);
-      e.target.reset();
+      addFormRef.current?.reset();
       load();
     } catch (err) {
       setError(err.message);
@@ -67,6 +72,45 @@ export default function TeamTab() {
     }
   }
 
+  function openEdit(member) {
+    setEditing(member);
+    setEditForm({ name: member.name, title: member.title, sort_order: member.sort_order ?? 0 });
+    setEditPhoto(null);
+    setEditBadge(null);
+    setError(null);
+  }
+
+  function closeEdit() {
+    setEditing(null);
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault();
+    setError(null);
+    setEditSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("name", editForm.name);
+      formData.append("title", editForm.title);
+      formData.append("sort_order", String(editForm.sort_order));
+      if (editPhoto) {
+        const compressed = await compressImage(editPhoto);
+        formData.append("photo", compressed, editPhoto.name);
+      }
+      if (editBadge) {
+        const compressed = await compressImage(editBadge);
+        formData.append("badge", compressed, editBadge.name);
+      }
+      await apiUpload(`/team/${editing.id}`, formData, "PUT");
+      closeEdit();
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   return (
     <div className="admin-tab">
       {error && <p className="admin-error">{error}</p>}
@@ -79,13 +123,22 @@ export default function TeamTab() {
             <div>
               {m.name} — {m.title}
             </div>
-            <button onClick={() => removeMember(m.id)}>Delete</button>
+            <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>Priority: {m.sort_order ?? 0}</div>
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+              <button onClick={() => openEdit(m)}>Edit</button>
+              <button
+                onClick={() => removeMember(m.id)}
+                style={{ color: "#fff", backgroundColor: "#dc2626", border: "none" }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
       <h2>Add Member</h2>
-      <form onSubmit={addMember} className="admin-form">
+      <form ref={addFormRef} onSubmit={addMember} className="admin-form">
         <input
           placeholder="name"
           value={form.name}
@@ -119,6 +172,101 @@ export default function TeamTab() {
           {submitting ? "Saving…" : "Add Member"}
         </button>
       </form>
+
+      {/* Edit modal */}
+      {editing && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={(e) => e.target === e.currentTarget && closeEdit()}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "0.5rem",
+              padding: "1.5rem",
+              minWidth: "320px",
+              maxWidth: "90vw",
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Edit Member</h3>
+
+            {/* current photo preview */}
+            <div style={{ marginBottom: "1rem", textAlign: "center" }}>
+              <img
+                src={editing.photo_url}
+                alt={editing.name}
+                style={{ maxHeight: "120px", borderRadius: "0.25rem", objectFit: "cover" }}
+              />
+              {editing.badge_url && (
+                <img
+                  src={editing.badge_url}
+                  alt="badge"
+                  style={{ maxHeight: "60px", marginLeft: "0.5rem", objectFit: "contain" }}
+                />
+              )}
+            </div>
+
+            <form onSubmit={saveEdit} className="admin-form">
+              <input
+                placeholder="Name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                required
+              />
+              <input
+                placeholder="Title"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                required
+              />
+              <label>
+                Display Priority (lower = first){" "}
+                <input
+                  type="number"
+                  value={editForm.sort_order}
+                  onChange={(e) => setEditForm({ ...editForm, sort_order: Number(e.target.value) })}
+                  style={{ width: "80px" }}
+                />
+              </label>
+              <label>
+                New Photo{" "}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setEditPhoto(e.target.files[0] ?? null)}
+                />
+              </label>
+              <label>
+                New Badge{" "}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setEditBadge(e.target.files[0] ?? null)}
+                />
+              </label>
+
+              {error && <p className="admin-error" style={{ margin: "0.5rem 0" }}>{error}</p>}
+
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                <button type="submit" disabled={editSubmitting}>
+                  {editSubmitting ? "Saving…" : "Save Changes"}
+                </button>
+                <button type="button" onClick={closeEdit}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
