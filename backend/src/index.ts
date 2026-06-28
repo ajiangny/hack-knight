@@ -3,6 +3,8 @@ import express from "express";
 import morgan from "morgan";
 import authRouter from "./routes/auth.js";
 import scheduleRouter from "./routes/schedule.js";
+import galleryRouter from "./routes/gallery.js";
+import teamRouter from "./routes/team.js";
 import cors from "cors";
 
 const app = express();
@@ -40,8 +42,13 @@ app.get("/api/health", (req, res) => {
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/schedule", scheduleRouter);
+app.use("/api/gallery", galleryRouter);
+app.use("/api/team", teamRouter);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Exported for Vercel Fluid Compute to wrap as a serverless function.
+export default app;

@@ -1,9 +1,11 @@
 // Displays the team member grid on the homepage.
 // Imports team data from data/team.js
 
-import { teamMembers } from '../data/team';
+import { useTeam } from '../hooks/useTeam';
 
 export default function TeamSection() {
+  const { teamMembers } = useTeam(); // Fetch from API (static fallback)
+
   return (
     <div className="section-wrapper">
 
@@ -28,7 +30,7 @@ export default function TeamSection() {
                 `relative` here is KEY — it makes this div the "anchor" for the badge.
                 Any child with `absolute` positioning will be placed relative to THIS div.
               */}
-              <div className="relative rounded-xl overflow-hidden aspect-square bg-border">
+              <div className="relative rounded-xl overflow-hidden aspect-square bg-white">
 
                 {/* The member's photo — fills the entire square */}
                 <img
@@ -42,11 +44,13 @@ export default function TeamSection() {
                   `bottom-2 right-2` places it 8px from the bottom-right corner.
                   `w-16 h-16` controls the badge size — adjust to taste.
                 */}
-                <img
-                  src={member.badge}
-                  alt="character badge"
-                  className="absolute bottom-2 right-2 w-16 h-16 object-contain"
-                />
+                {member.badge && (
+                  <img
+                    src={member.badge}
+                    alt="character badge"
+                    className="absolute bottom-2 right-2 w-16 h-16 object-contain"
+                  />
+                )}
               </div>
 
               {/* ── Name & Title — sit BELOW the photo, outside the image block ── */}
@@ -67,4 +71,4 @@ export default function TeamSection() {
 
     </div>
   );
-}
+}
