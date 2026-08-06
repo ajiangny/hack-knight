@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";  // added useEffect
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import Slideshow from "./Slideshow";
+import Slideshow, { type ActivePhoto } from "./Slideshow";
 import { useGallery } from "../../hooks/useGallery";
 
 export default function PhotoGallery() {
   const { galleryData } = useGallery(); // Fetch from API (static fallback)
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [activePhoto, setActivePhoto] = useState(null);
+  const [activePhoto, setActivePhoto] = useState<ActivePhoto | null>(null);
 
   function handleNext() {
     setDirection(1);

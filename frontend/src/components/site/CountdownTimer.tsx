@@ -1,8 +1,17 @@
 import { useState, useEffect } from "react";
 import { useCountdown } from "../../hooks/useCountdown";
 
+interface TimeLeft {
+  months: number;
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isOver: boolean;
+}
+
 // this function calculates the time left until the target date
-function calculateTimeLeft(targetMs, nowMs) {
+function calculateTimeLeft(targetMs: number, nowMs: number): TimeLeft {
   const difference = targetMs - nowMs;
 
   if (difference > 0) {
@@ -21,7 +30,7 @@ function calculateTimeLeft(targetMs, nowMs) {
 
 // `targetDate` (ISO string) is optional — pass it for an instant, network-free
 // preview (e.g. the admin Misc tab); otherwise it's fetched from the API.
-export default function CountdownTimer({ targetDate: targetDateProp }) {
+export default function CountdownTimer({ targetDate: targetDateProp }: { targetDate?: string }) {
   const { targetDate: fetchedTargetDate } = useCountdown({ enabled: !targetDateProp });
   const targetDate = targetDateProp ?? fetchedTargetDate;
   const targetMs = new Date(targetDate).getTime();
@@ -38,10 +47,10 @@ export default function CountdownTimer({ targetDate: targetDateProp }) {
 
   const timeLeft = calculateTimeLeft(targetMs, now);
 
-  const formatNumber = (num) => (num < 10 ? `0${num}` : num); // this function formats the number to have a leading zero if it is less than 10
-  
+  const formatNumber = (num: number) => (num < 10 ? `0${num}` : num); // this function formats the number to have a leading zero if it is less than 10
+
   return ( // this is the countdown timer component
-    <div className="hero-buttons flex w-full mt-2 mb-0"> 
+    <div className="hero-buttons flex w-full mt-2 mb-0">
       <div // this is the border around the countdown timer
         className="border border-ultraviolet rounded-[1.25rem] sm:rounded-4xl px-3 py-2.5 sm:px-8 sm:py-5 bg-void/80"
       >

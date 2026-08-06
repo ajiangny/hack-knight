@@ -1,14 +1,15 @@
 import { useRef } from 'react';
 import { useTeam } from '../../hooks/useTeam';
+import type { TeamMember } from '../../types';
 
-function MemberCard({ member }) {
-  const cardRef = useRef(null);
-  const frameRef = useRef(null);
+function MemberCard({ member }: { member: TeamMember }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<number | null>(null);
   // Tracks flip state imperatively — no re-render needed, rAF callbacks read it directly.
   const flippedRef = useRef(false);
   const hasBadge = !!member.badge;
 
-  function handleMouseMove(e) {
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(() => {
       const el = cardRef.current;
@@ -72,7 +73,7 @@ function MemberCard({ member }) {
             alt={member.name}
             className="w-full h-full object-cover"
           />
-          {hasBadge && (
+          {member.badge && (
             <img
               src={member.badge}
               alt="character badge"
@@ -82,7 +83,7 @@ function MemberCard({ member }) {
         </div>
 
         {/* Back face: full badge */}
-        {hasBadge && (
+        {member.badge && (
           <div
             className="absolute inset-0 rounded-xl overflow-hidden bg-void flex items-center justify-center"
             style={{

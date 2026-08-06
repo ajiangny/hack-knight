@@ -1,6 +1,6 @@
-// components/SponsorsCarousel.jsx
+// components/SponsorsCarousel.tsx
 // Displays a scrolling row of sponsor logos on the homepage.
-// Imports sponsor data from data/sponsors.js
+// Imports sponsor data from data/sponsors.ts
 // Has a link to the full /sponsors page.
 
 import { Link } from 'react-router-dom';            // Link for navigating to /sponsors

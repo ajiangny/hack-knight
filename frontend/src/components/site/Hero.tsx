@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, useSpring } from 'motion/react';
+import { motion, useScroll, useTransform, useSpring, type Variants } from 'motion/react';
 import CountdownTimer from './CountdownTimer';
 import MascotEyes from './MascotEyes';
 import hillsBgSvg  from '../../assets/brand/hillsbg.svg';
@@ -14,10 +14,10 @@ export default function Hero() {
   const hillsGroupY = useTransform(smoothScrollY, (v) => v * 0.30);
   const contentY = useTransform(smoothScrollY, (v) => v * 0.90);
 
-  const leftColRef = useRef(null);
-  const [towerHeight, setTowerHeight] = useState(undefined);
+  const leftColRef = useRef<HTMLDivElement>(null);
+  const [towerHeight, setTowerHeight] = useState<number | undefined>(undefined);
 
-  const containerVariants = { // this is the container variant for the left column
+  const containerVariants: Variants = { // this is the container variant for the left column
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -28,31 +28,31 @@ export default function Hero() {
     }
   };
 
-  const itemVariants = { // this is the item variant for the left column
+  const itemVariants: Variants = { // this is the item variant for the left column
     hidden: { opacity: 0, y: -50 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      transition: { 
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
         type: "spring",
         stiffness: 400,
         damping: 15,
         mass: 1.2
-      } 
+      }
     }
   };
 
-  const towerVariants = { // this is the tower variant for the left column
+  const towerVariants: Variants = { // this is the tower variant for the left column
     hidden: { opacity: 0, y: -100 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      transition: { 
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
         type: "spring",
         stiffness: 300,
         damping: 20,
         delay: 0.6
-      } 
+      }
     }
   };
 

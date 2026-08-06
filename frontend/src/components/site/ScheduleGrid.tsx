@@ -4,6 +4,15 @@
 
 import { formatHour } from "../../data/schedule";
 import { packEvents, getRangeLabel } from "../../lib/schedulePacking";
+import type { ScheduleEvent } from "../../types";
+
+interface ScheduleGridProps {
+  events: ScheduleEvent[];
+  minHour: number;
+  maxHour: number;
+  onEventClick?: (event: ScheduleEvent) => void;
+  eventClassName?: (event: ScheduleEvent) => string;
+}
 
 export default function ScheduleGrid({
   events,
@@ -11,9 +20,9 @@ export default function ScheduleGrid({
   maxHour,
   onEventClick,
   eventClassName,
-}) {
+}: ScheduleGridProps) {
   const totalSlots = (maxHour - minHour) * 2 + 1;
-  const getRow = (h) => Math.round((h - minHour) * 2) + 2;
+  const getRow = (h: number) => Math.round((h - minHour) * 2) + 2;
   const packed = packEvents(events);
 
   return (

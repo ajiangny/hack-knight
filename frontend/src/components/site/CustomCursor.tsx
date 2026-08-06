@@ -1,19 +1,17 @@
 import { useState, useEffect } from 'react';
-import { motion, useMotionValue } from 'motion/react';
+import { motion, useMotionValue, type Transition } from 'motion/react';
 
 const POINTER_SELECTOR =
   'a, button, [role="button"], select, label[for], summary, [tabindex]:not([tabindex="-1"]), [data-cursor="pointer"]';
 
 // Spring config for the morph transition between cursor states
-const morphSpring = { type: 'spring', stiffness: 500, damping: 28, mass: 0.5 };
+const morphSpring: Transition = { type: 'spring', stiffness: 500, damping: 28, mass: 0.5 };
 
 // Only render the custom cursor on devices with a precise pointer (mouse/trackpad).
 // On touch/mobile devices we return null so the native tap indicator is preserved.
 const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
 
 export default function CustomCursor() {
-  if (!hasFinePointer) return null;
-
   // useMotionValue drives the div position — updates bypass React re-renders entirely
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
@@ -22,10 +20,12 @@ export default function CustomCursor() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const onMove = (e) => {
+    if (!hasFinePointer) return;
+
+    const onMove = (e: MouseEvent) => {
       x.set(e.clientX);
       y.set(e.clientY);
-      setIsPointer(!!e.target.closest(POINTER_SELECTOR));
+      setIsPointer(!!(e.target as Element | null)?.closest(POINTER_SELECTOR));
       setIsVisible(true);
     };
     const onLeave = () => setIsVisible(false);
@@ -41,6 +41,8 @@ export default function CustomCursor() {
       document.removeEventListener('mouseenter', onEnter);
     };
   }, [x, y]);
+
+  if (!hasFinePointer) return null;
 
   return (
     <motion.div

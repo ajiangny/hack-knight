@@ -1,11 +1,19 @@
 import { useRef } from "react";
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
+import type { GalleryPhoto } from "../../types";
+
+/** Identifies the photo currently open in the lightbox. */
+export interface ActivePhoto {
+  photo: GalleryPhoto;
+  year: string;
+  idx: number;
+}
 
 // ─── Parent variant (the grid wrapper) ───────────────────────────────────────
 // The grid itself doesn't visually animate — it just orchestrates its children.
 // `staggerChildren` means each child starts its animation 0.08s after the previous one.
 // `delayChildren` adds a small pause before the first child starts.
-const gridVariants = {
+const gridVariants: Variants = {
   enter:  { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
   center: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
   exit:   { transition: { staggerChildren: 0.05, staggerDirection: -1 } },
@@ -15,20 +23,28 @@ const gridVariants = {
 // ─── Child variant (each individual photo) ───────────────────────────────────
 // Each photo starts invisible and slightly shifted down, then rises into place.
 // On exit, it fades out and drops slightly.
-const photoVariants = {
+const photoVariants: Variants = {
   enter:  { opacity: 0, y: 20, scale: 0.97 },   // starts below and faded
   center: { opacity: 1, y: 0,  scale: 1    },   // fully visible, in position
   exit:   { opacity: 0, y: -10, scale: 0.97 },  // exits upward and fades
 };
 
+interface ParallaxPhotoProps {
+  photo: GalleryPhoto;
+  index: number;
+  year: string;
+  onPhotoClick?: (photo: GalleryPhoto, idx: number) => void;
+  isActive: boolean;
+}
+
 // ─── ParallaxPhoto ────────────────────────────────────────────────────────────
 // Wraps each photo in a perspective container and applies a 3-D skew/tilt based
 // on where the cursor is relative to the card centre.
-function ParallaxPhoto({ photo, index, year, onPhotoClick, isActive }) {
-  const cardRef = useRef(null);
-  const frameRef = useRef(null); // rAF handle
+function ParallaxPhoto({ photo, index, year, onPhotoClick, isActive }: ParallaxPhotoProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<number | null>(null); // rAF handle
 
-  function handleMouseMove(e) {
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
 
     frameRef.current = requestAnimationFrame(() => {
@@ -88,13 +104,17 @@ function ParallaxPhoto({ photo, index, year, onPhotoClick, isActive }) {
   );
 }
 
+interface SlideshowProps {
+  year: string;
+  photos: GalleryPhoto[];
+  /** +1 or -1 — kept for future use / dot clicks. */
+  direction?: number;
+  onPhotoClick?: (photo: GalleryPhoto, idx: number) => void;
+  activePhoto?: ActivePhoto | null;
+}
+
 // ─── Slideshow ────────────────────────────────────────────────────────────────
-// Props:
-//   year      — string label e.g. "2024"
-//   photos    — array of { src, alt }
-//   direction — +1 or -1 (kept for future use / dot clicks)
-//   onPhotoClick — callback to trigger the modal
-export default function Slideshow({ year, photos, onPhotoClick, activePhoto }) {
+export default function Slideshow({ year, photos, onPhotoClick, activePhoto }: SlideshowProps) {
   return (
     // motion.div is the grid parent — it holds the stagger orchestration.
     // `initial`, `animate`, `exit` here match the keys in gridVariants.

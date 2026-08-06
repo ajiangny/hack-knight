@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { faqs } from '../../data/faq';
+import type { Faq as FaqEntry } from '../../types';
 
-function FAQItem({ faq }) { // this is the FAQ item component
+function FAQItem({ faq }: { faq: FaqEntry }) { // this is the FAQ item component
   const [isOpen, setIsOpen] = useState(false); // this state is used to store whether the FAQ item is open or not
 
   return (

@@ -6,7 +6,7 @@ export default function ComingSoon() {
   useEffect(() => {
     window.scrollTo(0, 0);  // force scroll to top on mount
   }, []);
-  
+
   return (
     <section className="section-wrapper" style={{ minHeight: "calc(100vh - 4rem)" }}>
       {/* Back button */}
@@ -20,7 +20,7 @@ export default function ComingSoon() {
         <h1 className="font-display font-bold text-4xl md:text-6xl text-text-primary mb-4">
           Applications <span className="text-ultraviolet">Opening Soon</span>
         </h1>
-  
+
         <p className="font-body text-text-secondary text-base max-w-xl text-center mx-auto">
           We're putting the finishing touches on registration. Check back soon!
         </p>

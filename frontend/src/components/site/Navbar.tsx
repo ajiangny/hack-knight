@@ -14,13 +14,13 @@ export default function Navbar() {
   const showMlhBadge = settings.mlh_badge_enabled === 'true';
 
   useEffect(() => {
-    const observers = [];
+    const observers: IntersectionObserver[] = [];
     // Track which sections are currently intersecting
-    const visibleSections = new Map();
+    const visibleSections = new Map<string, number>();
 
     const pickActive = () => {
       // Pick the section closest to the top of the viewport
-      let best = null;
+      let best: string | null = null;
       let bestTop = Infinity;
       visibleSections.forEach((top, id) => {
         if (top < bestTop) { bestTop = top; best = id; }

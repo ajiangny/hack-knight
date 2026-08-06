@@ -1,5 +1,5 @@
 // Site-wide footer with nav links, social links, and legal info.
-// Rendered in App.jsx so it appears on every page.
+// Rendered in App.tsx so it appears on every page.
 
 import { Link } from 'react-router-dom';            // Link for internal page navigation
 import logoUrl from '../../assets/brand/logoprimary.svg';

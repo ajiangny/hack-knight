@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties, type RefObject } from 'react';
 import { animate } from 'motion/react';
 import logoBaseSvg from '../../assets/brand/logobase.svg';
 
@@ -15,9 +15,15 @@ const BLINK_DURATION = 0.1;    // seconds each half of blink
 const BLINK_MIN_MS = 2500;
 const BLINK_MAX_MS = 5500;
 
+interface PupilProps {
+  eye: { cx: number; cy: number };
+  translateRef: RefObject<HTMLDivElement | null>;
+  blinkRef: RefObject<HTMLDivElement | null>;
+}
+
 // ── Pupil sub-component ────────────────────────────────────────────────────
 // Outer div handles mouse translation; inner motion target handles blink scaleY.
-function Pupil({ eye, translateRef, blinkRef }) {
+function Pupil({ eye, translateRef, blinkRef }: PupilProps) {
   return (
     <div
       ref={translateRef}
@@ -39,20 +45,20 @@ function Pupil({ eye, translateRef, blinkRef }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
-export default function MascotEyes({ className = '', style = {} }) {
-  const containerRef = useRef(null);
+export default function MascotEyes({ className = '', style = {} }: { className?: string; style?: CSSProperties }) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Translation refs (moved by mouse)
-  const leftTransRef = useRef(null);
-  const rightTransRef = useRef(null);
+  const leftTransRef = useRef<HTMLDivElement>(null);
+  const rightTransRef = useRef<HTMLDivElement>(null);
 
   // Blink refs (animated by Motion)
-  const leftBlinkRef = useRef(null);
-  const rightBlinkRef = useRef(null);
+  const leftBlinkRef = useRef<HTMLDivElement>(null);
+  const rightBlinkRef = useRef<HTMLDivElement>(null);
 
   // ── Mouse tracking ───────────────────────────────────────────────────────
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
@@ -76,10 +82,12 @@ export default function MascotEyes({ className = '', style = {} }) {
 
   // ── Blink loop (Motion) ──────────────────────────────────────────────────
   useEffect(() => {
-    let timer;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     const doBlink = async () => {
-      const targets = [leftBlinkRef.current, rightBlinkRef.current].filter(Boolean);
+      const targets = [leftBlinkRef.current, rightBlinkRef.current].filter(
+        (el): el is HTMLDivElement => el !== null,
+      );
       // Close
       await animate(targets, { scaleY: 0 }, { duration: BLINK_DURATION, ease: 'easeIn' });
       // Open
