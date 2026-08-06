@@ -11,33 +11,34 @@ import {
   apiUpload,
   compressImage,
 } from "../../../lib/api";
-import { Panel, Field, EmptyState, SaveBar, DiffModal } from "../ui";
+import { Panel, Field, EmptyState, SaveBar, DiffModal, type Change } from "../ui";
 import { useObjectUrls } from "../useObjectUrls";
+import type { AdminPhoto, AdminYear } from "../adminTypes";
 import YearPanel from "./YearPanel";
 
-function cloneYears(years) {
+function cloneYears(years: AdminYear[]): AdminYear[] {
   return years.map((y) => ({ ...y, photos: (y.photos ?? []).map((p) => ({ ...p })) }));
 }
 
-export default function GalleryTab({ onDirtyChange }) {
-  const [serverYears, setServerYears] = useState([]);
-  const [draftYears, setDraftYears] = useState([]);
+export default function GalleryTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
+  const [serverYears, setServerYears] = useState<AdminYear[]>([]);
+  const [draftYears, setDraftYears] = useState<AdminYear[]>([]);
   const [newYear, setNewYear] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [error, setError] = useState(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const tmpIdRef = useRef(0);
   const { trackUrl, revokeAll } = useObjectUrls();
 
   const load = useCallback(async () => {
     try {
-      const data = await apiGet("/gallery");
+      const data = await apiGet<AdminYear[]>("/gallery");
       setServerYears(data);
       setDraftYears(cloneYears(data));
       revokeAll();
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   }, [revokeAll]);
 
@@ -47,7 +48,7 @@ export default function GalleryTab({ onDirtyChange }) {
 
   /* ── Staged diff (presentational; applySave orchestrates the real ops) ── */
 
-  function needsReorder(draftYear, serverYear) {
+  function needsReorder(draftYear: AdminYear, serverYear: AdminYear | undefined) {
     if (!serverYear) return false; // new year uploads already land in draft order
     const persistedDraft = draftYear.photos.filter((p) => !p._new).map((p) => p.id);
     const serverKept = serverYear.photos
@@ -62,7 +63,7 @@ export default function GalleryTab({ onDirtyChange }) {
   }
 
   const changes = useMemo(() => {
-    const list = [];
+    const list: Change[] = [];
 
     for (const y of draftYears) {
       if (y._new) {
@@ -90,7 +91,7 @@ export default function GalleryTab({ onDirtyChange }) {
         list.push({
           kind: "add",
           summary: `${uploads.length} photo${uploads.length === 1 ? "" : "s"} to ${y.year}`,
-          detail: uploads.map((p) => p._file.name).join(", "),
+          detail: uploads.map((p) => p._file!.name).join(", "),
         });
       }
 
@@ -99,7 +100,7 @@ export default function GalleryTab({ onDirtyChange }) {
         list.push({
           kind: "replace",
           summary: `${replaces.length} photo${replaces.length === 1 ? "" : "s"} in ${y.year}`,
-          detail: replaces.map((p) => p._replaceFile.name).join(", "),
+          detail: replaces.map((p) => p._replaceFile!.name).join(", "),
         });
       }
 
@@ -129,7 +130,7 @@ export default function GalleryTab({ onDirtyChange }) {
 
   /* ── Draft mutations ── */
 
-  function addYear(e) {
+  function addYear(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = newYear.trim();
     if (!value) return;
@@ -145,12 +146,12 @@ export default function GalleryTab({ onDirtyChange }) {
     setNewYear("");
   }
 
-  function removeYear(id) {
+  function removeYear(id: string) {
     setDraftYears((years) => years.filter((y) => y.id !== id));
   }
 
-  function stagePhotos(yearId, fileList) {
-    const staged = Array.from(fileList).map((file) => ({
+  function stagePhotos(yearId: string, fileList: FileList) {
+    const staged: AdminPhoto[] = Array.from(fileList).map((file) => ({
       id: `tmp-photo-${++tmpIdRef.current}`,
       src: trackUrl(file),
       alt: file.name,
@@ -164,7 +165,7 @@ export default function GalleryTab({ onDirtyChange }) {
     );
   }
 
-  function removePhoto(yearId, photoId) {
+  function removePhoto(yearId: string, photoId: string) {
     setDraftYears((years) =>
       years.map((y) =>
         y.id === yearId
@@ -174,7 +175,7 @@ export default function GalleryTab({ onDirtyChange }) {
     );
   }
 
-  function replacePhoto(yearId, photoId, file) {
+  function replacePhoto(yearId: string, photoId: string, file: File) {
     const preview = trackUrl(file);
     setDraftYears((years) =>
       years.map((y) =>
@@ -192,7 +193,7 @@ export default function GalleryTab({ onDirtyChange }) {
     );
   }
 
-  function reorderPhotos(yearId, nextPhotos) {
+  function reorderPhotos(yearId: string, nextPhotos: AdminPhoto[]) {
     setDraftYears((years) =>
       years.map((y) => (y.id === yearId ? { ...y, photos: nextPhotos } : y)),
     );
@@ -212,10 +213,10 @@ export default function GalleryTab({ onDirtyChange }) {
     setSaveError(null);
     try {
       // 1. Create new years (tmp id → real id).
-      const yearIdMap = new Map();
+      const yearIdMap = new Map<string, string>();
       for (const y of draftYears) {
         if (!y._new) continue;
-        const created = await apiPost("/gallery/years", { year: y.year });
+        const created = await apiPost<{ id: string }>("/gallery/years", { year: y.year });
         yearIdMap.set(y.id, created.id);
       }
 
@@ -251,14 +252,14 @@ export default function GalleryTab({ onDirtyChange }) {
         // Upload staged photos in draft order; the response rows come back in
         // the same order, giving us the real ids for the final reorder.
         const newPhotos = y.photos.filter((p) => p._new);
-        const createdIds = new Map();
+        const createdIds = new Map<string, string>();
         if (newPhotos.length > 0) {
           const formData = new FormData();
           for (const p of newPhotos) {
-            const compressed = await compressImage(p._file);
-            formData.append("photos", compressed, p._file.name);
+            const compressed = await compressImage(p._file!);
+            formData.append("photos", compressed, p._file!.name);
           }
-          const created = await apiUpload(
+          const created = await apiUpload<Array<{ id: string }>>(
             `/gallery/years/${realYearId}/photos`,
             formData,
           );
@@ -278,7 +279,7 @@ export default function GalleryTab({ onDirtyChange }) {
       await load();
     } catch (err) {
       setSaveError(
-        `Save failed partway: ${err.message}. The gallery was reloaded — review what applied and re-stage the rest.`,
+        `Save failed partway: ${(err as Error).message}. The gallery was reloaded — review what applied and re-stage the rest.`,
       );
       setReviewOpen(false);
       await load();

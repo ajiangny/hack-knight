@@ -4,10 +4,20 @@
 import { useRef, useState } from "react";
 import { Panel, EmptyState, DragGrid, CardOverlay, CardMoveButtons } from "../ui";
 import { ReplaceIcon, XIcon } from "../icons";
+import type { AdminPhoto, AdminYear } from "../adminTypes";
 
 /* ── Photo card (inside DragGrid) ── */
 
-function PhotoCard({ photo, onReplace, onRemove, move, index, total }) {
+interface PhotoCardProps {
+  photo: AdminPhoto;
+  onReplace: () => void;
+  onRemove: () => void;
+  move: (delta: number) => void;
+  index: number;
+  total: number;
+}
+
+function PhotoCard({ photo, onReplace, onRemove, move, index, total }: PhotoCardProps) {
   return (
     <div className="group relative">
       <img
@@ -53,6 +63,15 @@ function PhotoCard({ photo, onReplace, onRemove, move, index, total }) {
 
 /* ── Year panel ── */
 
+interface YearPanelProps {
+  year: AdminYear;
+  onRemoveYear: (yearId: string) => void;
+  onStagePhotos: (yearId: string, files: FileList) => void;
+  onRemovePhoto: (yearId: string, photoId: string) => void;
+  onReplacePhoto: (yearId: string, photoId: string, file: File) => void;
+  onReorder: (yearId: string, nextPhotos: AdminPhoto[]) => void;
+}
+
 export default function YearPanel({
   year,
   onRemoveYear,
@@ -60,10 +79,10 @@ export default function YearPanel({
   onRemovePhoto,
   onReplacePhoto,
   onReorder,
-}) {
-  const uploadRef = useRef(null);
-  const replaceRef = useRef(null);
-  const replaceTargetRef = useRef(null);
+}: YearPanelProps) {
+  const uploadRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   return (
