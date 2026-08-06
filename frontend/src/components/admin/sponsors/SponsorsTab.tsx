@@ -11,8 +11,10 @@ import {
   apiUpload,
   compressImage,
 } from "../../../lib/api";
-import { SaveBar, DiffModal } from "../ui";
+import { SaveBar, DiffModal, type Change } from "../ui";
 import { useObjectUrls } from "../useObjectUrls";
+import type { SponsorTier } from "../../../types";
+import type { AdminCompany, AdminSponsor, SponsorForm } from "../adminTypes";
 import {
   TIERS,
   EMPTY_SPONSOR,
@@ -25,26 +27,26 @@ import SponsorModal from "./SponsorModal";
 import TierPanel from "./TierPanel";
 import OtherCompaniesPanel from "./OtherCompaniesPanel";
 
-export default function SponsorsTab({ onDirtyChange }) {
-  const [serverCompanies, setServerCompanies] = useState([]);
-  const [draftCompanies, setDraftCompanies] = useState([]);
-  const [editing, setEditing] = useState(null); // seed for SponsorModal
+export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
+  const [serverCompanies, setServerCompanies] = useState<AdminSponsor[]>([]);
+  const [draftCompanies, setDraftCompanies] = useState<AdminSponsor[]>([]);
+  const [editing, setEditing] = useState<SponsorForm | null>(null); // seed for SponsorModal
   const [reviewOpen, setReviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [error, setError] = useState(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const tmpIdRef = useRef(0);
   const { trackUrl, revokeAll } = useObjectUrls();
 
   const load = useCallback(async () => {
     try {
-      const companies = await apiGet("/companies");
+      const companies = await apiGet<AdminCompany[]>("/companies");
       const normalized = companies.map(normalizeSponsor);
       setServerCompanies(normalized);
       setDraftCompanies(normalized.map((c) => ({ ...c })));
       revokeAll();
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   }, [revokeAll]);
 
@@ -54,7 +56,7 @@ export default function SponsorsTab({ onDirtyChange }) {
 
   /* ── Staged diff ── */
 
-  function tierReorderChanged(tier) {
+  function tierReorderChanged(tier: SponsorTier) {
     const draftIds = tierMembers(draftCompanies, tier)
       .filter((c) => !c._new)
       .map((c) => c.id);
@@ -65,7 +67,7 @@ export default function SponsorsTab({ onDirtyChange }) {
   }
 
   const changes = useMemo(() => {
-    const list = [];
+    const list: Change[] = [];
 
     for (const c of draftCompanies) {
       if (c._new) {
@@ -78,7 +80,7 @@ export default function SponsorsTab({ onDirtyChange }) {
       }
       const orig = serverCompanies.find((s) => s.id === c.id);
       if (!orig) continue;
-      const parts = [];
+      const parts: string[] = [];
       if (orig.name !== c.name) parts.push(`name "${orig.name}" → "${c.name}"`);
       if (orig.sponsor_tier !== c.sponsor_tier)
         parts.push(
@@ -121,14 +123,14 @@ export default function SponsorsTab({ onDirtyChange }) {
 
   /* ── Draft mutations ── */
 
-  function openAdd(tier) {
+  function openAdd(tier: SponsorTier) {
     setEditing({ ...EMPTY_SPONSOR, sponsor_tier: tier });
   }
 
-  function upsertSponsor(form) {
+  function upsertSponsor(form: SponsorForm) {
     if (form.id) {
       setDraftCompanies((companies) =>
-        companies.map((c) => (c.id === form.id ? { ...c, ...form } : c)),
+        companies.map((c) => (c.id === form.id ? { ...c, ...form, id: c.id } : c)),
       );
     } else {
       const sortOrder = form.sponsor_tier
@@ -147,11 +149,11 @@ export default function SponsorsTab({ onDirtyChange }) {
     setEditing(null);
   }
 
-  function removeSponsor(id) {
+  function removeSponsor(id: string) {
     setDraftCompanies((companies) => companies.filter((c) => c.id !== id));
   }
 
-  function reorderTier(tier, nextItems) {
+  function reorderTier(_tier: SponsorTier, nextItems: AdminSponsor[]) {
     setDraftCompanies((companies) =>
       companies.map((c) => {
         const idx = nextItems.findIndex((n) => n.id === c.id);
@@ -173,7 +175,7 @@ export default function SponsorsTab({ onDirtyChange }) {
     setSaveError(null);
     try {
       // 1. Create new sponsors (tmp id → real id).
-      const idMap = new Map();
+      const idMap = new Map<string, string>();
       for (const c of draftCompanies) {
         if (!c._new) continue;
         const formData = new FormData();
@@ -181,9 +183,9 @@ export default function SponsorsTab({ onDirtyChange }) {
         formData.append("sponsor_tier", c.sponsor_tier || "");
         formData.append("sponsor_url", c.sponsor_url || "");
         formData.append("sponsor_blurb", c.sponsor_blurb || "");
-        const compressed = await compressImage(c._logoFile);
-        formData.append("logo", compressed, c._logoFile.name);
-        const created = await apiUpload("/companies", formData);
+        const compressed = await compressImage(c._logoFile!);
+        formData.append("logo", compressed, c._logoFile!.name);
+        const created = await apiUpload<{ id: string }>("/companies", formData);
         idMap.set(c.id, created.id);
       }
 
@@ -230,7 +232,7 @@ export default function SponsorsTab({ onDirtyChange }) {
       await load();
     } catch (err) {
       setSaveError(
-        `Save failed partway: ${err.message}. Sponsors were reloaded — review what applied and re-stage the rest.`,
+        `Save failed partway: ${(err as Error).message}. Sponsors were reloaded — review what applied and re-stage the rest.`,
       );
       setReviewOpen(false);
       await load();

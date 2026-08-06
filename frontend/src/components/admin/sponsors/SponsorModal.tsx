@@ -1,13 +1,23 @@
 // Add / edit sponsor modal for the sponsors tab.
 
 import { useRef, useState } from "react";
+import type { SponsorTier } from "../../../types";
 import { Field, Modal } from "../ui";
+import type { SponsorForm } from "../adminTypes";
 import { TIERS } from "./sponsorUtils";
 
-export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClose }) {
+interface SponsorModalProps {
+  open: boolean;
+  initial: SponsorForm | null;
+  trackUrl: (file: File) => string;
+  onSubmit: (form: SponsorForm) => void;
+  onClose: () => void;
+}
+
+export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClose }: SponsorModalProps) {
   const [form, setForm] = useState(initial);
-  const [formError, setFormError] = useState(null);
-  const logoRef = useRef(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
 
   // Reset the form when a new sponsor is opened — state adjustment during
   // render (not an effect) so the previous form persists through the
@@ -24,8 +34,9 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
   if (!form) return null;
   const isNew = !form.id;
 
-  function submit(e) {
+  function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!form) return;
     if (!form.name.trim()) {
       setFormError("Name is required");
       return;
@@ -41,6 +52,8 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
       sponsor_blurb: form.sponsor_blurb.trim(),
     });
   }
+
+  const logoPreview = form._logoPreview ?? form.logo_url;
 
   return (
     <Modal
@@ -65,7 +78,9 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
               id="sponsor-tier"
               className="admin-select"
               value={form.sponsor_tier}
-              onChange={(e) => setForm({ ...form, sponsor_tier: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, sponsor_tier: e.target.value as SponsorTier | "" })
+              }
             >
               <option value="">— Not a sponsor —</option>
               {TIERS.map((t) => (
@@ -100,9 +115,9 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
 
         <Field label={isNew ? "Logo (required)" : "Logo"}>
           <div className="flex items-center gap-3">
-            {form._logoPreview ?? form.logo_url ? (
+            {logoPreview ? (
               <img
-                src={form._logoPreview ?? form.logo_url}
+                src={logoPreview}
                 alt=""
                 aria-hidden="true"
                 className="w-14 h-14 object-contain bg-black/30 rounded-lg p-1.5"

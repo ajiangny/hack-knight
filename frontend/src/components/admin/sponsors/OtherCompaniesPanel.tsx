@@ -4,8 +4,14 @@
 import { useState } from "react";
 import { Panel, EmptyState, CollapseTitle } from "../ui";
 import { PencilIcon } from "../icons";
+import type { AdminSponsor } from "../adminTypes";
 
-export default function OtherCompaniesPanel({ companies, onEdit }) {
+interface OtherCompaniesPanelProps {
+  companies: AdminSponsor[];
+  onEdit: (company: AdminSponsor) => void;
+}
+
+export default function OtherCompaniesPanel({ companies, onEdit }: OtherCompaniesPanelProps) {
   const [open, setOpen] = useState(false);
   const items = companies
     .filter((c) => !c.sponsor_tier)
@@ -36,7 +42,7 @@ export default function OtherCompaniesPanel({ companies, onEdit }) {
                 className="flex items-center gap-3 bg-black/20 border border-border/40 rounded-lg px-3 py-2"
               >
                 <img
-                  src={c._logoPreview ?? c.logo_url}
+                  src={c._logoPreview ?? c.logo_url ?? undefined}
                   alt={`${c.name} logo`}
                   className="w-9 h-9 object-contain bg-black/30 rounded-lg p-1 shrink-0"
                 />

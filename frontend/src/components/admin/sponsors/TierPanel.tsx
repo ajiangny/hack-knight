@@ -8,9 +8,20 @@ import {
   CardMoveButtons,
 } from "../ui";
 import { PencilIcon, XIcon } from "../icons";
+import type { SponsorTier } from "../../../types";
+import type { AdminSponsor } from "../adminTypes";
 import { tierLabel, tierMembers } from "./sponsorUtils";
 
-export default function TierPanel({ tier, companies, onAdd, onEdit, onRemove, onReorder }) {
+interface TierPanelProps {
+  tier: SponsorTier;
+  companies: AdminSponsor[];
+  onAdd: (tier: SponsorTier) => void;
+  onEdit: (company: AdminSponsor) => void;
+  onRemove: (id: string) => void;
+  onReorder: (items: AdminSponsor[]) => void;
+}
+
+export default function TierPanel({ tier, companies, onAdd, onEdit, onRemove, onReorder }: TierPanelProps) {
   const items = tierMembers(companies, tier);
 
   return (
@@ -34,7 +45,7 @@ export default function TierPanel({ tier, companies, onAdd, onEdit, onRemove, on
           renderItem={(c, idx, { move }) => (
             <div className="group relative p-3 flex flex-col items-center gap-2">
               <img
-                src={c._logoPreview ?? c.logo_url}
+                src={c._logoPreview ?? c.logo_url ?? undefined}
                 alt={`${c.name} logo`}
                 className="w-full aspect-3/2 object-contain bg-black/30 rounded-lg p-2 pointer-events-none select-none"
                 draggable={false}
