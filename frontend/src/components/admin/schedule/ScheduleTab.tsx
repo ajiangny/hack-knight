@@ -6,29 +6,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiPost, apiPut, apiDelete } from "../../../lib/api";
 import ScheduleGrid from "../../site/ScheduleGrid";
-import { Panel, Field, EmptyState, SaveBar, DiffModal } from "../ui";
+import type { ScheduleDay } from "../../../types";
+import { Panel, Field, EmptyState, SaveBar, DiffModal, type Change } from "../ui";
 import { PencilIcon, XIcon } from "../icons";
 import EventModal from "./EventModal";
+import type { AdminEvent, EventForm, ScheduleEventRow } from "../adminTypes";
 import { EVENT_COLORS, mapEvent, eventsEqual, timeRange } from "./scheduleMeta";
 
-export default function ScheduleTab({ onDirtyChange }) {
-  const [serverEvents, setServerEvents] = useState([]);
-  const [serverDays, setServerDays] = useState([]);
-  const [draftEvents, setDraftEvents] = useState([]);
-  const [draftDays, setDraftDays] = useState([]);
+type AppliedChange = Change & { apply: () => Promise<unknown> };
+
+export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
+  const [serverEvents, setServerEvents] = useState<AdminEvent[]>([]);
+  const [serverDays, setServerDays] = useState<ScheduleDay[]>([]);
+  const [draftEvents, setDraftEvents] = useState<AdminEvent[]>([]);
+  const [draftDays, setDraftDays] = useState<ScheduleDay[]>([]);
   const [activeDay, setActiveDay] = useState("fri");
-  const [editing, setEditing] = useState(null); // form seed for EventModal
+  const [editing, setEditing] = useState<EventForm | null>(null); // form seed for EventModal
   const [reviewOpen, setReviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [error, setError] = useState(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const tmpIdRef = useRef(0);
 
   const load = useCallback(async () => {
     try {
       const [ev, dy] = await Promise.all([
-        apiGet("/schedule"),
-        apiGet("/schedule/days"),
+        apiGet<ScheduleEventRow[]>("/schedule"),
+        apiGet<ScheduleDay[]>("/schedule/days"),
       ]);
       const mapped = ev.map(mapEvent);
       setServerEvents(mapped);
@@ -36,7 +40,7 @@ export default function ScheduleTab({ onDirtyChange }) {
       setDraftEvents(mapped);
       setDraftDays(dy.map((d) => ({ ...d })));
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   }, []);
 
@@ -47,7 +51,7 @@ export default function ScheduleTab({ onDirtyChange }) {
   /* ── Staged diff ── */
 
   const changes = useMemo(() => {
-    const list = [];
+    const list: AppliedChange[] = [];
 
     for (const day of draftDays) {
       const orig = serverDays.find((d) => d.key === day.key);
@@ -88,7 +92,7 @@ export default function ScheduleTab({ onDirtyChange }) {
           apply: () => apiDelete(`/schedule/${orig.id}`),
         });
       } else if (!eventsEqual(orig, draft)) {
-        const parts = [];
+        const parts: string[] = [];
         if (orig.label !== draft.label)
           parts.push(`label "${orig.label}" → "${draft.label}"`);
         if (orig.day !== draft.day)
@@ -118,7 +122,7 @@ export default function ScheduleTab({ onDirtyChange }) {
 
     return list;
 
-    function dayLabel(key) {
+    function dayLabel(key: string) {
       return draftDays.find((d) => d.key === key)?.label ?? key;
     }
   }, [serverEvents, serverDays, draftEvents, draftDays]);
@@ -129,10 +133,10 @@ export default function ScheduleTab({ onDirtyChange }) {
 
   /* ── Draft mutations ── */
 
-  function upsertEvent(form) {
+  function upsertEvent(form: EventForm) {
     if (form.id) {
       setDraftEvents((evs) =>
-        evs.map((e) => (e.id === form.id ? { ...e, ...form } : e)),
+        evs.map((e) => (e.id === form.id ? { ...e, ...form, id: e.id } : e)),
       );
     } else {
       setDraftEvents((evs) => [
@@ -143,7 +147,7 @@ export default function ScheduleTab({ onDirtyChange }) {
     setEditing(null);
   }
 
-  function removeEvent(id) {
+  function removeEvent(id: string) {
     setDraftEvents((evs) => evs.filter((e) => e.id !== id));
   }
 
@@ -167,7 +171,7 @@ export default function ScheduleTab({ onDirtyChange }) {
       // Partial failure: resync with the server and drop the remaining draft
       // so the diff can't drift out of sync with reality.
       setSaveError(
-        `Saved ${applied} of ${changes.length} changes, then failed: ${err.message}. Remaining changes were discarded — please re-apply them.`,
+        `Saved ${applied} of ${changes.length} changes, then failed: ${(err as Error).message}. Remaining changes were discarded — please re-apply them.`,
       );
       await load();
     } finally {
@@ -178,7 +182,7 @@ export default function ScheduleTab({ onDirtyChange }) {
   /* ── Preview data ── */
 
   const stagedStatus = useMemo(() => {
-    const map = new Map();
+    const map = new Map<string | undefined, "new" | "edited">();
     for (const ev of draftEvents) {
       if (ev._new) {
         map.set(ev.id, "new");

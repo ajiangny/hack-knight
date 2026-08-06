@@ -2,12 +2,22 @@
 
 import { useState } from "react";
 import { formatFullTime } from "../../../data/schedule";
+import type { ScheduleDay } from "../../../types";
 import { Field, Modal } from "../ui";
+import type { EventForm } from "../adminTypes";
 import { EVENT_COLORS, TIME_OPTIONS } from "./scheduleMeta";
 
-export default function EventModal({ open, initial, days, onSubmit, onClose }) {
+interface EventModalProps {
+  open: boolean;
+  initial: EventForm | null;
+  days: ScheduleDay[];
+  onSubmit: (form: EventForm) => void;
+  onClose: () => void;
+}
+
+export default function EventModal({ open, initial, days, onSubmit, onClose }: EventModalProps) {
   const [form, setForm] = useState(initial);
-  const [formError, setFormError] = useState(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Reset the form when a new event is opened — state adjustment during
   // render (not an effect) so the previous form persists through the
@@ -21,8 +31,9 @@ export default function EventModal({ open, initial, days, onSubmit, onClose }) {
     }
   }
 
-  function submit(e) {
+  function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!form) return;
     if (!form.label.trim()) {
       setFormError("Label is required");
       return;
