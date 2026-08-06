@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -19,7 +19,7 @@ import AdminPage from "./pages/AdminPage";
 import { isAuthenticated } from "./lib/api";
 
 // Redirects to the login page when there is no valid admin token.
-function RequireAuth({ children }) {
+function RequireAuth({ children }: { children: ReactNode }) {
   return isAuthenticated() ? children : <Navigate to="/admin/login" replace />;
 }
 
@@ -40,7 +40,7 @@ function useScrollToHash() {
 }
 
 // Wrapper to animate routes crossing in and out
-const PageTransition = ({ children }) => (
+const PageTransition = ({ children }: { children: ReactNode }) => (
   <motion.div
     initial={{ opacity: 0, y: 15 }}
     animate={{ opacity: 1, y: 0 }}
