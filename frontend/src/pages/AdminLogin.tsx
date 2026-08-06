@@ -9,10 +9,10 @@ const API_URL = import.meta.env.VITE_API_URL ?? "";
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
@@ -24,15 +24,15 @@ export default function AdminLogin() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data: { message?: string } = await res.json().catch(() => ({}));
         throw new Error(data.message ?? "Login failed");
       }
 
-      const { token } = await res.json();
+      const { token }: { token: string } = await res.json();
       localStorage.setItem("admin_token", token);
       navigate("/admin");
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     } finally {
       setSubmitting(false);
     }

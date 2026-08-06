@@ -3,7 +3,7 @@
 // survive switching between them; each tab reports its unsaved-change
 // count so its nav label can show the ultraviolet dot.
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ComponentType } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion as Motion, MotionConfig } from "motion/react";
 import { logout } from "../lib/api";
@@ -13,7 +13,13 @@ import TeamTab from "../components/admin/team/TeamTab";
 import SponsorsTab from "../components/admin/sponsors/SponsorsTab";
 import MiscTab from "../components/admin/MiscTab";
 
-const TABS = [
+interface AdminTab {
+  key: string;
+  label: string;
+  Component: ComponentType<{ onDirtyChange?: (count: number) => void }>;
+}
+
+const TABS: AdminTab[] = [
   { key: "schedule", label: "Schedule", Component: ScheduleTab },
   { key: "gallery", label: "Gallery", Component: GalleryTab },
   { key: "team", label: "Team", Component: TeamTab },
@@ -24,14 +30,14 @@ const TABS = [
 export default function AdminPage() {
   const navigate = useNavigate();
   const [active, setActive] = useState("schedule");
-  const [dirty, setDirty] = useState({});
+  const [dirty, setDirty] = useState<Record<string, number>>({});
 
   function handleLogout() {
     logout();
     navigate("/admin/login");
   }
 
-  const handleDirtyChange = useCallback((key, count) => {
+  const handleDirtyChange = useCallback((key: string, count: number) => {
     setDirty((d) => (d[key] === count ? d : { ...d, [key]: count }));
   }, []);
 
