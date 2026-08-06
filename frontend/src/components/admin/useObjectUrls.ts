@@ -6,9 +6,9 @@ import { useCallback, useEffect, useRef } from "react";
  * (call it on discard/reload). Everything is also revoked on unmount.
  */
 export function useObjectUrls() {
-  const urlsRef = useRef(new Set());
+  const urlsRef = useRef(new Set<string>());
 
-  const trackUrl = useCallback((file) => {
+  const trackUrl = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
     urlsRef.current.add(url);
     return url;

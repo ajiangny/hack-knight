@@ -2,7 +2,14 @@
 // Every tab used to inline these SVGs; keep them here so a glyph tweak
 // lands everywhere at once.
 
-function Icon({ size = 13, className, children }) {
+import type { ReactNode } from "react";
+
+export interface IconProps {
+  size?: number;
+  className?: string;
+}
+
+function Icon({ size = 13, className, children }: IconProps & { children?: ReactNode }) {
   return (
     <svg
       width={size}
@@ -21,7 +28,7 @@ function Icon({ size = 13, className, children }) {
   );
 }
 
-export function PencilIcon(props) {
+export function PencilIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
@@ -29,7 +36,7 @@ export function PencilIcon(props) {
   );
 }
 
-export function XIcon(props) {
+export function XIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M18 6 6 18M6 6l12 12" />
@@ -37,7 +44,7 @@ export function XIcon(props) {
   );
 }
 
-export function ReplaceIcon(props) {
+export function ReplaceIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />
@@ -45,7 +52,7 @@ export function ReplaceIcon(props) {
   );
 }
 
-export function ChevronLeftIcon(props) {
+export function ChevronLeftIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M15 18l-6-6 6-6" />
@@ -53,7 +60,7 @@ export function ChevronLeftIcon(props) {
   );
 }
 
-export function ChevronRightIcon(props) {
+export function ChevronRightIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M9 6l6 6-6 6" />
@@ -61,7 +68,7 @@ export function ChevronRightIcon(props) {
   );
 }
 
-export function ChevronDownIcon(props) {
+export function ChevronDownIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M6 9l6 6 6-6" />

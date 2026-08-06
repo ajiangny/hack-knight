@@ -2,14 +2,14 @@
 // Visual spec: MASTER.md §7. Motion: fast/dry per the interaction thesis —
 // fades and small translates only, 150–250ms, ease-brand.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
-const EASE_BRAND = [0.4, 0, 0.2, 1];
+const EASE_BRAND: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
 /** Move an array item and return a new array. */
-function arrayMove(arr, from, to) {
+function arrayMove<T>(arr: T[], from: number, to: number): T[] {
   const next = [...arr];
   const [moved] = next.splice(from, 1);
   next.splice(to, 0, moved);
@@ -18,7 +18,15 @@ function arrayMove(arr, from, to) {
 
 /* ── Panel ─────────────────────────────────────────── */
 
-export function Panel({ title, count, actions, children, className = "" }) {
+interface PanelProps {
+  title?: ReactNode;
+  count?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}
+
+export function Panel({ title, count, actions, children, className = "" }: PanelProps) {
   return (
     <section className={`admin-panel ${className}`}>
       {(title || actions) && (
@@ -37,7 +45,14 @@ export function Panel({ title, count, actions, children, className = "" }) {
 
 /* ── Field ─────────────────────────────────────────── */
 
-export function Field({ label, htmlFor, children, className = "" }) {
+interface FieldProps {
+  label: ReactNode;
+  htmlFor?: string;
+  children?: ReactNode;
+  className?: string;
+}
+
+export function Field({ label, htmlFor, children, className = "" }: FieldProps) {
   return (
     <div className={className}>
       <label className="admin-label" htmlFor={htmlFor}>
@@ -48,13 +63,20 @@ export function Field({ label, htmlFor, children, className = "" }) {
   );
 }
 
-export function EmptyState({ children }) {
+export function EmptyState({ children }: { children?: ReactNode }) {
   return <div className="admin-empty">{children}</div>;
 }
 
 /* ── Toggle switch ─────────────────────────────────── */
 
-export function Toggle({ id, checked, onChange, label }) {
+interface ToggleProps {
+  id?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+}
+
+export function Toggle({ id, checked, onChange, label }: ToggleProps) {
   return (
     <button
       type="button"
@@ -85,7 +107,15 @@ export function Toggle({ id, checked, onChange, label }) {
 /* ── Collapsible panel title ───────────────────────── */
 
 /** Panel `title` that toggles an open/closed section (chevron flips). */
-export function CollapseTitle({ open, onToggle, children }) {
+export function CollapseTitle({
+  open,
+  onToggle,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  children?: ReactNode;
+}) {
   return (
     <button
       type="button"
@@ -105,7 +135,13 @@ export function CollapseTitle({ open, onToggle, children }) {
 /* ── Card overlays (inside a `group` drag card) ────── */
 
 /** Hover/focus-revealed action cluster pinned to a card corner. */
-export function CardOverlay({ corner = "top", children }) {
+export function CardOverlay({
+  corner = "top",
+  children,
+}: {
+  corner?: "top" | "bottom";
+  children?: ReactNode;
+}) {
   return (
     <div
       className={`absolute ${corner === "top" ? "top-1.5" : "bottom-1.5"} right-1.5 flex gap-1
@@ -118,7 +154,17 @@ export function CardOverlay({ corner = "top", children }) {
 }
 
 /** Keyboard-accessible reorder buttons for a DragGrid card. */
-export function CardMoveButtons({ label, index, total, move }) {
+export function CardMoveButtons({
+  label,
+  index,
+  total,
+  move,
+}: {
+  label: string;
+  index: number;
+  total: number;
+  move: (delta: number) => void;
+}) {
   return (
     <CardOverlay corner="bottom">
       <button
@@ -152,10 +198,19 @@ export function CardMoveButtons({ label, index, total, move }) {
  * width and scales it down (never up) to fit without horizontal scrolling.
  * Keep the wrapper itself padding-free so the measurements stay honest.
  */
-export function ScaledPreview({ children, className = "" }) {
-  const outerRef = useRef(null);
-  const innerRef = useRef(null);
-  const [box, setBox] = useState({ scale: 1, height: null });
+export function ScaledPreview({
+  children,
+  className = "",
+}: {
+  children?: ReactNode;
+  className?: string;
+}) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<{ scale: number; height: number | null }>({
+    scale: 1,
+    height: null,
+  });
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -163,6 +218,7 @@ export function ScaledPreview({ children, className = "" }) {
     if (!outer || !inner) return;
 
     function measure() {
+      if (!outer || !inner) return;
       const available = outer.clientWidth;
       const natural = inner.offsetWidth;
       if (!available || !natural) return;
@@ -197,7 +253,14 @@ export function ScaledPreview({ children, className = "" }) {
 
 /* ── Save bar ──────────────────────────────────────── */
 
-export function SaveBar({ count, saving, onSave, onDiscard }) {
+interface SaveBarProps {
+  count: number;
+  saving: boolean;
+  onSave: () => void;
+  onDiscard: () => void;
+}
+
+export function SaveBar({ count, saving, onSave, onDiscard }: SaveBarProps) {
   return (
     <AnimatePresence>
       {count > 0 && (
@@ -238,10 +301,18 @@ export function SaveBar({ count, saving, onSave, onDiscard }) {
 
 /* ── Modal ─────────────────────────────────────────── */
 
-export function Modal({ open, title, onClose, wide = false, children }) {
+interface ModalProps {
+  open: boolean;
+  title?: string;
+  onClose: () => void;
+  wide?: boolean;
+  children?: ReactNode;
+}
+
+export function Modal({ open, title, onClose, wide = false, children }: ModalProps) {
   useEffect(() => {
     if (!open) return;
-    function onKey(e) {
+    function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
@@ -281,7 +352,16 @@ export function Modal({ open, title, onClose, wide = false, children }) {
 
 /* ── Diff modal ────────────────────────────────────── */
 
-const CHANGE_KINDS = {
+export type ChangeKind = "add" | "edit" | "replace" | "delete" | "reorder";
+
+/** One staged change shown in the review-before-save modal. */
+export interface Change {
+  kind: ChangeKind;
+  summary: string;
+  detail?: string;
+}
+
+const CHANGE_KINDS: Record<ChangeKind, { label: string; chip: string }> = {
   add: { label: "+ Add", chip: "admin-chip-add" },
   edit: { label: "~ Edit", chip: "admin-chip-edit" },
   replace: { label: "~ Replace", chip: "admin-chip-edit" },
@@ -289,11 +369,16 @@ const CHANGE_KINDS = {
   reorder: { label: "⇅ Reorder", chip: "admin-chip-reorder" },
 };
 
-/**
- * Review-before-save modal. `changes` is a list of
- * { kind: 'add'|'edit'|'replace'|'delete'|'reorder', summary, detail? }.
- */
-export function DiffModal({ open, changes, saving, error, onConfirm, onClose }) {
+interface DiffModalProps {
+  open: boolean;
+  changes: Change[];
+  saving: boolean;
+  error?: string | null;
+  onConfirm: () => void;
+  onClose: () => void;
+}
+
+export function DiffModal({ open, changes, saving, error, onConfirm, onClose }: DiffModalProps) {
   return (
     <Modal open={open} title="Review changes" onClose={saving ? () => {} : onClose}>
       <ul className="flex flex-col gap-2 mb-5">
@@ -344,6 +429,19 @@ export function DiffModal({ open, changes, saving, error, onConfirm, onClose }) 
 
 /* ── Drag grid ─────────────────────────────────────── */
 
+interface DragGridProps<T> {
+  items: T[];
+  onReorder: (items: T[]) => void;
+  renderItem: (
+    item: T,
+    index: number,
+    helpers: { isDragging: boolean; move: (delta: number) => void },
+  ) => ReactNode;
+  keyOf?: (item: T) => string | number;
+  className?: string;
+  cardClassName?: (item: T) => string;
+}
+
 /**
  * Grid with HTML5 drag-to-reorder. The outer plain div owns the native drag
  * events (motion components swallow onDragStart/onDragEnd for their own
@@ -352,17 +450,17 @@ export function DiffModal({ open, changes, saving, error, onConfirm, onClose }) 
  * renderItem(item, index, { isDragging, move }) — `move(delta)` is the
  * keyboard-accessible fallback for reordering without a pointer.
  */
-export function DragGrid({
+export function DragGrid<T>({
   items,
   onReorder,
   renderItem,
-  keyOf = (item) => item.id,
+  keyOf = (item) => (item as { id: string | number }).id,
   className = "",
   cardClassName = () => "",
-}) {
-  const [dragKey, setDragKey] = useState(null);
+}: DragGridProps<T>) {
+  const [dragKey, setDragKey] = useState<string | number | null>(null);
 
-  function moveTo(from, to) {
+  function moveTo(from: number, to: number) {
     if (from === to || from < 0 || to < 0 || to >= items.length) return;
     onReorder(arrayMove(items, from, to));
   }
