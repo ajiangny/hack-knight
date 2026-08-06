@@ -1,3 +1,5 @@
+import type { GalleryYear } from "../types";
+
 // ─── 2024 Photos ─────────────────────────────────────────────────────────────
 import hk24_1 from "../assets/photos/2024/hackknight_1.webp";
 import hk24_2 from "../assets/photos/2024/hackknight_2.webp";
@@ -17,7 +19,7 @@ import hk25_6 from "../assets/photos/2025/hackknight25_6.webp";
 // ─── Gallery Data ─────────────────────────────────────────────────────────────
 // To add a new year: import the photos above, then add a new object below.
 // The components never need to change — only this file.
-const GALLERY_DATA = [
+const GALLERY_DATA: GalleryYear[] = [
   {
     year: "2024",
     photos: [

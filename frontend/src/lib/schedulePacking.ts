@@ -9,8 +9,16 @@
 // 3. Buffer Protection: Short events "reserve" their lane for 45 mins to prevent visual crush.
 
 import { formatFullTime } from "../data/schedule";
+import type { ScheduleEvent } from "../types";
 
-export function packEvents(events) {
+export interface PackedEvent {
+  event: ScheduleEvent;
+  laneIdx: number;
+  totalLanes: number;
+  laneSpan: number;
+}
+
+export function packEvents(events: ScheduleEvent[]): PackedEvent[] {
   if (!events.length) return [];
 
   const sorted = [...events].sort(
@@ -18,8 +26,8 @@ export function packEvents(events) {
       a.startHour - b.startHour || events.indexOf(a) - events.indexOf(b),
   );
 
-  const packed = [];
-  const lanesUsedInClump = []; // end time of each lane
+  const packed: Array<{ event: ScheduleEvent; laneIdx: number }> = [];
+  const lanesUsedInClump: number[] = []; // end time of each lane
 
   sorted.forEach((evt) => {
     let laneIdx = -1;
@@ -41,7 +49,7 @@ export function packEvents(events) {
       lanesUsedInClump[laneIdx] = bookingEnd;
     }
 
-    packed.push({ event: evt, laneIdx, totalLanes: 0 });
+    packed.push({ event: evt, laneIdx });
   });
 
   return packed.map((p) => {
@@ -67,7 +75,7 @@ export function packEvents(events) {
 }
 
 // "10AM–11:30AM" style range for event cards.
-export function getRangeLabel(start, end) {
-  const fmt = (h) => formatFullTime(h).replace(":00 ", "").replace(" ", "");
+export function getRangeLabel(start: number, end: number): string {
+  const fmt = (h: number) => formatFullTime(h).replace(":00 ", "").replace(" ", "");
   return start === end ? fmt(start) : `${fmt(start)}–${fmt(end)}`;
 }

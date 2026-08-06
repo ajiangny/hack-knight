@@ -1,4 +1,6 @@
-export const faqs = [
+import type { Faq } from "../types";
+
+export const faqs: Faq[] = [
     { question: "What is a hackathon?",                     answer: "A hackathon is a collaborative event where individuals or teams come together to solve problems, create innovative projects, or develop software and hardware solutions within a limited time frame. Participants typically include developers, designers, and other tech enthusiasts who brainstorm ideas, build prototypes, and present their work to judges or peers." },
     { question: "What is HackKnight?",                      answer: "Hack Knight is a dynamic gathering of creative minds and tech enthusiasts where participants collaborate intensively on projects for 48 hours, competing for certificates and recognition. Our event serves as a catalyst for innovation, fostering connections and driving forward-thinking solutions" },
     { question: "Who can participate in HackKnight?",       answer: "Hack Knight is open to all CUNY college students!" },
