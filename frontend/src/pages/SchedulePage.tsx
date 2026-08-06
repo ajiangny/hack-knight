@@ -5,6 +5,14 @@
 import { useEffect } from 'react';
 import { formatHour, formatFullTime } from '../data/schedule';
 import { useSchedule } from '../hooks/useSchedule';
+import type { ScheduleEvent } from '../types';
+
+interface PackedEvent {
+  event: ScheduleEvent;
+  laneIdx: number;
+  totalLanes: number;
+  laneSpan: number;
+}
 
 /**
  * SMART PACKING ALGORITHM
@@ -14,7 +22,7 @@ import { useSchedule } from '../hooks/useSchedule';
  * 2. Lane Re-use: Once an event ends, its lane is immediately available for the next one.
  * 3. Buffer Protection: Short events "reserve" their lane for 45 mins to prevent visual crush.
  */
-function packEvents(events) { // this function packs the events into lanes
+function packEvents(events: ScheduleEvent[]): PackedEvent[] { // this function packs the events into lanes
   if (!events.length) return [];
 
   const sorted = [...events].sort((a, b) => // this function sorts the events by their start hour
@@ -22,8 +30,8 @@ function packEvents(events) { // this function packs the events into lanes
     events.indexOf(a) - events.indexOf(b)
   );
 
-  const packed = []; // this array is used to store the packed events
-  const lanesUsedInClump = []; // this array is used to store the lanes that are used in the clump
+  const packed: Array<{ event: ScheduleEvent; laneIdx: number }> = []; // this array is used to store the packed events
+  const lanesUsedInClump: number[] = []; // this array is used to store the lanes that are used in the clump
 
   sorted.forEach(evt => { // this function iterates over the sorted events
     let laneIdx = -1;
@@ -42,7 +50,7 @@ function packEvents(events) { // this function packs the events into lanes
       lanesUsedInClump[laneIdx] = bookingEnd;
     }
 
-    packed.push({ event: evt, laneIdx, totalLanes: 0 }); // this function pushes the packed event into the packed array
+    packed.push({ event: evt, laneIdx }); // this function pushes the packed event into the packed array
   });
 
   return packed.map(p => { // this function maps the packed events to the packed array
@@ -67,8 +75,8 @@ function packEvents(events) { // this function packs the events into lanes
   });
 }
 
-function getRangeLabel(start, end) { // this function gets the range label
-  const fmt = h => formatFullTime(h).replace(':00 ', '').replace(' ', '');
+function getRangeLabel(start: number, end: number): string { // this function gets the range label
+  const fmt = (h: number) => formatFullTime(h).replace(':00 ', '').replace(' ', '');
   return start === end ? fmt(start) : `${fmt(start)}–${fmt(end)}`;
 }
 
@@ -86,7 +94,7 @@ export default function SchedulePage() {
   const minHour = Math.min(...allStartHours);
   const maxHour = Math.max(...allEndHours);
   const totalSlots = (maxHour - minHour) * 2 + 1;
-  const getRow = h => Math.round((h - minHour) * 2) + 2;
+  const getRow = (h: number) => Math.round((h - minHour) * 2) + 2;
 
   return (
     <main className="py-section">

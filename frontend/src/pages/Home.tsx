@@ -1,5 +1,6 @@
 // Imports and stacks every section component in order.
 // FAQ and Team are wrapped in <section> tags with IDs so the navbar can anchor-scroll to them.
+import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import Hero from '../components/site/Hero';                       // top banner: title, description, countdown, buttons
 import SchedulePreview from '../components/site/SchedulePreview'; // mini schedule grid + link to full schedule page
@@ -9,7 +10,13 @@ import TeamSection from '../components/site/TeamSection';         // team member
 import SponsorsCarousel from '../components/site/SponsorsCarousel'; // sponsor logo carousel + link to full sponsors page
 
 
-function FadeInSection({ children, id, className }) { 
+interface FadeInSectionProps {
+  children?: ReactNode;
+  id?: string;
+  className?: string;
+}
+
+function FadeInSection({ children, id, className }: FadeInSectionProps) {
   return (
     <motion.section
       id={id}
@@ -17,7 +24,7 @@ function FadeInSection({ children, id, className }) {
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} 
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.section>
