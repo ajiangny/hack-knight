@@ -1,42 +1,47 @@
 # Frontend Stack
 
 The frontend is a single-page React app for the Queens College Hack Knight
-website, located in `frontend/`. It is plain JavaScript (JSX) — no TypeScript
-on this side of the project.
+website, located in `frontend/`. It is written in TypeScript (TSX) with
+strict mode enabled.
 
 ## Stack at a glance
 
 | Layer | Technology | Notes |
 |---|---|---|
 | Build tool | [Vite 8](https://vite.dev) | Dev server + production bundler |
-| UI framework | React 19 | With `StrictMode` enabled in `src/main.jsx` |
-| Routing | React Router 7 (`react-router-dom`) | `BrowserRouter` set up in `src/App.jsx` |
+| Language | TypeScript 5 (strict) | `tsc -b` runs before every build; project references in `tsconfig.json` |
+| UI framework | React 19 | With `StrictMode` enabled in `src/main.tsx` |
+| Routing | React Router 7 (`react-router-dom`) | `BrowserRouter` set up in `src/App.tsx` |
 | Styling | Tailwind CSS 4 (via `@tailwindcss/vite`) | Plus hand-written CSS in `src/styles/` |
 | Animation | Motion 12 (`motion/react`) | Successor to Framer Motion; used for page transitions |
 | Images | `browser-image-compression` | Compresses admin uploads client-side before sending |
-| Linting | ESLint 9 (flat config, `eslint.config.js`) | With `react-hooks` and `react-refresh` plugins |
+| Linting | ESLint 9 (flat config, `eslint.config.js`) | With `typescript-eslint`, `react-hooks`, and `react-refresh` plugins |
 
 ## Directory layout
 
 ```
 frontend/
 ├── index.html              # Entry HTML — Google Fonts are loaded HERE and only here
-├── vite.config.js          # Vite + React + Tailwind plugins
+├── vite.config.ts          # Vite + React + Tailwind plugins
 ├── eslint.config.js        # ESLint flat config
+├── tsconfig.json           # Project references → tsconfig.app.json + tsconfig.node.json
 ├── vercel.json             # SPA rewrite: all routes → index.html
 ├── public/                 # Static files served as-is
 └── src/
-    ├── main.jsx            # ReactDOM entry point
-    ├── App.jsx             # Router, page transitions, auth guard
+    ├── main.tsx            # ReactDOM entry point
+    ├── App.tsx             # Router, page transitions, auth guard
+    ├── types.ts            # Shared domain types (ScheduleEvent, Sponsor, TeamMember, ...)
+    ├── vite-env.d.ts       # import.meta.env typing (VITE_API_URL)
     ├── index.css           # Tailwind v4 entry + base layer
     ├── pages/              # Route-level components (Home, SchedulePage, AdminPage, ...)
     ├── components/
     │   ├── site/           # Public site components (Navbar, Hero, CountdownTimer, TeamSection, ...)
     │   └── admin/          # Admin dashboard
-    │       ├── ui.jsx            # Shared UI kit (Panel, SaveBar, DiffModal, DragGrid, ScaledPreview, ...)
-    │       ├── icons.jsx         # Shared SVG icon set
-    │       ├── useObjectUrls.js  # Object-URL lifecycle for staged image previews
-    │       ├── MiscTab.jsx       # Site settings tab (countdown target, MLH badge)
+    │       ├── adminTypes.ts     # Draft shapes for staged edits (AdminEvent, AdminMember, ...)
+    │       ├── ui.tsx            # Shared UI kit (Panel, SaveBar, DiffModal, DragGrid, ScaledPreview, ...)
+    │       ├── icons.tsx         # Shared SVG icon set
+    │       ├── useObjectUrls.ts  # Object-URL lifecycle for staged image previews
+    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge)
     │       ├── schedule/         # ScheduleTab + EventModal + scheduleMeta
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
@@ -45,9 +50,9 @@ frontend/
     │                       #   useSponsors, useSiteSettings, useCountdown)
     ├── data/               # Static fallback data used when the API is unreachable
     ├── lib/
-    │   ├── api.js          # Auth-aware fetch helper (JWT from localStorage) + compressImage
-    │   ├── mlh.js          # MLH trust badge constants (shared by Navbar + admin preview)
-    │   └── schedulePacking.js  # Overlap-packing layout math for ScheduleGrid
+    │   ├── api.ts          # Auth-aware fetch helper (JWT from localStorage) + compressImage
+    │   ├── mlh.ts          # MLH trust badge constants (shared by Navbar + admin preview)
+    │   └── schedulePacking.ts  # Overlap-packing layout math for ScheduleGrid
     ├── styles/             # components.css, admin.css
     └── assets/             # Brand SVGs, photos, logos
 ```
@@ -63,14 +68,14 @@ Express API (see [backend-stack.md](backend-stack.md)):
   (or a sensible default for site settings) if the API is down or returns
   nothing. This means the site never renders empty — keep the static data
   reasonably fresh.
-- **Admin pages** use `src/lib/api.js`, which attaches the JWT stored in
+- **Admin pages** use `src/lib/api.ts`, which attaches the JWT stored in
   `localStorage` (key `admin_token`) to every request, throws on non-2xx, and
-  clears the token on 401 so `RequireAuth` in `App.jsx` bounces back to login.
-- **Image uploads** go through `compressImage()` in `lib/api.js` (target
+  clears the token on 401 so `RequireAuth` in `App.tsx` bounces back to login.
+- **Image uploads** go through `compressImage()` in `lib/api.ts` (target
   < 1 MB) so requests stay under Vercel's 4.5 MB body limit.
 
 Backend rows are `snake_case`; the hooks map them to `camelCase` before
-components see them (see `mapEvent` in `useSchedule.js` for the pattern).
+components see them (see `mapEvent` in `useSchedule.ts` for the pattern).
 
 ## Running locally
 
@@ -104,7 +109,7 @@ Rules to know:
   in a frontend env file is **public** — never put secrets here.
 - Access them via `import.meta.env.VITE_API_URL` (not `process.env`).
 - **Restart the dev server** after changing env files; they are read at startup.
-- If `VITE_API_URL` is unset, `lib/api.js` and the hooks fall back to
+- If `VITE_API_URL` is unset, `lib/api.ts` and the hooks fall back to
   same-origin paths, which only works when the API is served from the same
   domain (production behind rewrites). For local dev you want it set.
 
@@ -142,10 +147,10 @@ After any dependency change:
 - **Component halves:** public site components live in `components/site/`,
   admin components in `components/admin/`. Each large admin tab is a folder
   (tab + its modals/panels/utils); shared admin pieces live at the `admin/`
-  root (`ui.jsx`, `icons.jsx`, `useObjectUrls.js`).
+  root (`ui.tsx`, `icons.tsx`, `useObjectUrls.ts`, `adminTypes.ts`).
 - **Admin routes** (`/admin/*`) render standalone without the public
-  Navbar/Footer — `App.jsx` checks `location.pathname.startsWith("/admin")`.
-- New pages get a `<Route>` in `App.jsx` wrapped in `PageTransition`.
+  Navbar/Footer — `App.tsx` checks `location.pathname.startsWith("/admin")`.
+- New pages get a `<Route>` in `App.tsx` wrapped in `PageTransition`.
 
 ## Deployment
 
