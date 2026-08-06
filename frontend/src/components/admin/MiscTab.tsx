@@ -5,24 +5,27 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../../lib/api";
 import { MLH_BADGE_SRC, MLH_BADGE_ALT } from "../../lib/mlh";
+import type { SiteSettings } from "../../types";
 import CountdownTimer from "../site/CountdownTimer";
-import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview } from "./ui";
+import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview, type Change } from "./ui";
 
 const COUNTDOWN_KEY = "countdown_target";
 const MLH_KEY = "mlh_badge_enabled";
 
+type AppliedChange = Change & { apply: () => Promise<unknown> };
+
 // "2026-10-09T00:00:00" -> { date: "2026-10-09", time: "00:00" }
-function splitDateTime(value) {
+function splitDateTime(value: string) {
   const [date, time] = value.split("T");
   return { date: date ?? "", time: (time ?? "00:00:00").slice(0, 5) };
 }
 
-function joinDateTime(date, time) {
+function joinDateTime(date: string, time: string) {
   return `${date}T${time || "00:00"}:00`;
 }
 
-function formatDisplay(value) {
-  const d = new Date(value);
+function formatDisplay(value: string | undefined) {
+  const d = new Date(value ?? NaN);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString(undefined, {
     dateStyle: "medium",
@@ -30,21 +33,21 @@ function formatDisplay(value) {
   });
 }
 
-export default function MiscTab({ onDirtyChange }) {
-  const [serverSettings, setServerSettings] = useState(null);
-  const [draftSettings, setDraftSettings] = useState(null);
+export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
+  const [serverSettings, setServerSettings] = useState<SiteSettings | null>(null);
+  const [draftSettings, setDraftSettings] = useState<SiteSettings | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [error, setError] = useState(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const settings = await apiGet("/settings");
+      const settings = await apiGet<SiteSettings>("/settings");
       setServerSettings(settings);
       setDraftSettings({ ...settings });
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   }, []);
 
@@ -52,13 +55,13 @@ export default function MiscTab({ onDirtyChange }) {
     load();
   }, [load]);
 
-  function setDraft(key, value) {
+  function setDraft(key: string, value: string) {
     setDraftSettings((s) => ({ ...s, [key]: value }));
   }
 
   const changes = useMemo(() => {
     if (!serverSettings || !draftSettings) return [];
-    const list = [];
+    const list: AppliedChange[] = [];
 
     if (draftSettings[COUNTDOWN_KEY] !== serverSettings[COUNTDOWN_KEY]) {
       list.push({
@@ -106,7 +109,7 @@ export default function MiscTab({ onDirtyChange }) {
       setReviewOpen(false);
       await load();
     } catch (err) {
-      setSaveError(`Save failed: ${err.message}. Please try again.`);
+      setSaveError(`Save failed: ${(err as Error).message}. Please try again.`);
       await load();
     } finally {
       setSaving(false);
