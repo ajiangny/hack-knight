@@ -7,7 +7,7 @@ export const DEFAULT_COUNTDOWN_TARGET = "2026-10-09T00:00:00";
 
 // Pass `enabled: false` to skip the fetch entirely (e.g. when a caller
 // already has its own target date, such as the admin live preview).
-export function useCountdown({ enabled = true } = {}) {
+export function useCountdown({ enabled = true }: { enabled?: boolean } = {}) {
   const { settings, loading, error } = useSiteSettings({ enabled });
   return {
     targetDate: settings.countdown_target ?? DEFAULT_COUNTDOWN_TARGET,

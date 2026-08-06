@@ -3,15 +3,16 @@
 // so an unreachable API degrades to the bundled behavior.
 
 import { useState, useEffect } from "react";
+import type { SiteSettings } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 // Pass `enabled: false` to skip the fetch entirely (e.g. when a caller
 // already has its own values, such as the admin live preview).
-export function useSiteSettings({ enabled = true } = {}) {
-  const [settings, setSettings] = useState({});
+export function useSiteSettings({ enabled = true }: { enabled?: boolean } = {}) {
+  const [settings, setSettings] = useState<SiteSettings>({});
   const [loading, setLoading] = useState(enabled);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -21,11 +22,11 @@ export function useSiteSettings({ enabled = true } = {}) {
       try {
         const res = await fetch(`${API_URL}/settings`);
         if (!res.ok) throw new Error("Failed to fetch settings");
-        const data = await res.json();
+        const data: SiteSettings = await res.json();
         if (cancelled) return;
         if (data && typeof data === "object") setSettings(data);
       } catch (err) {
-        if (!cancelled) setError(err);
+        if (!cancelled) setError(err as Error);
       } finally {
         if (!cancelled) setLoading(false);
       }

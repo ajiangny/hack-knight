@@ -4,12 +4,28 @@
 
 import { useState, useEffect } from "react";
 import { sponsors as staticSponsors } from "../data/sponsors";
+import type { Sponsor, SponsorTier } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
-const TIER_RANK = { platinum: 0, gold: 1, silver: 2, bronze: 3 };
+const TIER_RANK: Record<SponsorTier, number> = {
+  platinum: 0,
+  gold: 1,
+  silver: 2,
+  bronze: 3,
+};
 
-function mapCompany(c) {
+/** Raw row from the Express API (snake_case DB columns). */
+interface CompanyRow {
+  id: string;
+  name: string;
+  logo_url: string;
+  sponsor_tier: SponsorTier | null;
+  sponsor_url?: string | null;
+  sponsor_blurb?: string | null;
+}
+
+function mapCompany(c: CompanyRow & { sponsor_tier: SponsorTier }): Sponsor {
   return {
     id: c.id,
     name: c.name,
@@ -21,9 +37,9 @@ function mapCompany(c) {
 }
 
 export function useSponsors() {
-  const [sponsors, setSponsors] = useState(staticSponsors);
+  const [sponsors, setSponsors] = useState<Sponsor[]>(staticSponsors);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,10 +48,13 @@ export function useSponsors() {
       try {
         const res = await fetch(`${API_URL}/companies`);
         if (!res.ok) throw new Error("Failed to fetch sponsors");
-        const data = await res.json();
+        const data: CompanyRow[] = await res.json();
         if (cancelled) return;
         const mapped = (Array.isArray(data) ? data : [])
-          .filter((c) => c.sponsor_tier)
+          .filter(
+            (c): c is CompanyRow & { sponsor_tier: SponsorTier } =>
+              !!c.sponsor_tier,
+          )
           .map(mapCompany)
           .sort(
             (a, b) =>
@@ -44,7 +63,7 @@ export function useSponsors() {
           );
         if (mapped.length > 0) setSponsors(mapped);
       } catch (err) {
-        if (!cancelled) setError(err);
+        if (!cancelled) setError(err as Error);
       } finally {
         if (!cancelled) setLoading(false);
       }

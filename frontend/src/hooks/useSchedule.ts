@@ -6,11 +6,23 @@ import {
   scheduleEvents as staticEvents,
   scheduleDays as staticDays,
 } from "../data/schedule";
+import type { EventColor, ScheduleDay, ScheduleEvent } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
+/** Raw row from the Express API (snake_case DB columns). */
+interface ScheduleEventRow {
+  id: string;
+  day: string;
+  start_hour: number | string;
+  end_hour: number | string;
+  label: string;
+  color: EventColor;
+  sort_order?: number;
+}
+
 // Backend rows are snake_case; the components expect camelCase.
-function mapEvent(e) {
+function mapEvent(e: ScheduleEventRow): ScheduleEvent {
   return {
     id: e.id,
     day: e.day,
@@ -23,10 +35,10 @@ function mapEvent(e) {
 }
 
 export function useSchedule() {
-  const [events, setEvents] = useState(staticEvents);
-  const [days, setDays] = useState(staticDays);
+  const [events, setEvents] = useState<ScheduleEvent[]>(staticEvents);
+  const [days, setDays] = useState<ScheduleDay[]>(staticDays);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,10 +52,8 @@ export function useSchedule() {
         if (!evRes.ok || !dayRes.ok) {
           throw new Error("Failed to fetch schedule");
         }
-        const [evData, dayData] = await Promise.all([
-          evRes.json(),
-          dayRes.json(),
-        ]);
+        const [evData, dayData]: [ScheduleEventRow[], ScheduleDay[]] =
+          await Promise.all([evRes.json(), dayRes.json()]);
         if (cancelled) return;
         if (Array.isArray(evData) && evData.length > 0) {
           setEvents(evData.map(mapEvent));
@@ -53,7 +63,7 @@ export function useSchedule() {
         }
       } catch (err) {
         // Keep the static fallback already in state.
-        if (!cancelled) setError(err);
+        if (!cancelled) setError(err as Error);
       } finally {
         if (!cancelled) setLoading(false);
       }
