@@ -2,11 +2,20 @@
 
 import { useRef, useState } from "react";
 import { Field, Modal } from "../ui";
+import type { AdminCompany, MemberForm } from "../adminTypes";
 
 /* ── File picker button with thumbnail preview ── */
 
-function FilePick({ label, preview, previewClass, onFile, hint }) {
-  const inputRef = useRef(null);
+interface FilePickProps {
+  label: string;
+  preview?: string | null;
+  previewClass?: string;
+  onFile: (file: File) => void;
+  hint?: string;
+}
+
+function FilePick({ label, preview, previewClass, onFile, hint }: FilePickProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
     <Field label={label}>
       <div className="flex items-center gap-3">
@@ -46,9 +55,18 @@ function FilePick({ label, preview, previewClass, onFile, hint }) {
 
 /* ── Modal ── */
 
-export default function MemberModal({ open, initial, companies, trackUrl, onSubmit, onClose }) {
+interface MemberModalProps {
+  open: boolean;
+  initial: MemberForm | null;
+  companies: AdminCompany[];
+  trackUrl: (file: File) => string;
+  onSubmit: (form: MemberForm) => void;
+  onClose: () => void;
+}
+
+export default function MemberModal({ open, initial, companies, trackUrl, onSubmit, onClose }: MemberModalProps) {
   const [form, setForm] = useState(initial);
-  const [formError, setFormError] = useState(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Reset the form when a new member is opened — state adjustment during
   // render (not an effect) so the previous form persists through the
@@ -66,8 +84,9 @@ export default function MemberModal({ open, initial, companies, trackUrl, onSubm
 
   const isNew = !form.id;
 
-  function submit(e) {
+  function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!form) return;
     if (!form.name.trim() || !form.title.trim()) {
       setFormError("Name and title are required");
       return;
@@ -87,7 +106,7 @@ export default function MemberModal({ open, initial, companies, trackUrl, onSubm
     onSubmit({ ...form, name: form.name.trim(), title: form.title.trim() });
   }
 
-  function companyOptions(excludeId) {
+  function companyOptions(excludeId: string) {
     return companies.filter((c) => c.id !== excludeId);
   }
 

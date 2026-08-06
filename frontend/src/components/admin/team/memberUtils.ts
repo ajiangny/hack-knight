@@ -1,6 +1,8 @@
 // Shared member shapes/helpers for the team tab.
 
-export const EMPTY_MEMBER = {
+import type { AdminMember, MemberForm, RawMember } from "../adminTypes";
+
+export const EMPTY_MEMBER: MemberForm = {
   name: "",
   title: "",
   linkedin_url: "",
@@ -15,7 +17,7 @@ export const EMPTY_MEMBER = {
   _badgePreview: null,
 };
 
-export function normalizeMember(m) {
+export function normalizeMember(m: RawMember): AdminMember {
   return {
     ...m,
     linkedin_url: m.linkedin_url ?? "",
@@ -25,7 +27,12 @@ export function normalizeMember(m) {
   };
 }
 
-export function memberFieldsEqual(a, b) {
+type MemberFields = Pick<
+  AdminMember,
+  "name" | "title" | "linkedin_url" | "github_url" | "company1_id" | "company2_id"
+>;
+
+export function memberFieldsEqual(a: MemberFields, b: MemberFields): boolean {
   return (
     a.name === b.name &&
     a.title === b.title &&

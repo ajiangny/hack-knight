@@ -5,6 +5,18 @@
 import { useRef, useState } from "react";
 import { Panel, Field, EmptyState, CollapseTitle } from "../ui";
 import { ReplaceIcon, XIcon } from "../icons";
+import type { AdminCompany } from "../adminTypes";
+
+interface CompaniesPanelProps {
+  companies: AdminCompany[];
+  wearerCount: (companyId: string) => number;
+  serverCompanies: AdminCompany[];
+  trackUrl: (file: File) => string;
+  onAdd: (name: string, logoFile: File, logoPreview: string | null) => void;
+  onRename: (id: string, name: string) => void;
+  onReplaceLogo: (id: string, file: File) => void;
+  onRemove: (id: string) => void;
+}
 
 export default function CompaniesPanel({
   companies,
@@ -15,17 +27,17 @@ export default function CompaniesPanel({
   onRename,
   onReplaceLogo,
   onRemove,
-}) {
+}: CompaniesPanelProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState(null);
-  const [addError, setAddError] = useState(null);
-  const logoRef = useRef(null);
-  const replaceRef = useRef(null);
-  const replaceTargetRef = useRef(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<string | null>(null);
 
-  function submitAdd(e) {
+  function submitAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = name.trim();
     if (!value || !logoFile) {
@@ -72,7 +84,7 @@ export default function CompaniesPanel({
                     className="flex items-center gap-3 bg-black/20 border border-border/40 rounded-lg px-3 py-2"
                   >
                     <img
-                      src={company._logoPreview ?? company.logo_url}
+                      src={company._logoPreview ?? company.logo_url ?? undefined}
                       alt={`${company.name} logo`}
                       className="w-9 h-9 object-contain bg-black/30 rounded-lg p-1 shrink-0"
                     />

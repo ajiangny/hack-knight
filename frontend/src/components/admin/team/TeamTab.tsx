@@ -18,31 +18,33 @@ import {
   DragGrid,
   CardOverlay,
   CardMoveButtons,
+  type Change,
 } from "../ui";
 import { PencilIcon, XIcon } from "../icons";
 import { useObjectUrls } from "../useObjectUrls";
+import type { AdminCompany, AdminMember, MemberForm, RawMember } from "../adminTypes";
 import { EMPTY_MEMBER, normalizeMember, memberFieldsEqual } from "./memberUtils";
 import MemberModal from "./MemberModal";
 import CompaniesPanel from "./CompaniesPanel";
 
-export default function TeamTab({ onDirtyChange }) {
-  const [serverMembers, setServerMembers] = useState([]);
-  const [serverCompanies, setServerCompanies] = useState([]);
-  const [draftMembers, setDraftMembers] = useState([]);
-  const [draftCompanies, setDraftCompanies] = useState([]);
-  const [editing, setEditing] = useState(null); // seed for MemberModal
+export default function TeamTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
+  const [serverMembers, setServerMembers] = useState<AdminMember[]>([]);
+  const [serverCompanies, setServerCompanies] = useState<AdminCompany[]>([]);
+  const [draftMembers, setDraftMembers] = useState<AdminMember[]>([]);
+  const [draftCompanies, setDraftCompanies] = useState<AdminCompany[]>([]);
+  const [editing, setEditing] = useState<MemberForm | null>(null); // seed for MemberModal
   const [reviewOpen, setReviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [error, setError] = useState(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const tmpIdRef = useRef(0);
   const { trackUrl, revokeAll } = useObjectUrls();
 
   const load = useCallback(async () => {
     try {
       const [members, companies] = await Promise.all([
-        apiGet("/team"),
-        apiGet("/companies"),
+        apiGet<RawMember[]>("/team"),
+        apiGet<AdminCompany[]>("/companies"),
       ]);
       const normalized = members.map(normalizeMember);
       setServerMembers(normalized);
@@ -51,7 +53,7 @@ export default function TeamTab({ onDirtyChange }) {
       setDraftCompanies(companies.map((c) => ({ ...c })));
       revokeAll();
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   }, [revokeAll]);
 
@@ -62,11 +64,11 @@ export default function TeamTab({ onDirtyChange }) {
   /* ── Staged diff ── */
 
   const companyName = useCallback(
-    (id) => draftCompanies.find((c) => c.id === id)?.name ?? "None",
+    (id: string) => draftCompanies.find((c) => c.id === id)?.name ?? "None",
     [draftCompanies],
   );
 
-  function describeBadges(m) {
+  function describeBadges(m: AdminMember | MemberForm) {
     const names = [m.company1_id, m.company2_id]
       .filter(Boolean)
       .map(companyName);
@@ -86,7 +88,7 @@ export default function TeamTab({ onDirtyChange }) {
   }, [draftMembers, serverMembers]);
 
   const changes = useMemo(() => {
-    const list = [];
+    const list: Change[] = [];
 
     for (const c of draftCompanies) {
       if (c._new) {
@@ -95,7 +97,7 @@ export default function TeamTab({ onDirtyChange }) {
       }
       const orig = serverCompanies.find((s) => s.id === c.id);
       if (!orig) continue;
-      const parts = [];
+      const parts: string[] = [];
       if (orig.name !== c.name) parts.push(`name "${orig.name}" → "${c.name}"`);
       if (c._logoFile) parts.push("new logo");
       if (parts.length) {
@@ -137,7 +139,7 @@ export default function TeamTab({ onDirtyChange }) {
         });
         continue;
       }
-      const parts = [];
+      const parts: string[] = [];
       if (orig.name !== draft.name)
         parts.push(`name "${orig.name}" → "${draft.name}"`);
       if (orig.title !== draft.title)
@@ -179,10 +181,10 @@ export default function TeamTab({ onDirtyChange }) {
 
   /* ── Draft mutations ── */
 
-  function upsertMember(form) {
+  function upsertMember(form: MemberForm) {
     if (form.id) {
       setDraftMembers((members) =>
-        members.map((m) => (m.id === form.id ? { ...m, ...form } : m)),
+        members.map((m) => (m.id === form.id ? { ...m, ...form, id: m.id } : m)),
       );
     } else {
       setDraftMembers((members) => [
@@ -193,11 +195,11 @@ export default function TeamTab({ onDirtyChange }) {
     setEditing(null);
   }
 
-  function removeMember(id) {
+  function removeMember(id: string) {
     setDraftMembers((members) => members.filter((m) => m.id !== id));
   }
 
-  function addCompany(name, logoFile, logoPreview) {
+  function addCompany(name: string, logoFile: File, logoPreview: string | null) {
     setDraftCompanies((companies) => [
       ...companies,
       {
@@ -211,13 +213,13 @@ export default function TeamTab({ onDirtyChange }) {
     ]);
   }
 
-  function renameCompany(id, name) {
+  function renameCompany(id: string, name: string) {
     setDraftCompanies((companies) =>
       companies.map((c) => (c.id === id ? { ...c, name } : c)),
     );
   }
 
-  function replaceCompanyLogo(id, file) {
+  function replaceCompanyLogo(id: string, file: File) {
     const preview = trackUrl(file);
     setDraftCompanies((companies) =>
       companies.map((c) =>
@@ -226,7 +228,7 @@ export default function TeamTab({ onDirtyChange }) {
     );
   }
 
-  function removeCompany(id) {
+  function removeCompany(id: string) {
     setDraftCompanies((companies) => companies.filter((c) => c.id !== id));
     // Detach the badge from any member wearing it in the draft.
     setDraftMembers((members) =>
@@ -238,7 +240,7 @@ export default function TeamTab({ onDirtyChange }) {
     );
   }
 
-  function wearerCount(companyId) {
+  function wearerCount(companyId: string) {
     return draftMembers.filter(
       (m) => m.company1_id === companyId || m.company2_id === companyId,
     ).length;
@@ -258,17 +260,17 @@ export default function TeamTab({ onDirtyChange }) {
     setSaveError(null);
     try {
       // 1. Create new companies (tmp id → real id).
-      const companyIdMap = new Map();
+      const companyIdMap = new Map<string, string>();
       for (const c of draftCompanies) {
         if (!c._new) continue;
         const formData = new FormData();
         formData.append("name", c.name);
-        const compressed = await compressImage(c._logoFile);
-        formData.append("logo", compressed, c._logoFile.name);
-        const created = await apiUpload("/companies", formData);
+        const compressed = await compressImage(c._logoFile!);
+        formData.append("logo", compressed, c._logoFile!.name);
+        const created = await apiUpload<{ id: string }>("/companies", formData);
         companyIdMap.set(c.id, created.id);
       }
-      const resolveCompany = (id) => (id ? (companyIdMap.get(id) ?? id) : "");
+      const resolveCompany = (id: string) => (id ? (companyIdMap.get(id) ?? id) : "");
 
       // 2. Update edited companies.
       for (const c of draftCompanies) {
@@ -328,8 +330,8 @@ export default function TeamTab({ onDirtyChange }) {
         formData.append("company1_id", resolveCompany(m.company1_id));
         formData.append("company2_id", resolveCompany(m.company2_id));
         formData.append("sort_order", String(i));
-        const compressedPhoto = await compressImage(m._photoFile);
-        formData.append("photo", compressedPhoto, m._photoFile.name);
+        const compressedPhoto = await compressImage(m._photoFile!);
+        formData.append("photo", compressedPhoto, m._photoFile!.name);
         if (m._badgeFile) {
           const compressedBadge = await compressImage(m._badgeFile);
           formData.append("badge", compressedBadge, m._badgeFile.name);
@@ -358,7 +360,7 @@ export default function TeamTab({ onDirtyChange }) {
       await load();
     } catch (err) {
       setSaveError(
-        `Save failed partway: ${err.message}. The team was reloaded — review what applied and re-stage the rest.`,
+        `Save failed partway: ${(err as Error).message}. The team was reloaded — review what applied and re-stage the rest.`,
       );
       setReviewOpen(false);
       await load();
@@ -369,11 +371,11 @@ export default function TeamTab({ onDirtyChange }) {
 
   /* ── Render ── */
 
-  const memberCompanies = (m) =>
+  const memberCompanies = (m: AdminMember) =>
     [m.company1_id, m.company2_id]
       .filter(Boolean)
       .map((id) => draftCompanies.find((c) => c.id === id))
-      .filter(Boolean);
+      .filter((c): c is AdminCompany => Boolean(c));
 
   return (
     <div className="flex flex-col gap-6">
@@ -432,7 +434,7 @@ export default function TeamTab({ onDirtyChange }) {
                 <div className="group relative p-2 flex flex-col gap-1.5">
                   <div className="relative">
                     <img
-                      src={m._photoPreview ?? m.photo_url}
+                      src={m._photoPreview ?? m.photo_url ?? undefined}
                       alt={m.name}
                       className="w-full aspect-square object-cover rounded-lg pointer-events-none select-none"
                       draggable={false}
@@ -488,7 +490,7 @@ export default function TeamTab({ onDirtyChange }) {
                       {memberCompanies(m).map((c) => (
                         <img
                           key={c.id}
-                          src={c._logoPreview ?? c.logo_url}
+                          src={c._logoPreview ?? c.logo_url ?? undefined}
                           alt={`${c.name} badge`}
                           title={c.name}
                           className="w-5 h-5 object-contain bg-black/30 rounded p-0.5"
