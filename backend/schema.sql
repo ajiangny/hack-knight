@@ -96,6 +96,36 @@ INSERT INTO site_settings (key, value) VALUES
   ('countdown_target', '2026-10-09T00:00:00'),
   ('mlh_badge_enabled', 'false');
 
+-- 'registration_open' is intentionally absent: PUT /api/settings/:key upserts,
+-- so the row appears the first time an admin saves the Misc tab toggle, and
+-- readers treat a missing key as closed.
+
+-- Registrations (participant sign-ups)
+
+CREATE TABLE registrations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  major TEXT NOT NULL,
+  cuny_school TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Case-insensitive uniqueness so Alice@x.com and alice@x.com collide.
+CREATE UNIQUE INDEX registrations_email_unique ON registrations (lower(email));
+CREATE INDEX registrations_created_at_idx ON registrations (created_at DESC);
+
+ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
+-- Deliberately NO public read policy: this table holds participant PII and is
+-- reachable only through the service role, behind admin auth in the API.
+CREATE POLICY "Service role full access registrations" ON registrations FOR ALL USING (auth.role() = 'service_role');
+REVOKE ALL ON TABLE registrations FROM anon, authenticated;
+GRANT ALL ON TABLE registrations TO service_role;
+
+-- See supabase/migrations/20260807221653_registrations.sql for the
+-- registrations table, its policy, and its grants.
+
 -- Team Members
 
 CREATE TABLE team_members (
