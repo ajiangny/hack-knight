@@ -18,11 +18,15 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminPage from "./pages/AdminPage";
 import { useAuth } from "./hooks/useAuth";
 
-// Redirects to the login page when there is no valid admin token. Reads auth
-// through the hook so a token cleared mid-session (log out, or a 401 from any
+// Redirects to the login page when there is no admin session. Reads auth
+// through the hook so a session ending mid-visit (sign out, or a 401 from any
 // admin write) redirects at once instead of stranding an empty dashboard.
+//
+// Renders nothing while Supabase restores a persisted session — deciding
+// before that resolves bounces a signed-in admin to login on every refresh.
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthed } = useAuth();
+  const { isAuthed, loading } = useAuth();
+  if (loading) return null;
   return isAuthed ? children : <Navigate to="/admin/login" replace />;
 }
 
