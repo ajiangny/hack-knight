@@ -64,7 +64,7 @@ export default function Navbar() {
           href={MLH_BADGE_HREF}
           target="_blank"
           rel="noreferrer"
-          className="w-[50px] md:w-[100px]"
+          className="w-12.5 md:w-25"
           style={{
             display: "block",
             position: "fixed",
@@ -96,10 +96,10 @@ export default function Navbar() {
       {/* ── CENTER — Desktop nav tabs ──────────────────────── */}
       <ul className="navbar-desktop-links flex gap-20 items-center">
         <li><a href="/#sponsors" className={`navbar-link${activeSection === 'sponsors' ? ' navbar-link-active' : ''}`}>Sponsors</a></li>
-        <li><a href="/#photos"   className={`navbar-link${activeSection === 'photos'   ? ' navbar-link-active' : ''}`}>Past Events</a></li>
+        <li><a href="/#photos" className={`navbar-link${activeSection === 'photos' ? ' navbar-link-active' : ''}`}>Past Events</a></li>
         <li><a href="/#schedule" className={`navbar-link${activeSection === 'schedule' ? ' navbar-link-active' : ''}`}>Schedule</a></li>
-        <li><a href="/#team"     className={`navbar-link${activeSection === 'team'     ? ' navbar-link-active' : ''}`}>Team</a></li>
-        <li><a href="/#faq"      className={`navbar-link${activeSection === 'faq'      ? ' navbar-link-active' : ''}`}>FAQ</a></li>
+        <li><a href="/#team" className={`navbar-link${activeSection === 'team' ? ' navbar-link-active' : ''}`}>Team</a></li>
+        <li><a href="/#faq" className={`navbar-link${activeSection === 'faq' ? ' navbar-link-active' : ''}`}>FAQ</a></li>
       </ul>
 
       {/* ── RIGHT GROUP (flex-1) — Apply Now + Hamburger ───── */}
@@ -122,10 +122,10 @@ export default function Navbar() {
       <div className={`mobile-nav-menu ${menuOpen ? 'mobile-nav-menu-open' : ''}`}>
         <ul className="flex flex-col items-center gap-6 pt-6 pb-4">
           <li><a href="/#sponsors" className={`navbar-link text-lg${activeSection === 'sponsors' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Sponsors</a></li>
-          <li><a href="/#photos"   className={`navbar-link text-lg${activeSection === 'photos'   ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Past Events</a></li>
+          <li><a href="/#photos" className={`navbar-link text-lg${activeSection === 'photos' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Past Events</a></li>
           <li><a href="/#schedule" className={`navbar-link text-lg${activeSection === 'schedule' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Schedule</a></li>
-          <li><a href="/#team"     className={`navbar-link text-lg${activeSection === 'team'     ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Team</a></li>
-          <li><a href="/#faq"      className={`navbar-link text-lg${activeSection === 'faq'      ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>FAQ</a></li>
+          <li><a href="/#team" className={`navbar-link text-lg${activeSection === 'team' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Team</a></li>
+          <li><a href="/#faq" className={`navbar-link text-lg${activeSection === 'faq' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>FAQ</a></li>
         </ul>
         <div className="flex justify-center pb-6">
           <Link to="/register" className="btn-primary" onClick={() => setMenuOpen(false)}>Apply Now</Link>

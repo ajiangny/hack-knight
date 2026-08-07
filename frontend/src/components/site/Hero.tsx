@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useSpring, type Variants } from 'motion/react';
 import CountdownTimer from './CountdownTimer';
 import MascotEyes from './MascotEyes';
-import hillsBgSvg  from '../../assets/brand/hillsbg.svg';
-import hillsSvg    from '../../assets/brand/hills.svg';
-import knightsSvg  from '../../assets/brand/knights1.svg';
-import towerSvg    from '../../assets/brand/tower.svg';
+import hillsBgSvg from '../../assets/brand/hillsbg.svg';
+import hillsSvg from '../../assets/brand/hills.svg';
+import knightsSvg from '../../assets/brand/knights1.svg';
+import towerSvg from '../../assets/brand/tower.svg';
 
 export default function Hero() {
   const { scrollY } = useScroll();
@@ -93,7 +93,7 @@ export default function Hero() {
         style={{ zIndex: 10 }}
       />
 
-      <div className="hero-content-wrapper w-full grid grid-cols-1 lg:grid-cols-[auto_auto] justify-center justify-items-center lg:justify-items-start items-center lg:items-start gap-8 lg:gap-8 xl:gap-8 relative px-6 my-auto z-4 max-w-[2560px] mx-auto">
+      <div className="hero-content-wrapper w-full grid grid-cols-1 lg:grid-cols-[auto_auto] justify-center justify-items-center lg:justify-items-start items-center lg:items-start gap-8 lg:gap-8 xl:gap-8 relative px-6 my-auto z-4 max-w-640 mx-auto">
 
         {/* z:4 — Left column */}
         <motion.div
