@@ -3,10 +3,10 @@
 // survive switching between them; each tab reports its unsaved-change
 // count so its nav label can show the ultraviolet dot.
 
-import { useCallback, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion as Motion, MotionConfig } from "motion/react";
-import { logout } from "../lib/api";
+import { getSessionRemainingMs, logout, pruneExpiredToken } from "../lib/api";
 import ScheduleTab from "../components/admin/schedule/ScheduleTab";
 import GalleryTab from "../components/admin/gallery/GalleryTab";
 import TeamTab from "../components/admin/team/TeamTab";
@@ -27,10 +27,44 @@ const TABS: AdminTab[] = [
   { key: "misc", label: "Misc", Component: MiscTab },
 ];
 
+const WARN_BEFORE_MS = 5 * 60 * 1000;
+const EXPIRY_POLL_MS = 60 * 1000;
+
+/**
+ * Warns before the session lapses. Every tab holds its staged, unsaved
+ * changes in memory, so redirecting the moment the token expires silently
+ * destroys that work — the banner is the chance to hit Save first. Returns
+ * whole minutes left once inside the warning window, otherwise null.
+ */
+function useSessionExpiryWarning(): number | null {
+  const [minutesLeft, setMinutesLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    function check() {
+      const remaining = getSessionRemainingMs();
+      // Already gone: clearing the token makes RequireAuth redirect.
+      if (remaining <= 0) {
+        pruneExpiredToken();
+        return;
+      }
+      setMinutesLeft(
+        remaining <= WARN_BEFORE_MS ? Math.ceil(remaining / 60_000) : null,
+      );
+    }
+
+    check();
+    const id = setInterval(check, EXPIRY_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  return minutesLeft;
+}
+
 export default function AdminPage() {
   const navigate = useNavigate();
   const [active, setActive] = useState("schedule");
   const [dirty, setDirty] = useState<Record<string, number>>({});
+  const minutesLeft = useSessionExpiryWarning();
 
   function handleLogout() {
     logout();
@@ -60,6 +94,14 @@ export default function AdminPage() {
             </button>
           </div>
         </header>
+
+        {minutesLeft !== null && (
+          <p className="admin-warning" role="status">
+            Your session expires in {minutesLeft} minute
+            {minutesLeft === 1 ? "" : "s"} — save any unsaved changes now, then
+            log in again.
+          </p>
+        )}
 
         <nav className="admin-tabs" aria-label="Admin sections">
           {TABS.map((tab) => (
