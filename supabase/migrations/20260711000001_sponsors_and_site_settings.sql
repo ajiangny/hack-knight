@@ -17,8 +17,3 @@ CREATE TABLE site_settings (
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read site_settings" ON site_settings FOR SELECT USING (true);
 CREATE POLICY "Service role full access site_settings" ON site_settings FOR ALL USING (auth.role() = 'service_role');
-
-INSERT INTO site_settings (key, value) VALUES
-  ('countdown_target', '2026-10-09T00:00:00'),
-  ('mlh_badge_enabled', 'false')
-ON CONFLICT (key) DO NOTHING;
