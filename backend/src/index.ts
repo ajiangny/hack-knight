@@ -7,6 +7,7 @@ import galleryRouter from "./routes/gallery.js";
 import teamRouter from "./routes/team.js";
 import companiesRouter from "./routes/companies.js";
 import settingsRouter from "./routes/settings.js";
+import registrationsRouter from "./routes/registrations.js";
 import cors from "cors";
 
 const app = express();
@@ -64,6 +65,7 @@ app.use("/api/gallery", galleryRouter);
 app.use("/api/team", teamRouter);
 app.use("/api/companies", companiesRouter);
 app.use("/api/settings", settingsRouter);
+app.use("/api/registrations", registrationsRouter);
 
 // Start server
 app.listen(PORT, () => {

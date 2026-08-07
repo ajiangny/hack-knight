@@ -99,6 +99,26 @@ export interface ReorderBody {
   order: { id: string; sort_order: number }[];
 }
 
+export interface Registration {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  major: string;
+  cuny_school: string;
+  created_at?: string;
+}
+
+export interface CreateRegistrationBody {
+  firstName: string;
+  lastName: string;
+  email: string;
+  major: string;
+  cunySchool: string;
+  turnstileToken: string;
+  website?: string; // honeypot
+}
+
 export interface SiteSetting {
   key: string;
   value: string;
