@@ -13,7 +13,7 @@ import CustomCursor from "./components/site/CustomCursor";
 import Home from "./pages/Home";
 import Schedule from "./pages/SchedulePage";
 import Sponsors from "./pages/SponsorsPage";
-import ComingSoon from "./components/site/ComingSoon";
+import RegisterPage from "./pages/RegisterPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPage from "./pages/AdminPage";
 import { useAuth } from "./hooks/useAuth";
@@ -74,7 +74,8 @@ function AppContent() {
           <Route path="/" element={<PageTransition><Home /></PageTransition>} />
           <Route path="/schedule" element={<PageTransition><Schedule /></PageTransition>} />
           <Route path="/sponsors" element={<PageTransition><Sponsors /></PageTransition>} />
-          <Route path="/register" element={<PageTransition><ComingSoon /></PageTransition>} />
+          {/* RegisterPage renders ComingSoon itself when registration is closed. */}
+          <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
