@@ -16,11 +16,14 @@ import Sponsors from "./pages/SponsorsPage";
 import ComingSoon from "./components/site/ComingSoon";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPage from "./pages/AdminPage";
-import { isAuthenticated } from "./lib/api";
+import { useAuth } from "./hooks/useAuth";
 
-// Redirects to the login page when there is no valid admin token.
+// Redirects to the login page when there is no valid admin token. Reads auth
+// through the hook so a token cleared mid-session (log out, or a 401 from any
+// admin write) redirects at once instead of stranding an empty dashboard.
 function RequireAuth({ children }: { children: ReactNode }) {
-  return isAuthenticated() ? children : <Navigate to="/admin/login" replace />;
+  const { isAuthed } = useAuth();
+  return isAuthed ? children : <Navigate to="/admin/login" replace />;
 }
 
 function useScrollToHash() {

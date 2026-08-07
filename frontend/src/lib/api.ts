@@ -12,15 +12,89 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+  notifyAuthChange();
 }
 
 export function logout(): void {
   localStorage.removeItem(TOKEN_KEY);
+  notifyAuthChange();
 }
 
-export function isAuthenticated(): boolean {
-  return !!getToken();
+/**
+ * The `exp` claim (Unix seconds) from a JWT payload, or null when the token
+ * is not a parseable JWT. The signature is deliberately NOT checked — that is
+ * the server's job. This only lets the UI avoid rendering a dashboard it
+ * already knows it cannot save from.
+ */
+export function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    // JWTs use base64url; atob only understands standard base64.
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const { exp } = JSON.parse(json) as { exp?: unknown };
+    return typeof exp === "number" ? exp : null;
+  } catch {
+    return null;
+  }
 }
+
+/**
+ * Milliseconds left on the stored session, or 0 when there is no usable
+ * token. Drives the "save now" warning banner in the admin shell.
+ */
+export function getSessionRemainingMs(): number {
+  const token = getToken();
+  if (!token) return 0;
+  const exp = getTokenExpiry(token);
+  if (exp === null) return 0;
+  return Math.max(0, exp * 1000 - Date.now());
+}
+
+/**
+ * True only for a token that is present, well formed, and unexpired. A bare
+ * presence check let an 8-hour-old token render the dashboard, where every
+ * write then failed. Kept pure so it is safe as a `useSyncExternalStore`
+ * snapshot — clearing is `pruneExpiredToken`'s job.
+ */
+export function isAuthenticated(): boolean {
+  const token = getToken();
+  if (!token) return false;
+  return getSessionRemainingMs() > 0;
+}
+
+/** Drop a token that can no longer authenticate anything, and notify. */
+export function pruneExpiredToken(): void {
+  if (getToken() && !isAuthenticated()) logout();
+}
+
+/* ── Auth change notifications ──────────────────────────────────
+   The token lives in localStorage, which React cannot observe. Publishing
+   changes here lets `useAuth` re-render the route guard the instant the
+   token is set or cleared — including by a 401 raised deep inside a save. */
+
+const authListeners = new Set<() => void>();
+
+function notifyAuthChange(): void {
+  for (const listener of authListeners) listener();
+}
+
+export function subscribeToAuth(callback: () => void): () => void {
+  authListeners.add(callback);
+  return () => {
+    authListeners.delete(callback);
+  };
+}
+
+// `storage` fires only in *other* tabs, so logging out in one tab logs out
+// the rest. A null key means the whole store was cleared.
+window.addEventListener("storage", (e) => {
+  if (e.key === null || e.key === TOKEN_KEY) notifyAuthChange();
+});
+
+// A tab reopened after the session lapsed starts clean rather than flashing
+// the dashboard before the first write fails.
+pruneExpiredToken();
 
 /**
  * Authenticated fetch. Attaches the JWT, throws on non-2xx, and clears the
@@ -38,6 +112,8 @@ export async function apiFetch<T = unknown>(
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
   if (res.status === 401) {
+    // logout() notifies subscribers, so the guard redirects before any
+    // caller gets a chance to swallow this error.
     logout();
     throw new Error("Unauthorized");
   }

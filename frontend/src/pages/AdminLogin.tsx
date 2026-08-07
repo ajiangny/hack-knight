@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { setToken } from "../lib/api";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
@@ -29,7 +30,8 @@ export default function AdminLogin() {
       }
 
       const { token }: { token: string } = await res.json();
-      localStorage.setItem("admin_token", token);
+      // setToken (not a raw localStorage write) so the auth guard is notified.
+      setToken(token);
       navigate("/admin");
     } catch (err) {
       setError((err as Error).message);
