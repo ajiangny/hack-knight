@@ -1,23 +1,17 @@
 # Dependencies
-backend/node_modules/
 node_modules/
 
 # Environment variables
-backend/.env
 .env
 
 # Database files
-backend/*.db
-backend/*.db-wal
-backend/*.db-shm
-backend/*.db-journal
 *.db
 *.db-wal
 *.db-shm
 *.db-journal
 
 # Build output
-backend/dist/
+dist/
 
 # OS garbage
 .DS_Store
