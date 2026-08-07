@@ -1,41 +1,17 @@
-import { Router, Request, Response } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+// Admin identity. Sign-in itself happens in the browser against Supabase
+// Auth (Google provider); the backend only verifies the resulting token and
+// reports who it belongs to.
 
-interface LoginRequestBody {
-  password: string;
-}
+import { Router, Request, Response } from "express";
+import { authenticateAdmin } from "../middleware/auth.js";
 
 const authRouter: Router = Router();
 
-// Login
-authRouter.post(
-  "/login",
-  async (req: Request<{}, {}, LoginRequestBody>, res: Response) => {
-    if (!req.body.password) {
-      res.status(400).json({ message: "Password is required" });
-      return;
-    }
-
-    const hash = process.env.ADMIN_PASSWORD_HASH;
-    const secret = process.env.JWT_SECRET;
-
-    if (!hash || !secret) {
-      res.status(500).json({ message: "Server misconfiguration" });
-      return;
-    }
-
-    const isCorrectPassword = await bcrypt.compare(req.body.password, hash);
-
-    if (!isCorrectPassword) {
-      res.status(401).json({ message: "Incorrect password" });
-      return;
-    }
-
-    const token = jwt.sign({ role: "admin" }, secret, { expiresIn: "8h" });
-
-    return res.json({ token });
-  },
-);
+// GET /api/auth/me  (admin) — identity for the dashboard header. Reaching
+// this route at all means the token verified and the email is allowlisted.
+authRouter.get("/me", authenticateAdmin, (req: Request, res: Response) => {
+  const { email, name, avatar_url } = req.adminUser!;
+  res.json({ email, name, avatar_url });
+});
 
 export default authRouter;
