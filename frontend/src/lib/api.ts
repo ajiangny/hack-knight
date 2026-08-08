@@ -86,6 +86,32 @@ export const apiPut = <T = unknown>(path: string, body: unknown) =>
 
 export const apiDelete = (path: string) => apiFetch<null>(path, { method: "DELETE" });
 
+/**
+ * Fetch a file body as a Blob. Downloads behind auth cannot use a plain anchor
+ * href — the browser would send no Authorization header and get a 401 — so the
+ * caller turns this blob into an object URL and clicks it instead.
+ */
+export async function apiDownload(path: string): Promise<Blob> {
+  const token = await getToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`${API_URL}${path}`, { headers });
+
+  if (res.status === 401) {
+    await logout();
+    throw new Error("Unauthorized");
+  }
+  if (res.status === 403) {
+    throw new ForbiddenError();
+  }
+  if (!res.ok) {
+    throw new Error(`Download failed (${res.status})`);
+  }
+
+  return res.blob();
+}
+
 // Multipart upload. Do NOT set Content-Type — the browser adds the boundary.
 export const apiUpload = <T = unknown>(
   path: string,

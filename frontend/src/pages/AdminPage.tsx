@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion as Motion, MotionConfig } from "motion/react";
 import type { Session } from "@supabase/supabase-js";
 import { useAuth } from "../hooks/useAuth";
+import RegistrationsTab from "../components/admin/registrations/RegistrationsTab";
 import ScheduleTab from "../components/admin/schedule/ScheduleTab";
 import GalleryTab from "../components/admin/gallery/GalleryTab";
 import TeamTab from "../components/admin/team/TeamTab";
@@ -21,6 +22,8 @@ interface AdminTab {
 }
 
 const TABS: AdminTab[] = [
+  // First: during the event this is the tab people open most.
+  { key: "registrations", label: "Registrations", Component: RegistrationsTab },
   { key: "schedule", label: "Schedule", Component: ScheduleTab },
   { key: "gallery", label: "Gallery", Component: GalleryTab },
   { key: "team", label: "Team", Component: TeamTab },
@@ -71,7 +74,7 @@ function useSessionExpiryWarning(session: Session | null): number | null {
 
 export default function AdminPage() {
   const navigate = useNavigate();
-  const [active, setActive] = useState("schedule");
+  const [active, setActive] = useState("registrations");
   const [dirty, setDirty] = useState<Record<string, number>>({});
   const { session, email, logout } = useAuth();
   const minutesLeft = useSessionExpiryWarning(session);
