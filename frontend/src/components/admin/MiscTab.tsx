@@ -11,6 +11,7 @@ import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview, type Change } 
 
 const COUNTDOWN_KEY = "countdown_target";
 const MLH_KEY = "mlh_badge_enabled";
+const REGISTRATION_KEY = "registration_open";
 
 type AppliedChange = Change & { apply: () => Promise<unknown> };
 
@@ -90,6 +91,21 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
       });
     }
 
+    if (draftSettings[REGISTRATION_KEY] !== serverSettings[REGISTRATION_KEY]) {
+      const open = draftSettings[REGISTRATION_KEY] === "true";
+      list.push({
+        kind: "edit",
+        summary: "Registration",
+        detail: open
+          ? "Closed → /register accepts submissions"
+          : "Open → /register shows the coming-soon page",
+        apply: () =>
+          apiPut(`/settings/${REGISTRATION_KEY}`, {
+            value: draftSettings[REGISTRATION_KEY],
+          }),
+      });
+    }
+
     return list;
   }, [serverSettings, draftSettings]);
 
@@ -123,6 +139,8 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
   const countdownValue = draftSettings[COUNTDOWN_KEY] ?? "";
   const { date, time } = splitDateTime(countdownValue);
   const mlhOn = draftSettings[MLH_KEY] === "true";
+  // Absent key = closed, matching how the backend reads it.
+  const registrationOpen = draftSettings[REGISTRATION_KEY] === "true";
 
   return (
     <div>
@@ -158,6 +176,31 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                   }
                 />
               </Field>
+            </div>
+          </Panel>
+
+          <Panel title="Registration">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <label
+                  className="admin-label mb-0.5 cursor-pointer"
+                  htmlFor="registration-open-toggle"
+                >
+                  Accept registrations
+                </label>
+                <p className="admin-help">
+                  When off, /register shows the coming-soon page and the API
+                  rejects submissions. Turn on when applications open.
+                </p>
+              </div>
+              <Toggle
+                id="registration-open-toggle"
+                label="Accept registrations"
+                checked={registrationOpen}
+                onChange={(next) =>
+                  setDraft(REGISTRATION_KEY, next ? "true" : "false")
+                }
+              />
             </div>
           </Panel>
 
