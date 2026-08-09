@@ -33,21 +33,26 @@ import { apiGet } from "./lib/api";
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthed, loading, session } = useAuth();
   const userId = session?.user.id;
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  // The result is stored with the user it belongs to, so switching accounts
+  // invalidates it by derivation instead of a synchronous reset in the effect.
+  const [check, setCheck] = useState<{ userId: string; ok: boolean } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (loading || !userId) return;
     let cancelled = false;
-    setAuthorized(null);
 
     apiGet("/auth/me")
-      .then(() => !cancelled && setAuthorized(true))
-      .catch(() => !cancelled && setAuthorized(false));
+      .then(() => !cancelled && setCheck({ userId, ok: true }))
+      .catch(() => !cancelled && setCheck({ userId, ok: false }));
 
     return () => {
       cancelled = true;
     };
   }, [loading, userId]);
+
+  const authorized = check && check.userId === userId ? check.ok : null;
 
   if (loading) return null;
   if (!isAuthed || authorized === false) return <Navigate to="/admin/login" replace />;
