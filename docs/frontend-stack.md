@@ -49,7 +49,8 @@ frontend/
     │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + OtherCompaniesPanel + sponsorUtils
     │       └── registrations/    # RegistrationsTab (search, CSV export, delete)
     ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
-    │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth
+    │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth.
+    │                       #   Public hooks are built on useApiData (shared response cache)
     ├── data/               # Static fallback data used when the API is unreachable
     ├── lib/
     │   ├── api.ts          # Auth-aware fetch helper (token from the Supabase session) + compressImage
@@ -74,7 +75,12 @@ sign-in and session. All data goes through the Express API (see
   fetches from the API and **falls back to the static data in `src/data/`**
   (or a sensible default for site settings) if the API is down or returns
   nothing. This means the site never renders empty — keep the static data
-  reasonably fresh.
+  reasonably fresh. All of these sit on `useApiData`, which keeps an
+  in-memory cache per API path for the session and dedupes concurrent
+  requests, so navigating between pages renders instantly from cache
+  (the register page in particular gates on `registration_open` without a
+  loading gap). Cached responses older than 60 seconds are refreshed in the
+  background after render.
 - **Admin pages** use `src/lib/api.ts`, which reads the access token from the
   Supabase session (`useAuth` exposes the same session reactively) and attaches
   it to every request. Supabase refreshes the token in the background, so there

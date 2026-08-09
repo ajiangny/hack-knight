@@ -26,7 +26,7 @@ Visitor / Admin ──► Frontend (Vite + React, Vercel)
 | Database + storage | Supabase (`@supabase/supabase-js`) | One client for Postgres queries **and** Storage |
 | Auth | Supabase Auth (Google sign-in) | Browser signs in with Google; backend verifies the access token and checks the `ADMIN_EMAILS` allowlist |
 | Captcha | Cloudflare Turnstile | Server-side verification of the public registration form (`lib/turnstile.ts`) |
-| Uploads | `multer` (in-memory) | Multipart photos → Supabase Storage |
+| Uploads | `multer` (in-memory) | Multipart photos → Supabase Storage, stored with a one-year `cacheControl` |
 | Middleware | `cors`, `morgan` | CORS locked to `FRONTEND_URL` |
 | Dev runner | `tsx watch` | Auto-restarts on file changes |
 
@@ -223,6 +223,22 @@ npm outdated && npm update                # update within semver ranges
 After changes, confirm `npm run dev` boots and `npm run build` compiles
 cleanly (TypeScript strict mode will catch type breakage), then commit
 `package.json` + `package-lock.json` together.
+
+## Storage cache headers
+
+Uploaded files get random UUID names, so the content behind a URL never
+changes. Every upload route therefore passes a one-year `cacheControl`
+(`IMMUTABLE_CACHE` in `db/supabase.ts`), letting browsers cache images
+instead of re-requesting them on every mount. Objects uploaded before this
+existed (or through the Supabase dashboard, which stores `no-cache`) keep
+their old setting; `scripts/set-storage-cache-control.ts` re-uploads
+everything in the `photos` bucket with the current one. Run it once per
+environment:
+
+```bash
+cd backend
+npx tsx scripts/set-storage-cache-control.ts   # uses SUPABASE_* from .env or the shell
+```
 
 ## Deployment
 
