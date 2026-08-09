@@ -111,5 +111,7 @@ export default function TurnstileWidget({
     };
   }, [siteKey]);
 
-  return <div ref={containerRef} />;
+  // data-cursor-native: the custom cursor hides while this subtree is
+  // hovered — the OS cursor is the only one that works inside the iframe.
+  return <div ref={containerRef} data-cursor-native />;
 }

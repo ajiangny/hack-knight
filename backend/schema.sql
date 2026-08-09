@@ -117,6 +117,9 @@ CREATE TABLE registrations (
   mlh_code_of_conduct BOOLEAN NOT NULL,
   mlh_data_sharing BOOLEAN NOT NULL,
   mlh_emails BOOLEAN NOT NULL DEFAULT false,
+  -- In-bucket path in the private 'resumes' storage bucket. Nullable only
+  -- because rows predating the resume requirement have no file.
+  resume_path TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -137,7 +140,9 @@ GRANT ALL ON TABLE registrations TO service_role;
 -- fields (phone, age, level_of_study, country, mlh_* checkboxes) and the
 -- cuny_school → school rename, and
 -- supabase/migrations/20260809130000_drop_registration_major.sql for the
--- removal of major.
+-- removal of major, and
+-- supabase/migrations/20260809150000_registration_resumes.sql for the private
+-- 'resumes' storage bucket (4 MB / PDF-DOC-DOCX limits) and resume_path.
 
 -- Team Members
 

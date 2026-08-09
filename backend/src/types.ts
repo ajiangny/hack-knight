@@ -109,27 +109,60 @@ export interface Registration {
   school: string;
   level_of_study: string;
   country: string;
+  // Demographic answers hold the list option verbatim, except where the
+  // participant chose a "self-describe"/"other" option — then the column
+  // holds their typed text instead.
+  gender: string;
+  // Null when the participant skipped the question (pronouns are optional).
+  pronouns: string | null;
+  race_ethnicity: string[];
+  sexual_orientation: string;
+  major: string;
+  dietary_restrictions: string[];
+  // Normalized to an https:// URL; null when not provided (optional).
+  linkedin_url: string | null;
   mlh_code_of_conduct: boolean;
   mlh_data_sharing: boolean;
   mlh_emails: boolean;
+  // In-bucket path in the private resumes bucket. Null only on rows that
+  // predate the resume requirement.
+  resume_path: string | null;
   created_at?: string;
 }
 
+// POST /api/registrations is multipart/form-data (the resume file rides
+// along), so every field arrives as a string — including age and the MLH
+// checkboxes ("true"/"false"). The route parses them.
 export interface CreateRegistrationBody {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  age: number;
-  school: string;
-  levelOfStudy: string;
-  country: string;
-  // MLH member-event checkboxes: the first two must be true to register,
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  age?: string;
+  school?: string;
+  levelOfStudy?: string;
+  country?: string;
+  // Multi-selects arrive as JSON-encoded string arrays (multipart fields are
+  // strings). The *Other fields carry the free text for the corresponding
+  // "self-describe"/"other" option and are required only when it is chosen.
+  gender?: string;
+  genderSelfDescribe?: string;
+  pronouns?: string;
+  pronounsOther?: string;
+  raceEthnicity?: string;
+  raceEthnicityOther?: string;
+  sexualOrientation?: string;
+  sexualOrientationOther?: string;
+  major?: string;
+  majorOther?: string;
+  dietaryRestrictions?: string;
+  linkedinUrl?: string;
+  // MLH member-event checkboxes: the first two must be "true" to register,
   // mlhEmails is the optional opt-in.
-  mlhCodeOfConduct: boolean;
-  mlhDataSharing: boolean;
-  mlhEmails: boolean;
-  turnstileToken: string;
+  mlhCodeOfConduct?: string;
+  mlhDataSharing?: string;
+  mlhEmails?: string;
+  turnstileToken?: string;
   website?: string; // honeypot
 }
 

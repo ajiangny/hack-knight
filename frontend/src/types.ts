@@ -78,9 +78,21 @@ export interface Registration {
   school: string;
   levelOfStudy: string;
   country: string;
+  /** Option verbatim, or the participant's typed text for "self-describe". */
+  gender: string;
+  /** Null when the participant skipped the question (pronouns are optional). */
+  pronouns: string | null;
+  raceEthnicity: string[];
+  sexualOrientation: string;
+  major: string;
+  dietaryRestrictions: string[];
+  /** Normalized https:// URL; null when not provided. */
+  linkedinUrl: string | null;
   mlhCodeOfConduct: boolean;
   mlhDataSharing: boolean;
   mlhEmails: boolean;
+  /** In-bucket path of the resume; null on rows predating the requirement. */
+  resumePath: string | null;
   createdAt?: string;
 }
 

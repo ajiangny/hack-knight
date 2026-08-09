@@ -1,8 +1,8 @@
 // Dropdown options for the registration form.
 //
 // KEEP IN SYNC with backend/src/lib/registrationOptions.ts — the backend
-// rejects any level-of-study or country value not in its copy, so an option
-// missing from either list cannot be registered.
+// rejects any dropdown value not in its copy, so an option missing from
+// either list cannot be registered.
 
 // MLH's standard Level of Study options — registrations are shared with MLH,
 // so the values match their forms verbatim rather than a local paraphrase.
@@ -278,3 +278,100 @@ export const COUNTRIES = [
 // MLH requires collecting age; 13 is their minimum age to participate.
 export const AGE_MIN = 13;
 export const AGE_MAX = 100;
+
+/* ── Participant demographics and profile ───────────────────────
+   MLH's standard demographic questions plus event logistics. Options match
+   the wording the organizers were given verbatim. Where a question offers a
+   "self-describe"/"other" option (the *_OTHER_OPTION constants below), the
+   form reveals a free-text input and the API stores the typed text in place
+   of the placeholder option. */
+
+// Multi-select: a participant can be, say, both Vegetarian and Halal.
+// Selecting nothing is the "no restrictions" answer, so there is no
+// explicit "None" option.
+export const DIETARY_RESTRICTIONS = [
+  "Vegetarian",
+  "Vegan",
+  "Celiac Disease",
+  "Allergies",
+  "Kosher",
+  "Halal",
+] as const;
+
+export const GENDERS = [
+  "Man",
+  "Woman",
+  "Non-Binary",
+  "Prefer to self-describe",
+  "Prefer Not to Answer",
+] as const;
+
+export const GENDER_SELF_DESCRIBE_OPTION = "Prefer to self-describe";
+
+// Pronouns are always optional — the form accepts no answer at all.
+export const PRONOUNS = [
+  "She/Her",
+  "He/Him",
+  "They/Them",
+  "She/They",
+  "He/They",
+  "Prefer Not to Answer",
+  "Other",
+] as const;
+
+export const PRONOUNS_OTHER_OPTION = "Other";
+
+// Multi-select ("select all that apply"), per MLH's registration form.
+export const RACES_ETHNICITIES = [
+  "Asian Indian",
+  "Black or African",
+  "Chinese",
+  "Filipino",
+  "Guamanian or Chamorro",
+  "Hispanic / Latino / Spanish Origin",
+  "Japanese",
+  "Korean",
+  "Middle Eastern",
+  "Native American or Alaskan Native",
+  "Native Hawaiian",
+  "Samoan",
+  "Vietnamese",
+  "White",
+  "Other Asian (Thai, Cambodian, etc)",
+  "Other Pacific Islander",
+  "Other (Please Specify)",
+  "Prefer Not to Answer",
+] as const;
+
+export const RACE_ETHNICITY_OTHER_OPTION = "Other (Please Specify)";
+
+// Asked as "Do you consider yourself to be any of the following?"
+export const SEXUAL_ORIENTATIONS = [
+  "Heterosexual or straight",
+  "Gay or lesbian",
+  "Bisexual",
+  "Different identity",
+  "Prefer Not to Answer",
+] as const;
+
+export const SEXUAL_ORIENTATION_OTHER_OPTION = "Different identity";
+
+export const MAJORS = [
+  "Computer science, computer engineering, or software engineering",
+  "Another engineering discipline (such as civil, electrical, mechanical, etc.)",
+  "Information systems, information technology, or system administration",
+  "A natural science (such as biology, chemistry, physics, etc.)",
+  "Mathematics or statistics",
+  "Web development or web design",
+  "Business discipline (such as accounting, finance, marketing, etc.)",
+  "Humanities discipline (such as literature, history, philosophy, etc.)",
+  "Social science (such as anthropology, psychology, political science, etc.)",
+  "Fine arts or performing arts (such as graphic design, music, studio art, etc.)",
+  "Health science (such as nursing, pharmacy, radiology, etc.)",
+  "Other (please specify)",
+  "Undecided / No Declared Major",
+  "My school does not offer majors / primary areas of study",
+  "Prefer not to answer",
+] as const;
+
+export const MAJOR_OTHER_OPTION = "Other (please specify)";

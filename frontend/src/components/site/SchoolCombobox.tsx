@@ -7,6 +7,8 @@
 // fetched when the form mounts instead of shipping with the initial bundle.
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
+import DropdownPanel from "./DropdownPanel";
 
 const MIN_QUERY = 2;
 const MAX_RESULTS = 50;
@@ -115,6 +117,11 @@ export default function SchoolCombobox({
 
   const listboxId = `${id}-listbox`;
 
+  // Panel states: loading row, match list, or "no match" help text — but the
+  // last only while nothing is selected, so a chosen school with no other
+  // matches shows no panel at all.
+  const showPanel = schools === null || matches.length > 0 || value === "";
+
   return (
     <div ref={rootRef} className="relative">
       <input
@@ -133,36 +140,41 @@ export default function SchoolCombobox({
         onChange={(e) => handleInput(e.target.value)}
         onKeyDown={handleKeyDown}
       />
-      {open && term.length >= MIN_QUERY && (
-        <>
-          {schools === null ? (
-            <div className="register-combobox-list px-3 py-2 font-body text-sm text-text-muted">
-              Loading school list…
-            </div>
-          ) : matches.length > 0 ? (
-            <ul className="register-combobox-list" role="listbox" id={listboxId}>
-              {matches.map((school, i) => (
-                <li
-                  key={school}
-                  role="option"
-                  aria-selected={i === highlight}
-                  className="register-combobox-option"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => choose(school)}
-                  onMouseEnter={() => setHighlight(i)}
-                >
-                  {school}
-                </li>
-              ))}
-            </ul>
-          ) : value === "" ? (
-            <div className="register-combobox-list px-3 py-2 font-body text-sm text-text-muted">
-              No matching school — check the spelling, or ask MLH to add it via
-              my.mlh.io.
-            </div>
-          ) : null}
-        </>
-      )}
+      {/* One persistent panel around the three states, so switching between
+          loading/matches/no-match swaps content without replaying the
+          open animation. */}
+      <AnimatePresence>
+        {open && term.length >= MIN_QUERY && showPanel && (
+          <DropdownPanel>
+            {schools === null ? (
+              <div className="px-3 py-2 font-body text-sm text-text-muted">
+                Loading school list…
+              </div>
+            ) : matches.length > 0 ? (
+              <ul role="listbox" id={listboxId}>
+                {matches.map((school, i) => (
+                  <li
+                    key={school}
+                    role="option"
+                    aria-selected={i === highlight}
+                    className="register-combobox-option"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => choose(school)}
+                    onMouseEnter={() => setHighlight(i)}
+                  >
+                    {school}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-3 py-2 font-body text-sm text-text-muted">
+                No matching school — check the spelling, or ask MLH to add it
+                via my.mlh.io.
+              </div>
+            )}
+          </DropdownPanel>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

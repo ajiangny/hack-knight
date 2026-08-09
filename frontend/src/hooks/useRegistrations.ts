@@ -17,9 +17,17 @@ interface RegistrationRow {
   school: string;
   level_of_study: string;
   country: string;
+  gender: string;
+  pronouns: string | null;
+  race_ethnicity: string[];
+  sexual_orientation: string;
+  major: string;
+  dietary_restrictions: string[];
+  linkedin_url: string | null;
   mlh_code_of_conduct: boolean;
   mlh_data_sharing: boolean;
   mlh_emails: boolean;
+  resume_path: string | null;
   created_at?: string;
 }
 
@@ -34,9 +42,18 @@ function mapRegistration(r: RegistrationRow): Registration {
     school: r.school,
     levelOfStudy: r.level_of_study,
     country: r.country,
+    gender: r.gender,
+    pronouns: r.pronouns,
+    // ?? [] covers rows written before the demographics migration.
+    raceEthnicity: r.race_ethnicity ?? [],
+    sexualOrientation: r.sexual_orientation,
+    major: r.major,
+    dietaryRestrictions: r.dietary_restrictions ?? [],
+    linkedinUrl: r.linkedin_url,
     mlhCodeOfConduct: r.mlh_code_of_conduct,
     mlhDataSharing: r.mlh_data_sharing,
     mlhEmails: r.mlh_emails,
+    resumePath: r.resume_path,
     createdAt: r.created_at,
   };
 }

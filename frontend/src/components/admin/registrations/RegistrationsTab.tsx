@@ -3,8 +3,8 @@
 // it reports 0 dirty changes once on mount to satisfy the tab contract and
 // keep the unsaved-changes dot from ever appearing.
 
-import { useEffect, useMemo, useState } from "react";
-import { apiDelete, apiDownload } from "../../../lib/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { apiDelete, apiDownload, apiGet } from "../../../lib/api";
 import { useRegistrations } from "../../../hooks/useRegistrations";
 import type { Registration } from "../../../types";
 import { XIcon } from "../icons";
@@ -30,6 +30,12 @@ export default function RegistrationsTab({
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [resumeFor, setResumeFor] = useState<Registration | null>(null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  // Bumped on every open/close so a signed-URL fetch that resolves after the
+  // modal moved on can't paint a stale (wrong applicant's) resume.
+  const resumeReq = useRef(0);
 
   // Read-only tab: never dirty.
   useEffect(() => {
@@ -49,6 +55,7 @@ export default function RegistrationsTab({
         r.school,
         r.levelOfStudy,
         r.country,
+        r.major,
       ]
         .join(" ")
         .toLowerCase()
@@ -80,6 +87,31 @@ export default function RegistrationsTab({
       if (url) URL.revokeObjectURL(url);
       setExporting(false);
     }
+  }
+
+  // The bucket is private, so the browser can't link to the file directly;
+  // the API mints a short-lived signed URL per view.
+  async function openResume(r: Registration) {
+    const req = ++resumeReq.current;
+    setResumeFor(r);
+    setResumeUrl(null);
+    setResumeError(null);
+    try {
+      const { url } = await apiGet<{ url: string }>(
+        `/registrations/${r.id}/resume-url`,
+      );
+      if (resumeReq.current === req) setResumeUrl(url);
+    } catch (err) {
+      if (resumeReq.current === req)
+        setResumeError(`Couldn't load resume: ${(err as Error).message}`);
+    }
+  }
+
+  function closeResume() {
+    resumeReq.current++;
+    setResumeFor(null);
+    setResumeUrl(null);
+    setResumeError(null);
   }
 
   async function confirmDelete() {
@@ -126,7 +158,7 @@ export default function RegistrationsTab({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name, email, phone, or school"
+            placeholder="Name, email, phone, school, or major"
           />
         </div>
 
@@ -151,10 +183,16 @@ export default function RegistrationsTab({
                     <th scope="col">School</th>
                     <th scope="col">Level of Study</th>
                     <th scope="col">Country</th>
+                    <th scope="col">Major</th>
+                    <th scope="col">Dietary</th>
+                    <th scope="col">LinkedIn</th>
                     {/* The two required MLH boxes are always true (the API
                         rejects otherwise), so only the optional opt-in earns
-                        a column. Full detail is in the CSV export. */}
+                        a column. Demographic answers (gender, pronouns,
+                        race/ethnicity, orientation) and other full detail
+                        are in the CSV export. */}
                     <th scope="col">MLH Emails</th>
+                    <th scope="col">Resume</th>
                     <th scope="col">Registered</th>
                     <th scope="col">
                       <span className="sr-only">Actions</span>
@@ -176,7 +214,44 @@ export default function RegistrationsTab({
                       <td>{r.school}</td>
                       <td>{r.levelOfStudy}</td>
                       <td className="whitespace-nowrap">{r.country}</td>
+                      <td>{r.major}</td>
+                      <td>
+                        {r.dietaryRestrictions.length > 0 ? (
+                          r.dietaryRestrictions.join(", ")
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {r.linkedinUrl ? (
+                          <a
+                            href={r.linkedinUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-ultraviolet hover:underline"
+                          >
+                            Profile
+                          </a>
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
                       <td>{r.mlhEmails ? "Yes" : "No"}</td>
+                      <td>
+                        {/* Rows from before the resume requirement have no
+                            file, hence the dash. */}
+                        {r.resumePath ? (
+                          <button
+                            type="button"
+                            className="admin-btn-ghost"
+                            onClick={() => openResume(r)}
+                          >
+                            Resume
+                          </button>
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap font-mono text-xs text-text-secondary">
                         {formatDate(r.createdAt)}
                       </td>
@@ -204,6 +279,57 @@ export default function RegistrationsTab({
           </>
         )}
       </Panel>
+
+      <Modal
+        open={resumeFor !== null}
+        title={
+          resumeFor
+            ? `Resume — ${resumeFor.firstName} ${resumeFor.lastName}`
+            : "Resume"
+        }
+        onClose={closeResume}
+        xl
+      >
+        {resumeError ? (
+          <p className="admin-error">{resumeError}</p>
+        ) : !resumeUrl ? (
+          <EmptyState>Loading resume…</EmptyState>
+        ) : resumeFor?.resumePath?.toLowerCase().endsWith(".pdf") ? (
+          // White backdrop because PDF viewers assume a light page; without
+          // it a transparent iframe reads as a black hole on this theme.
+          <iframe
+            src={resumeUrl}
+            title={`Resume for ${resumeFor.firstName} ${resumeFor.lastName}`}
+            className="w-full h-[70vh] rounded-lg border border-border bg-white"
+          />
+        ) : (
+          // Browsers can't render Word documents natively, so DOC/DOCX get
+          // the open-in-new-tab path only (which downloads the file).
+          <EmptyState>
+            Word documents can&rsquo;t be previewed here. Use &ldquo;Open in
+            new tab&rdquo; to download it.
+          </EmptyState>
+        )}
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            className="admin-btn-ghost"
+            onClick={closeResume}
+          >
+            Close
+          </button>
+          {resumeUrl && (
+            <a
+              className="admin-btn-primary"
+              href={resumeUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open in new tab
+            </a>
+          )}
+        </div>
+      </Modal>
 
       <Modal
         open={pendingDelete !== null}

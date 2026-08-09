@@ -64,6 +64,12 @@
     @apply bg-ultraviolet/20;
   }
 
+  /* SelectDropdown: the currently-chosen value, distinct from the moving
+     aria-selected keyboard/hover highlight above. */
+  .register-combobox-option[data-selected="true"] {
+    @apply text-ultraviolet;
+  }
+
   /* Honeypot: off-screen rather than display:none, because some bots skip
      hidden inputs. Real users never reach it (tabIndex -1, aria-hidden). */
   .register-honeypot {
