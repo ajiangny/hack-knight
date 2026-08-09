@@ -47,7 +47,7 @@ frontend/
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
     │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + OtherCompaniesPanel + sponsorUtils
-    │       └── registrations/    # RegistrationsTab (search, CSV export, delete)
+    │       └── registrations/    # RegistrationsTab (search, CSV export, resume viewer, delete)
     ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
     │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth
     ├── data/               # Static fallback data used when the API is unreachable
@@ -82,11 +82,16 @@ sign-in and session. All data goes through the Express API (see
   `App.tsx` bounces back to login; a 403 means "signed in but not on the
   backend's `ADMIN_EMAILS` allowlist" and shows a not-authorized screen instead.
 - **The registration form** (`pages/RegisterPage.tsx`, at `/register`) POSTs to
-  the public `/api/registrations` endpoint. It mirrors the backend's validation
-  for fast feedback (options come from `lib/registrationOptions.ts` and
-  `lib/schools.ts`), renders the Turnstile captcha when
-  `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
+  the public `/api/registrations` endpoint as `FormData` — a resume attachment
+  (PDF/DOC/DOCX ≤ 4 MB) is mandatory, so the body is multipart rather than
+  JSON and the checkboxes travel as `"true"`/`"false"` strings. It mirrors the
+  backend's validation for fast feedback (options come from
+  `lib/registrationOptions.ts` and `lib/schools.ts`), renders the Turnstile
+  captcha when `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
   `registration_open` site setting is on. The backend re-checks all of it.
+  Admins view resumes from the Registrations tab: each row's Resume button
+  opens a modal (PDFs preview in an iframe; Word docs are download-only) fed
+  by a short-lived signed URL, since the `resumes` bucket is private.
 - **Image uploads** go through `compressImage()` in `lib/api.ts` (target
   < 1 MB) so requests stay under Vercel's 4.5 MB body limit.
 

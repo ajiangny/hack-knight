@@ -14,7 +14,8 @@ Visitor / Admin ──► Frontend (Vite + React, Vercel)
                          │  @supabase/supabase-js (secret key)
                          ▼
                     Supabase ── Postgres
-                             └─ Storage ('photos' bucket, public read)
+                             ├─ Storage ('photos' bucket, public read)
+                             └─ Storage ('resumes' bucket, private — signed URLs only)
 ```
 
 ## Stack at a glance
@@ -75,15 +76,21 @@ backend/
 - `GET /api/settings` — public read of all site settings (e.g.
   `countdown_target`, `mlh_badge_enabled`, `registration_open`);
   `PUT /api/settings/:key` admin only
-- `POST /api/registrations` — **the only public write endpoint.** Validates
-  the MLH-required fields (name, email, phone, age, school from the MLH list,
-  level of study, ISO 3166-1 country, MLH agreements), then applies the abuse
-  gauntlet: honeypot field, per-IP rate limit, Turnstile captcha, and the
-  `registration_open` setting (closed unless explicitly opened). Duplicate
-  email → 409.
+- `POST /api/registrations` — **the only public write endpoint.** Accepts
+  `multipart/form-data` (a resume file rides along, so every field arrives as
+  a string). Validates the MLH-required fields (name, email, phone, age,
+  school from the MLH list, level of study, ISO 3166-1 country, MLH
+  agreements) plus the mandatory resume (PDF/DOC/DOCX ≤ 4 MB, checked by
+  extension *and* magic bytes), then applies the abuse gauntlet: honeypot
+  field, per-IP rate limit, Turnstile captcha, and the `registration_open`
+  setting (closed unless explicitly opened). The resume is only written to
+  the private `resumes` bucket after every gate passes, and is rolled back if
+  the row insert fails. Duplicate email → 409.
 - `GET /api/registrations` (+ `?search=`), `GET /api/registrations/export`
-  (CSV download), `DELETE /api/registrations/:id` — admin only; the table
-  holds student PII, so there are no public reads
+  (CSV download), `GET /api/registrations/:id/resume-url` (mints a 1-hour
+  signed URL for the private resume — the only road to the file),
+  `DELETE /api/registrations/:id` (also removes the resume object) — admin
+  only; the table holds student PII, so there are no public reads
 
 "Admin only" routes use the `authenticateAdmin` middleware. Sign-in itself
 happens in the browser against Supabase Auth (Google provider); the middleware
@@ -187,7 +194,8 @@ Schema lives in two places, deliberately:
   Currently: initial schema, the `photos` storage bucket and its policies,
   the `companies` table + member badge columns, the sponsor fields +
   `site_settings` table, and the `registrations` table (plus follow-ups that
-  added the MLH-required fields and dropped the old `major` column).
+  added the MLH-required fields, dropped the old `major` column, and added
+  the private `resumes` bucket + `resume_path` column).
 - `backend/schema.sql` — the flat, human-readable canonical schema, run once
   in the cloud project's SQL editor.
 
