@@ -472,14 +472,14 @@ export default function RegisterPage() {
 
             {/* MLH agreements — wording is MLH's, required verbatim for member
                 events. The pre-partnership disclaimer is admin-toggleable
-                (mlh_disclaimer_enabled) and hidden unless explicitly enabled,
-                since HackKnight is now an official MLH member event. */}
+                (mlh_disclaimer_enabled) and shown unless explicitly turned
+                off — it must stay up until MLH membership is official. */}
             <fieldset className="mt-8 border border-border rounded-xl p-5">
               <legend className="register-label px-2 mb-0">
                 MLH Agreements
               </legend>
 
-              {settings.mlh_disclaimer_enabled === "true" && (
+              {settings.mlh_disclaimer_enabled !== "false" && (
                 <p className="font-body text-xs text-text-muted mb-4">
                   We are currently in the process of partnering with MLH. The
                   following 3 checkboxes are for this partnership. If we do

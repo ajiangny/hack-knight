@@ -158,9 +158,9 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
   const mlhOn = draftSettings[MLH_KEY] === "true";
   // Absent key = closed, matching how the backend reads it.
   const registrationOpen = draftSettings[REGISTRATION_KEY] === "true";
-  // Absent key = hidden — HackKnight is an official MLH member event, so the
-  // pre-partnership wording only appears when explicitly turned on.
-  const disclaimerOn = draftSettings[MLH_DISCLAIMER_KEY] === "true";
+  // Absent key = shown — the disclaimer must stay up until MLH membership is
+  // official, so only an explicit "false" hides it.
+  const disclaimerOn = draftSettings[MLH_DISCLAIMER_KEY] !== "false";
 
   return (
     <div>
@@ -234,7 +234,7 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                 <p className="admin-help">
                   Shows the &quot;we are in the process of partnering with
                   MLH&quot; note above the MLH checkboxes on the registration
-                  form. Leave off now that HackKnight is an official MLH
+                  form. Leave on until HackKnight is an official MLH
                   member event.
                 </p>
               </div>
