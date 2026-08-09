@@ -5,7 +5,13 @@
 import { Router, Request, Response } from "express";
 import { supabase } from "../db/supabase.js";
 import { authenticateAdmin } from "../middleware/auth.js";
-import { isValidCunySchool } from "../lib/cunySchools.js";
+import {
+  AGE_MAX,
+  AGE_MIN,
+  isValidCountry,
+  isValidLevelOfStudy,
+} from "../lib/registrationOptions.js";
+import { isValidSchool } from "../lib/schools.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
 import { CreateRegistrationBody, Registration, SiteSetting } from "../types.js";
 
@@ -18,6 +24,11 @@ const MAX_EXPORT_ROWS = 1000;
 // Deliberately loose: an over-clever regex rejects valid addresses. The real
 // confirmation that an address works is mail reaching it.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Loose for the same reason: enough structure to catch garbage, not so strict
+// it rejects a valid international format. The digit count is checked
+// separately (7–15 digits, per E.164's upper bound).
+const PHONE_RE = /^\+?[\d\s().-]+$/;
 
 /* ── Rate limiting ──────────────────────────────────────────────
    In-memory, so it is per-instance and best-effort only: Vercel can run
@@ -97,14 +108,35 @@ registrationsRouter.post(
     const firstName = (body.firstName ?? "").trim();
     const lastName = (body.lastName ?? "").trim();
     const email = (body.email ?? "").trim().toLowerCase();
+    const phone = (body.phone ?? "").trim();
+    const age = Number(body.age);
     const major = (body.major ?? "").trim();
-    const cunySchool = (body.cunySchool ?? "").trim();
+    // Must match MLH's verified school list exactly (the form's combobox only
+    // submits list entries) — uniform names, no deduping at check-in.
+    const school = (body.school ?? "").trim();
+    const levelOfStudy = (body.levelOfStudy ?? "").trim();
+    const country = (body.country ?? "").trim();
+    // Strict === true so a truthy string like "false" cannot count as agreed.
+    const mlhCodeOfConduct = body.mlhCodeOfConduct === true;
+    const mlhDataSharing = body.mlhDataSharing === true;
+    const mlhEmails = body.mlhEmails === true;
 
-    if (!firstName || !lastName || !email || !major || !cunySchool) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !phone ||
+      !major ||
+      !school ||
+      !levelOfStudy ||
+      !country
+    ) {
       res.status(422).json({ message: "All fields are required" });
       return;
     }
 
+    // School is absent here on purpose: it is checked against the MLH list
+    // below, which bounds it more tightly than any length cap.
     if (
       firstName.length > MAX_FIELD_LENGTH ||
       lastName.length > MAX_FIELD_LENGTH ||
@@ -121,8 +153,43 @@ registrationsRouter.post(
       return;
     }
 
-    if (!isValidCunySchool(cunySchool)) {
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (
+      !PHONE_RE.test(phone) ||
+      phoneDigits.length < 7 ||
+      phoneDigits.length > 15
+    ) {
+      res.status(422).json({ message: "Enter a valid phone number" });
+      return;
+    }
+
+    if (!Number.isInteger(age) || age < AGE_MIN || age > AGE_MAX) {
+      res.status(422).json({ message: "Select your age" });
+      return;
+    }
+
+    if (!isValidSchool(school)) {
       res.status(422).json({ message: "Select a school from the list" });
+      return;
+    }
+
+    if (!isValidLevelOfStudy(levelOfStudy)) {
+      res.status(422).json({ message: "Select a level of study from the list" });
+      return;
+    }
+
+    if (!isValidCountry(country)) {
+      res.status(422).json({ message: "Select a country from the list" });
+      return;
+    }
+
+    // MLH requires agreement to the Code of Conduct and the data-sharing
+    // terms; the email opt-in is the one box that may stay unchecked.
+    if (!mlhCodeOfConduct || !mlhDataSharing) {
+      res.status(422).json({
+        message:
+          "You must agree to the MLH Code of Conduct and data sharing terms",
+      });
       return;
     }
 
@@ -154,8 +221,15 @@ registrationsRouter.post(
       first_name: firstName,
       last_name: lastName,
       email,
+      phone,
+      age,
       major,
-      cuny_school: cunySchool,
+      school,
+      level_of_study: levelOfStudy,
+      country,
+      mlh_code_of_conduct: mlhCodeOfConduct,
+      mlh_data_sharing: mlhDataSharing,
+      mlh_emails: mlhEmails,
     });
 
     if (error) {
@@ -177,7 +251,16 @@ registrationsRouter.post(
 
 /* ── Admin reads ────────────────────────────────────────────────*/
 
-const SEARCHABLE = ["first_name", "last_name", "email", "major", "cuny_school"];
+const SEARCHABLE = [
+  "first_name",
+  "last_name",
+  "email",
+  "phone",
+  "major",
+  "school",
+  "level_of_study",
+  "country",
+];
 
 /** Rows newest-first, optionally filtered by `?search=`. */
 async function fetchRegistrations(search?: string) {
@@ -220,16 +303,27 @@ registrationsRouter.get(
 );
 
 /** One CSV field: quote always, double any internal quote (RFC 4180). */
-function csvField(value: string | null | undefined): string {
-  return `"${(value ?? "").replace(/"/g, '""')}"`;
+function csvField(value: string | number | boolean | null | undefined): string {
+  // Booleans are the MLH checkbox columns; Yes/No reads better than t/f in a
+  // spreadsheet handed to organizers.
+  const text =
+    typeof value === "boolean" ? (value ? "Yes" : "No") : String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 const CSV_COLUMNS: Array<[header: string, key: keyof Registration]> = [
   ["First Name", "first_name"],
   ["Last Name", "last_name"],
   ["Email", "email"],
+  ["Phone Number", "phone"],
+  ["Age", "age"],
+  ["School", "school"],
+  ["Level of Study", "level_of_study"],
+  ["Country of Residence", "country"],
   ["Major", "major"],
-  ["CUNY School", "cuny_school"],
+  ["MLH Code of Conduct", "mlh_code_of_conduct"],
+  ["MLH Data Sharing", "mlh_data_sharing"],
+  ["MLH Email Opt-In", "mlh_emails"],
   ["Registered At", "created_at"],
 ];
 
