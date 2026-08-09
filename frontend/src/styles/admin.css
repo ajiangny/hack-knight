@@ -245,7 +245,7 @@
   }
 
   .admin-table tbody tr {
-    @apply transition-colors duration-150 ease-brand hover:bg-white/[0.03];
+    @apply transition-colors duration-150 ease-brand hover:bg-white/3;
   }
 
   /* ── Misc ── */
