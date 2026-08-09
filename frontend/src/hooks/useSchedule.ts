@@ -1,14 +1,15 @@
 // Fetches schedule events + day headers from the Express API.
 // Falls back to the bundled static data if the API is unreachable.
+// Cached across navigations by useApiData, so revisiting the page renders
+// the fetched schedule immediately instead of re-requesting it.
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useApiData } from "./useApiData";
 import {
   scheduleEvents as staticEvents,
   scheduleDays as staticDays,
 } from "../data/schedule";
 import type { EventColor, ScheduleDay, ScheduleEvent } from "../types";
-
-const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 /** Raw row from the Express API (snake_case DB columns). */
 interface ScheduleEventRow {
@@ -35,45 +36,23 @@ function mapEvent(e: ScheduleEventRow): ScheduleEvent {
 }
 
 export function useSchedule() {
-  const [events, setEvents] = useState<ScheduleEvent[]>(staticEvents);
-  const [days, setDays] = useState<ScheduleDay[]>(staticDays);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const ev = useApiData<ScheduleEventRow[]>("/schedule");
+  const day = useApiData<ScheduleDay[]>("/schedule/days");
 
-  useEffect(() => {
-    let cancelled = false;
+  const events = useMemo(
+    () =>
+      Array.isArray(ev.data) && ev.data.length > 0
+        ? ev.data.map(mapEvent)
+        : staticEvents,
+    [ev.data],
+  );
+  const days =
+    Array.isArray(day.data) && day.data.length > 0 ? day.data : staticDays;
 
-    async function load() {
-      try {
-        const [evRes, dayRes] = await Promise.all([
-          fetch(`${API_URL}/schedule`),
-          fetch(`${API_URL}/schedule/days`),
-        ]);
-        if (!evRes.ok || !dayRes.ok) {
-          throw new Error("Failed to fetch schedule");
-        }
-        const [evData, dayData]: [ScheduleEventRow[], ScheduleDay[]] =
-          await Promise.all([evRes.json(), dayRes.json()]);
-        if (cancelled) return;
-        if (Array.isArray(evData) && evData.length > 0) {
-          setEvents(evData.map(mapEvent));
-        }
-        if (Array.isArray(dayData) && dayData.length > 0) {
-          setDays(dayData);
-        }
-      } catch (err) {
-        // Keep the static fallback already in state.
-        if (!cancelled) setError(err as Error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { events, days, loading, error };
+  return {
+    events,
+    days,
+    loading: ev.loading || day.loading,
+    error: ev.error ?? day.error,
+  };
 }

@@ -1,41 +1,17 @@
 // Fetches gallery years + photos from the Express API.
 // Falls back to the bundled static data if the API is unreachable.
+// Cached across navigations by useApiData, so revisiting the page renders
+// the fetched photos immediately instead of re-requesting them.
 
-import { useState, useEffect } from "react";
+import { useApiData } from "./useApiData";
 import staticGallery from "../data/gallery";
 import type { GalleryYear } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
-
 export function useGallery() {
-  const [galleryData, setGalleryData] = useState<GalleryYear[]>(staticGallery);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch(`${API_URL}/gallery`);
-        if (!res.ok) throw new Error("Failed to fetch gallery");
-        const data: GalleryYear[] = await res.json();
-        if (cancelled) return;
-        // The API shape ({ year, photos: [{ src, alt }] }) matches the
-        // static data, so components consume it unchanged.
-        if (Array.isArray(data) && data.length > 0) setGalleryData(data);
-      } catch (err) {
-        if (!cancelled) setError(err as Error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+  const { data, loading, error } = useApiData<GalleryYear[]>("/gallery");
+  // The API shape ({ year, photos: [{ src, alt }] }) matches the
+  // static data, so components consume it unchanged.
+  const galleryData =
+    Array.isArray(data) && data.length > 0 ? data : staticGallery;
   return { galleryData, loading, error };
 }
