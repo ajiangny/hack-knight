@@ -73,8 +73,15 @@ export interface Registration {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
+  age: number;
   major: string;
-  cunySchool: string;
+  school: string;
+  levelOfStudy: string;
+  country: string;
+  mlhCodeOfConduct: boolean;
+  mlhDataSharing: boolean;
+  mlhEmails: boolean;
   createdAt?: string;
 }
 

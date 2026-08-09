@@ -41,7 +41,16 @@ export default function RegistrationsTab({
     const term = search.trim().toLowerCase();
     if (!term) return registrations;
     return registrations.filter((r) =>
-      [r.firstName, r.lastName, r.email, r.major, r.cunySchool]
+      [
+        r.firstName,
+        r.lastName,
+        r.email,
+        r.phone,
+        r.major,
+        r.school,
+        r.levelOfStudy,
+        r.country,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(term),
@@ -138,8 +147,16 @@ export default function RegistrationsTab({
                   <tr>
                     <th scope="col">Name</th>
                     <th scope="col">Email</th>
-                    <th scope="col">Major</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Age</th>
                     <th scope="col">School</th>
+                    <th scope="col">Level of Study</th>
+                    <th scope="col">Country</th>
+                    <th scope="col">Major</th>
+                    {/* The two required MLH boxes are always true (the API
+                        rejects otherwise), so only the optional opt-in earns
+                        a column. Full detail is in the CSV export. */}
+                    <th scope="col">MLH Emails</th>
                     <th scope="col">Registered</th>
                     <th scope="col">
                       <span className="sr-only">Actions</span>
@@ -154,8 +171,15 @@ export default function RegistrationsTab({
                       </td>
                       {/* select-all so one click grabs the whole address */}
                       <td className="select-all font-mono text-xs">{r.email}</td>
+                      <td className="whitespace-nowrap font-mono text-xs">
+                        {r.phone}
+                      </td>
+                      <td>{r.age}</td>
+                      <td>{r.school}</td>
+                      <td>{r.levelOfStudy}</td>
+                      <td className="whitespace-nowrap">{r.country}</td>
                       <td>{r.major}</td>
-                      <td className="whitespace-nowrap">{r.cunySchool}</td>
+                      <td>{r.mlhEmails ? "Yes" : "No"}</td>
                       <td className="whitespace-nowrap font-mono text-xs text-text-secondary">
                         {formatDate(r.createdAt)}
                       </td>

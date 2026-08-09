@@ -12,8 +12,15 @@ interface RegistrationRow {
   first_name: string;
   last_name: string;
   email: string;
+  phone: string;
+  age: number;
   major: string;
-  cuny_school: string;
+  school: string;
+  level_of_study: string;
+  country: string;
+  mlh_code_of_conduct: boolean;
+  mlh_data_sharing: boolean;
+  mlh_emails: boolean;
   created_at?: string;
 }
 
@@ -23,8 +30,15 @@ function mapRegistration(r: RegistrationRow): Registration {
     firstName: r.first_name,
     lastName: r.last_name,
     email: r.email,
+    phone: r.phone,
+    age: r.age,
     major: r.major,
-    cunySchool: r.cuny_school,
+    school: r.school,
+    levelOfStudy: r.level_of_study,
+    country: r.country,
+    mlhCodeOfConduct: r.mlh_code_of_conduct,
+    mlhDataSharing: r.mlh_data_sharing,
+    mlhEmails: r.mlh_emails,
     createdAt: r.created_at,
   };
 }
