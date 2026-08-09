@@ -55,6 +55,7 @@ export default function RegistrationsTab({
         r.school,
         r.levelOfStudy,
         r.country,
+        r.major,
       ]
         .join(" ")
         .toLowerCase()
@@ -157,7 +158,7 @@ export default function RegistrationsTab({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name, email, phone, or school"
+            placeholder="Name, email, phone, school, or major"
           />
         </div>
 
@@ -182,9 +183,14 @@ export default function RegistrationsTab({
                     <th scope="col">School</th>
                     <th scope="col">Level of Study</th>
                     <th scope="col">Country</th>
+                    <th scope="col">Major</th>
+                    <th scope="col">Dietary</th>
+                    <th scope="col">LinkedIn</th>
                     {/* The two required MLH boxes are always true (the API
                         rejects otherwise), so only the optional opt-in earns
-                        a column. Full detail is in the CSV export. */}
+                        a column. Demographic answers (gender, pronouns,
+                        race/ethnicity, orientation) and other full detail
+                        are in the CSV export. */}
                     <th scope="col">MLH Emails</th>
                     <th scope="col">Resume</th>
                     <th scope="col">Registered</th>
@@ -208,6 +214,28 @@ export default function RegistrationsTab({
                       <td>{r.school}</td>
                       <td>{r.levelOfStudy}</td>
                       <td className="whitespace-nowrap">{r.country}</td>
+                      <td>{r.major}</td>
+                      <td>
+                        {r.dietaryRestrictions.length > 0 ? (
+                          r.dietaryRestrictions.join(", ")
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {r.linkedinUrl ? (
+                          <a
+                            href={r.linkedinUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-ultraviolet hover:underline"
+                          >
+                            Profile
+                          </a>
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
                       <td>{r.mlhEmails ? "Yes" : "No"}</td>
                       <td>
                         {/* Rows from before the resume requirement have no
