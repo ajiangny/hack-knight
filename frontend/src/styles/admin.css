@@ -213,6 +213,12 @@
     @apply max-w-2xl;
   }
 
+  /* Document previews (resume modal): claim most of the viewport so a
+     portrait PDF page renders near 100% instead of postage-stamp size. */
+  .admin-modal-xl {
+    @apply max-w-5xl;
+  }
+
   .admin-modal-title {
     @apply font-display font-bold text-lg text-text-primary mb-4;
   }

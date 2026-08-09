@@ -260,7 +260,7 @@ export default function RegistrationsTab({
             : "Resume"
         }
         onClose={closeResume}
-        wide
+        xl
       >
         {resumeError ? (
           <p className="admin-error">{resumeError}</p>

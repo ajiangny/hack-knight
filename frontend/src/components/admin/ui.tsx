@@ -306,10 +306,19 @@ interface ModalProps {
   title?: string;
   onClose: () => void;
   wide?: boolean;
+  /** Near-full-width modal for document previews; overrides `wide`. */
+  xl?: boolean;
   children?: ReactNode;
 }
 
-export function Modal({ open, title, onClose, wide = false, children }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  wide = false,
+  xl = false,
+  children,
+}: ModalProps) {
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -332,7 +341,7 @@ export function Modal({ open, title, onClose, wide = false, children }: ModalPro
           onClick={(e) => e.target === e.currentTarget && onClose()}
         >
           <Motion.div
-            className={`admin-modal ${wide ? "admin-modal-wide" : ""}`}
+            className={`admin-modal ${xl ? "admin-modal-xl" : wide ? "admin-modal-wide" : ""}`}
             role="dialog"
             aria-modal="true"
             aria-label={title}
