@@ -10,6 +10,7 @@ Express + Supabase backend, both deployed on Vercel.
 | [frontend-stack.md](frontend-stack.md) | React/Vite/Tailwind stack, running the dev server, env vars, installing & updating packages, conventions |
 | [backend-stack.md](backend-stack.md) | Express/TypeScript/Supabase stack, env setup, **running Supabase locally**, migrations, deployment |
 | [testing-and-github.md](testing-and-github.md) | How to verify changes before pushing, branch/commit/PR workflow, hard rules |
+| [external-services.md](external-services.md) | Supabase, Google OAuth, Cloudflare Turnstile, Vercel: keys, local vs production setup, preview deploys |
 | [MASTER.md](MASTER.md) | Design system: tokens, typography, motion rules, and the admin ("backstage") component kit |
 
 ## Quick start (full local stack)
@@ -21,12 +22,12 @@ npx supabase start                 # from repo root; note the printed URL + serv
 # 2. Backend
 cd backend
 npm install
-cp .env.example .env               # fill in values — see backend-stack.md
+cp .env.example .env               # fill in values, see backend-stack.md
 npm run dev                        # http://localhost:3000
 
 # 3. Frontend (new terminal)
 cd frontend
 npm install
-cp .env.example .env.local         # fill in values — see frontend-stack.md
+cp .env.example .env.local         # fill in values, see frontend-stack.md
 npm run dev                        # http://localhost:5173
 ```
