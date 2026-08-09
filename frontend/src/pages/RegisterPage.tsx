@@ -48,7 +48,6 @@ interface FormValues {
   email: string;
   phone: string;
   age: string; // select value; sent as a number
-  major: string;
   school: string; // always an MLH-list entry or "", enforced by SchoolCombobox
   levelOfStudy: string;
   country: string;
@@ -61,7 +60,6 @@ const EMPTY: FormValues = {
   email: "",
   phone: "",
   age: "",
-  major: "",
   school: "",
   levelOfStudy: "",
   country: "United States",
@@ -111,10 +109,6 @@ function validate(values: FormValues, agreements: Agreements): FieldErrors {
     errors.phone = "Enter a valid phone number";
 
   if (!values.age) errors.age = "Select your age";
-
-  if (!values.major.trim()) errors.major = "Major is required";
-  else if (values.major.trim().length > MAX_FIELD_LENGTH)
-    errors.major = `Must be ${MAX_FIELD_LENGTH} characters or fewer`;
 
   if (!values.school) errors.school = "Select your school from the list";
 
@@ -174,7 +168,6 @@ export default function RegisterPage() {
           email: values.email.trim(),
           phone: values.phone.trim(),
           age: Number(values.age),
-          major: values.major.trim(),
           school: values.school,
           levelOfStudy: values.levelOfStudy,
           country: values.country,
@@ -453,57 +446,32 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-5 mt-5">
-              <div>
-                <label className="register-label" htmlFor="country">
-                  Country of Residence
-                </label>
-                <select
-                  id="country"
-                  name="country"
-                  className="register-select"
-                  value={values.country}
-                  onChange={(e) => setField("country", e.target.value)}
-                  autoComplete="country-name"
-                  disabled={submitting}
-                  aria-invalid={!!errors.country}
-                  aria-describedby={errors.country ? "country-error" : undefined}
-                >
-                  {COUNTRIES.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
-                    </option>
-                  ))}
-                </select>
-                {errors.country && (
-                  <p className="register-error" id="country-error">
-                    {errors.country}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="register-label" htmlFor="major">
-                  Major
-                </label>
-                <input
-                  id="major"
-                  name="major"
-                  className="register-input"
-                  value={values.major}
-                  onChange={(e) => setField("major", e.target.value)}
-                  maxLength={MAX_FIELD_LENGTH}
-                  placeholder="e.g. Computer Science"
-                  disabled={submitting}
-                  aria-invalid={!!errors.major}
-                  aria-describedby={errors.major ? "major-error" : undefined}
-                />
-                {errors.major && (
-                  <p className="register-error" id="major-error">
-                    {errors.major}
-                  </p>
-                )}
-              </div>
+            <div className="mt-5">
+              <label className="register-label" htmlFor="country">
+                Country of Residence
+              </label>
+              <select
+                id="country"
+                name="country"
+                className="register-select"
+                value={values.country}
+                onChange={(e) => setField("country", e.target.value)}
+                autoComplete="country-name"
+                disabled={submitting}
+                aria-invalid={!!errors.country}
+                aria-describedby={errors.country ? "country-error" : undefined}
+              >
+                {COUNTRIES.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
+              {errors.country && (
+                <p className="register-error" id="country-error">
+                  {errors.country}
+                </p>
+              )}
             </div>
 
             {/* MLH agreements — wording is MLH's, required verbatim for member
