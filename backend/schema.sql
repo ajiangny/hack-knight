@@ -109,7 +109,6 @@ CREATE TABLE registrations (
   email TEXT NOT NULL,
   phone TEXT NOT NULL,
   age INT NOT NULL CHECK (age BETWEEN 13 AND 100),
-  major TEXT NOT NULL,
   school TEXT NOT NULL,
   level_of_study TEXT NOT NULL,
   country TEXT NOT NULL,
@@ -136,7 +135,9 @@ GRANT ALL ON TABLE registrations TO service_role;
 -- registrations table, its policy, and its grants, and
 -- supabase/migrations/20260809120000_mlh_registration_fields.sql for the MLH
 -- fields (phone, age, level_of_study, country, mlh_* checkboxes) and the
--- cuny_school → school rename.
+-- cuny_school → school rename, and
+-- supabase/migrations/20260809130000_drop_registration_major.sql for the
+-- removal of major.
 
 -- Team Members
 
