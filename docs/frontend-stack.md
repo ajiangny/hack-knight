@@ -47,7 +47,7 @@ frontend/
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
     │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + OtherCompaniesPanel + sponsorUtils
-    │       └── registrations/    # RegistrationsTab (search, CSV export, resume viewer, delete)
+    │       └── registrations/    # RegistrationsTab (search, CSV export, resume links, delete)
     ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
     │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth.
     │                       #   Public hooks are built on useApiData (shared response cache)
@@ -87,21 +87,19 @@ sign-in and session. All data goes through the Express API (see
   is no fixed-expiry cliff. A 401 signs the session out so the auth guard in
   `App.tsx` bounces back to login; a 403 means "signed in but not on the
   backend's `ADMIN_EMAILS` allowlist" and shows a not-authorized screen instead.
-- **The registration form** (`pages/RegisterPage.tsx`, at `/register`) POSTs to
-  the public `/api/registrations` endpoint as `FormData`. A resume attachment
-  (PDF/DOC/DOCX ≤ 4 MB) is mandatory, so the body is multipart rather than
-  JSON and the checkboxes travel as `"true"`/`"false"` strings (multi-selects
-  like dietary restrictions and race/ethnicity go as JSON arrays). Besides the
-  MLH-required fields it collects the demographic questions (gender, optional
-  pronouns, race/ethnicity, sexual orientation, major), dietary restrictions,
-  and an optional LinkedIn URL. It mirrors the
-  backend's validation for fast feedback (options come from
-  `lib/registrationOptions.ts` and `lib/schools.ts`), renders the Turnstile
-  captcha when `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
+- **The registration form** (`pages/RegisterPage.tsx`, at `/register`) POSTs
+  JSON to the public `/api/registrations` endpoint. Besides the MLH-required
+  fields it collects the demographic questions (gender, optional pronouns,
+  race/ethnicity, sexual orientation, major), dietary restrictions, an
+  optional LinkedIn URL, and a required Google Drive link to the applicant's
+  resume (shared as "anyone with the link can view", so the CSV handed to
+  MLH links straight to every file). It mirrors the backend's validation for
+  fast feedback (options come from `lib/registrationOptions.ts` and
+  `lib/schools.ts`), renders the Turnstile captcha when
+  `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
   `registration_open` site setting is on. The backend re-checks all of it.
-  Admins view resumes from the Registrations tab: each row's Resume button
-  opens a modal (PDFs preview in an iframe; Word docs are download-only) fed
-  by a short-lived signed URL, since the `resumes` bucket is private.
+  Admins open resumes straight from the Registrations tab; each row's Resume
+  link opens the Drive file in a new tab.
 - **Image uploads** go through `compressImage()` in `lib/api.ts` (target
   < 1 MB) so requests stay under Vercel's 4.5 MB body limit.
 

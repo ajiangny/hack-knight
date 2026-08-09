@@ -14,8 +14,7 @@ Visitor / Admin ──► Frontend (Vite + React, Vercel)
                          │  @supabase/supabase-js (secret key)
                          ▼
                     Supabase ── Postgres
-                             ├─ Storage ('photos' bucket, public read)
-                             └─ Storage ('resumes' bucket, private, signed URLs only)
+                             └─ Storage ('photos' bucket, public read)
 ```
 
 ## Stack at a glance
@@ -78,25 +77,22 @@ The database schema lives in `supabase/migrations/` (see
 - `GET /api/settings`: public read of all site settings (e.g.
   `countdown_target`, `mlh_badge_enabled`, `registration_open`);
   `PUT /api/settings/:key` admin only
-- `POST /api/registrations`: **the only public write endpoint.** Accepts
-  `multipart/form-data` (a resume file rides along, so every field arrives as
-  a string). Validates the MLH-required fields (name, email, phone, age,
-  school from the MLH list, level of study, ISO 3166-1 country, MLH
-  agreements), the demographic questions (gender, optional pronouns,
-  race/ethnicity, sexual orientation, major; allowlisted options, with the
-  typed text stored in place of any "self-describe"/"other" choice), optional
-  dietary restrictions and LinkedIn URL (normalized to https://, must be
-  linkedin.com), plus the mandatory resume (PDF/DOC/DOCX ≤ 4 MB, checked by
-  extension *and* magic bytes), then applies the abuse gauntlet: honeypot
-  field, per-IP rate limit, Turnstile captcha, and the `registration_open`
-  setting (closed unless explicitly opened). The resume is only written to
-  the private `resumes` bucket after every gate passes, and is rolled back if
-  the row insert fails. Duplicate email → 409.
+- `POST /api/registrations`: **the only public write endpoint.** JSON body.
+  Validates the MLH-required fields (name, email, phone, age, school from
+  the MLH list, level of study, ISO 3166-1 country, MLH agreements), the
+  demographic questions (gender, optional pronouns, race/ethnicity, sexual
+  orientation, major; allowlisted options, with the typed text stored in
+  place of any "self-describe"/"other" choice), optional dietary
+  restrictions and LinkedIn URL (normalized to https://, must be
+  linkedin.com), plus the required resume link (a drive.google.com or
+  docs.google.com URL, normalized to https://; the form instructs applicants
+  to enable "anyone with the link" sharing, which the server cannot verify),
+  then applies the abuse gauntlet: honeypot field, per-IP rate limit,
+  Turnstile captcha, and the `registration_open` setting (closed unless
+  explicitly opened). Duplicate email → 409.
 - `GET /api/registrations` (+ `?search=`), `GET /api/registrations/export`
-  (CSV download), `GET /api/registrations/:id/resume-url` (mints a 1-hour
-  signed URL for the private resume, the only road to the file),
-  `DELETE /api/registrations/:id` (also removes the resume object): admin
-  only; the table holds student PII, so there are no public reads
+  (CSV download, resume links included), `DELETE /api/registrations/:id`:
+  admin only; the table holds student PII, so there are no public reads
 
 "Admin only" routes use the `authenticateAdmin` middleware. Sign-in itself
 happens in the browser against Supabase Auth (Google provider); the middleware

@@ -105,5 +105,4 @@ details and required env vars are in
   not automatically exist for Preview; set both when adding one, or the
   preview will fail in ways production will not.
 - **Body-size cap:** Vercel rejects request bodies over 4.5 MB, which is
-  why image uploads are compressed client-side and resumes are capped at
-  4 MB.
+  why image uploads are compressed client-side.

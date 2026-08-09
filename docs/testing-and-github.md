@@ -68,9 +68,8 @@ the closest thing we have to a test suite.
    still render from the static data in `src/data/`.
 4. For admin changes: log in, do the full create, edit, delete cycle, and
    confirm a 401 (expired or cleared token) bounces you to the login page.
-5. For uploads: use a large file and confirm the request stays under
-   Vercel's 4.5 MB body limit (images are compressed client-side; resumes
-   are capped at 4 MB).
+5. For image uploads: use a large image and confirm client-side compression
+   keeps the request under Vercel's 4.5 MB body limit.
 
 ### Pulling production data into your local database
 
