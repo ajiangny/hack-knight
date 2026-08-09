@@ -40,8 +40,10 @@ export default function CustomCursor() {
     if (!hasFinePointer) return;
 
     const onMove = (e: MouseEvent) => {
-      // Mouse events resuming means any scrollbar drag is over.
+      // Mouse events resuming means any scrollbar drag is over, and the
+      // mouse is provably still in our document — not inside an iframe.
       scrollDrag.current = null;
+      window.clearTimeout(outTimer);
       x.set(e.clientX);
       y.set(e.clientY);
       const target = e.target as Element | null;
@@ -115,9 +117,24 @@ export default function CustomCursor() {
     // Crossing into an iframe stops mousemove in this document entirely, so
     // hide on the way in. Entering an iframe reports it as relatedTarget;
     // some browsers report null, which also covers leaving the window.
+    //
+    // Neither check sees an iframe hidden behind a closed shadow root
+    // (Cloudflare's Turnstile does this): shadow DOM retargets the event to
+    // the host <div>, so the cursor used to freeze at the widget's edge.
+    // Every mouseout therefore also arms a short fuse that the next event
+    // from our own document defuses — if nothing fires, the mouse is inside
+    // an iframe and the cursor hides. Ordinary moves defuse it long before
+    // it burns: crossing any element fires mouseout, mouseover, and
+    // mousemove back-to-back.
+    let outTimer = 0;
     const onOut = (e: MouseEvent) => {
       const entering = e.relatedTarget as Element | null;
-      if (!entering || entering.tagName === 'IFRAME') setIsVisible(false);
+      if (!entering || entering.tagName === 'IFRAME') {
+        setIsVisible(false);
+        return;
+      }
+      window.clearTimeout(outTimer);
+      outTimer = window.setTimeout(() => setIsVisible(false), 80);
     };
 
     document.addEventListener('mousemove', onMove);
@@ -137,6 +154,7 @@ export default function CustomCursor() {
       document.removeEventListener('pointerup', onPointerUp, true);
       document.removeEventListener('mouseout', onOut);
       document.removeEventListener('scroll', onScroll, true);
+      window.clearTimeout(outTimer);
     };
   }, [x, y]);
 
