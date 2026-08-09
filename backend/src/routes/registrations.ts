@@ -12,8 +12,19 @@ import { authenticateAdmin } from "../middleware/auth.js";
 import {
   AGE_MAX,
   AGE_MIN,
+  GENDER_SELF_DESCRIBE_OPTION,
+  MAJOR_OTHER_OPTION,
+  PRONOUNS_OTHER_OPTION,
+  RACE_ETHNICITY_OTHER_OPTION,
+  SEXUAL_ORIENTATION_OTHER_OPTION,
   isValidCountry,
+  isValidDietaryRestriction,
+  isValidGender,
   isValidLevelOfStudy,
+  isValidMajor,
+  isValidPronouns,
+  isValidRaceEthnicity,
+  isValidSexualOrientation,
 } from "../lib/registrationOptions.js";
 import { isValidSchool } from "../lib/schools.js";
 import { verifyTurnstile } from "../lib/turnstile.js";
@@ -33,6 +44,73 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // it rejects a valid international format. The digit count is checked
 // separately (7–15 digits, per E.164's upper bound).
 const PHONE_RE = /^\+?[\d\s().-]+$/;
+
+// LinkedIn profile URLs are short; this bounds abuse, not real input.
+const MAX_LINKEDIN_LENGTH = 200;
+
+/**
+ * Multi-select fields ride the multipart body as JSON-encoded string arrays.
+ * Returns null on anything that is not one (the frontend never sends that,
+ * so null means a hand-crafted request).
+ */
+function parseStringArray(raw: string | undefined): string[] | null {
+  if (raw === undefined || raw === "") return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((item): item is string => typeof item === "string")
+    ) {
+      // De-dupe so a crafted body can't inflate the stored array.
+      return [...new Set(parsed)];
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
+/**
+ * Folds a single-choice answer with a "self-describe"/"other" escape hatch:
+ * returns the chosen option verbatim, the trimmed free text when the other
+ * option was chosen, or null when the answer is invalid (unknown option,
+ * or the other option without usable text).
+ */
+function resolveChoice(
+  value: string,
+  isValid: (v: string) => boolean,
+  otherOption: string,
+  otherText: string,
+): string | null {
+  if (!isValid(value)) return null;
+  if (value !== otherOption) return value;
+  const text = otherText.trim();
+  if (!text || text.length > MAX_FIELD_LENGTH) return null;
+  return text;
+}
+
+/**
+ * Accepts a linkedin.com profile URL with or without a scheme and returns it
+ * normalized to https://. Returns "" for no answer (the field is optional)
+ * and null for anything that is not a LinkedIn URL.
+ */
+function normalizeLinkedinUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (trimmed.length > MAX_LINKEDIN_LENGTH) return null;
+  const withScheme = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  let url: URL;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.toLowerCase();
+  if (host !== "linkedin.com" && !host.endsWith(".linkedin.com")) return null;
+  return withScheme;
+}
 
 /* ── Resume upload ──────────────────────────────────────────────
    Resumes land in a PRIVATE bucket — they are PII like the rest of this
@@ -177,6 +255,13 @@ registrationsRouter.post(
     const school = (body.school ?? "").trim();
     const levelOfStudy = (body.levelOfStudy ?? "").trim();
     const country = (body.country ?? "").trim();
+    const gender = (body.gender ?? "").trim();
+    const pronouns = (body.pronouns ?? "").trim();
+    const sexualOrientation = (body.sexualOrientation ?? "").trim();
+    const major = (body.major ?? "").trim();
+    const raceEthnicity = parseStringArray(body.raceEthnicity);
+    const dietaryRestrictions = parseStringArray(body.dietaryRestrictions);
+    const linkedinUrl = normalizeLinkedinUrl(body.linkedinUrl ?? "");
     // Multipart fields are strings, so the checkboxes arrive as "true"/
     // "false". Strict === "true" so any other value cannot count as agreed.
     const mlhCodeOfConduct = body.mlhCodeOfConduct === "true";
@@ -240,6 +325,94 @@ registrationsRouter.post(
 
     if (!isValidCountry(country)) {
       res.status(422).json({ message: "Select a country from the list" });
+      return;
+    }
+
+    // Demographic single-selects: the stored value is the option, or the
+    // participant's typed text where they chose the self-describe/other
+    // option. Pronouns alone may be skipped entirely.
+    const genderValue = resolveChoice(
+      gender,
+      isValidGender,
+      GENDER_SELF_DESCRIBE_OPTION,
+      body.genderSelfDescribe ?? "",
+    );
+    if (genderValue === null) {
+      res.status(422).json({ message: "Select your gender" });
+      return;
+    }
+
+    const pronounsValue = pronouns
+      ? resolveChoice(
+          pronouns,
+          isValidPronouns,
+          PRONOUNS_OTHER_OPTION,
+          body.pronounsOther ?? "",
+        )
+      : "";
+    if (pronounsValue === null) {
+      res.status(422).json({ message: "Select your pronouns from the list" });
+      return;
+    }
+
+    const sexualOrientationValue = resolveChoice(
+      sexualOrientation,
+      isValidSexualOrientation,
+      SEXUAL_ORIENTATION_OTHER_OPTION,
+      body.sexualOrientationOther ?? "",
+    );
+    if (sexualOrientationValue === null) {
+      res.status(422).json({ message: "Answer the identity question" });
+      return;
+    }
+
+    const majorValue = resolveChoice(
+      major,
+      isValidMajor,
+      MAJOR_OTHER_OPTION,
+      body.majorOther ?? "",
+    );
+    if (majorValue === null) {
+      res.status(422).json({ message: "Select your major or field of study" });
+      return;
+    }
+
+    // Race/ethnicity is a required multi-select; the "Other (Please Specify)"
+    // entry is replaced by the typed text, same folding as above.
+    if (
+      raceEthnicity === null ||
+      raceEthnicity.length === 0 ||
+      !raceEthnicity.every(isValidRaceEthnicity)
+    ) {
+      res.status(422).json({ message: "Select your race/ethnicity" });
+      return;
+    }
+    const raceOther = (body.raceEthnicityOther ?? "").trim();
+    if (
+      raceEthnicity.includes(RACE_ETHNICITY_OTHER_OPTION) &&
+      (!raceOther || raceOther.length > MAX_FIELD_LENGTH)
+    ) {
+      res.status(422).json({ message: "Please specify your race/ethnicity" });
+      return;
+    }
+    const raceEthnicityValue = raceEthnicity.map((item) =>
+      item === RACE_ETHNICITY_OTHER_OPTION ? raceOther : item,
+    );
+
+    // Dietary restrictions are optional (none selected = no restrictions).
+    if (
+      dietaryRestrictions === null ||
+      !dietaryRestrictions.every(isValidDietaryRestriction)
+    ) {
+      res
+        .status(422)
+        .json({ message: "Select dietary restrictions from the list" });
+      return;
+    }
+
+    // Optional, but when present it must be a LinkedIn URL.
+    if (linkedinUrl === null) {
+      res.status(422).json({ message: "Enter a valid LinkedIn URL" });
       return;
     }
 
@@ -320,6 +493,13 @@ registrationsRouter.post(
       school,
       level_of_study: levelOfStudy,
       country,
+      gender: genderValue,
+      pronouns: pronounsValue || null,
+      race_ethnicity: raceEthnicityValue,
+      sexual_orientation: sexualOrientationValue,
+      major: majorValue,
+      dietary_restrictions: dietaryRestrictions,
+      linkedin_url: linkedinUrl || null,
       mlh_code_of_conduct: mlhCodeOfConduct,
       mlh_data_sharing: mlhDataSharing,
       mlh_emails: mlhEmails,
@@ -357,6 +537,7 @@ const SEARCHABLE = [
   "school",
   "level_of_study",
   "country",
+  "major",
 ];
 
 /** Rows newest-first, optionally filtered by `?search=`. */
@@ -400,11 +581,20 @@ registrationsRouter.get(
 );
 
 /** One CSV field: quote always, double any internal quote (RFC 4180). */
-function csvField(value: string | number | boolean | null | undefined): string {
+function csvField(
+  value: string | number | boolean | string[] | null | undefined,
+): string {
   // Booleans are the MLH checkbox columns; Yes/No reads better than t/f in a
-  // spreadsheet handed to organizers.
+  // spreadsheet handed to organizers. Arrays are the multi-select columns;
+  // "; " keeps them readable in one cell (options themselves contain commas).
   const text =
-    typeof value === "boolean" ? (value ? "Yes" : "No") : String(value ?? "");
+    typeof value === "boolean"
+      ? value
+        ? "Yes"
+        : "No"
+      : Array.isArray(value)
+        ? value.join("; ")
+        : String(value ?? "");
   return `"${text.replace(/"/g, '""')}"`;
 }
 
@@ -417,6 +607,13 @@ const CSV_COLUMNS: Array<[header: string, key: keyof Registration]> = [
   ["School", "school"],
   ["Level of Study", "level_of_study"],
   ["Country of Residence", "country"],
+  ["Major / Field of Study", "major"],
+  ["Gender", "gender"],
+  ["Pronouns", "pronouns"],
+  ["Race / Ethnicity", "race_ethnicity"],
+  ["Sexual Orientation", "sexual_orientation"],
+  ["Dietary Restrictions", "dietary_restrictions"],
+  ["LinkedIn URL", "linkedin_url"],
   ["MLH Code of Conduct", "mlh_code_of_conduct"],
   ["MLH Data Sharing", "mlh_data_sharing"],
   ["MLH Email Opt-In", "mlh_emails"],
