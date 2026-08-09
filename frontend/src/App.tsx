@@ -67,7 +67,10 @@ function useScrollToHash() {
     if (hash) {
       // Small timeout ensures DOM elements render before browser tries to seek them
       setTimeout(() => {
-        const el = document.querySelector(hash);
+        // getElementById, not querySelector: the hash can be arbitrary data
+        // (e.g. Supabase's OAuth redirect lands with #access_token=...),
+        // which querySelector would reject as an invalid selector and throw.
+        const el = document.getElementById(hash.slice(1));
         if (el) el.scrollIntoView({ behavior: "smooth" });
       }, 10);
     } else {
