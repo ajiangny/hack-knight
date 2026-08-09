@@ -6,11 +6,13 @@
 // phone, age, school, level of study, country of residence, plus the three
 // MLH agreement checkboxes):
 // https://guide.mlh.com/general-information/managing-registrations/registrations
+// A resume (PDF/DOC/DOCX) is also required, which is why the submit is
+// multipart FormData rather than JSON.
 //
 // Client-side validation here mirrors the server's rules for fast feedback
 // only — POST /api/registrations is the authority and re-checks everything.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteSettings } from "../hooks/useSiteSettings";
 import {
@@ -42,6 +44,17 @@ const AGES = Array.from(
   { length: AGE_MAX - AGE_MIN + 1 },
   (_, i) => AGE_MIN + i,
 );
+
+// Mirrors the server: extension allowlist and a 4 MB cap (Vercel rejects
+// bodies over 4.5 MB, so a bigger file would fail anyway, just less kindly).
+const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
+const RESUME_ACCEPT = RESUME_EXTENSIONS.join(",");
+const MAX_RESUME_BYTES = 4 * 1024 * 1024;
+
+function hasResumeExtension(name: string): boolean {
+  const lower = name.toLowerCase();
+  return RESUME_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
 
 interface FormValues {
   firstName: string;
@@ -81,7 +94,7 @@ const NO_AGREEMENTS: Agreements = {
   emails: false,
 };
 
-type ErrorKey = keyof FormValues | "codeOfConduct" | "dataSharing";
+type ErrorKey = keyof FormValues | "codeOfConduct" | "dataSharing" | "resume";
 type FieldErrors = Partial<Record<ErrorKey, string>>;
 
 // Every visible field is required; the marker is decorative for screen
@@ -95,7 +108,11 @@ function RequiredMark() {
   );
 }
 
-function validate(values: FormValues, agreements: Agreements): FieldErrors {
+function validate(
+  values: FormValues,
+  agreements: Agreements,
+  resume: File | null,
+): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!values.firstName.trim()) errors.firstName = "First name is required";
@@ -128,6 +145,12 @@ function validate(values: FormValues, agreements: Agreements): FieldErrors {
 
   if (!values.country) errors.country = "Select your country of residence";
 
+  if (!resume) errors.resume = "Attach your resume";
+  else if (!hasResumeExtension(resume.name))
+    errors.resume = "Resume must be a PDF, DOC, or DOCX file";
+  else if (resume.size > MAX_RESUME_BYTES)
+    errors.resume = "Resume must be 4 MB or smaller";
+
   if (!agreements.codeOfConduct)
     errors.codeOfConduct = "Required to participate";
   if (!agreements.dataSharing) errors.dataSharing = "Required to participate";
@@ -139,6 +162,8 @@ export default function RegisterPage() {
   const { settings, loading } = useSiteSettings();
   const [values, setValues] = useState<FormValues>(EMPTY);
   const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
+  const [resume, setResume] = useState<File | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "success">(
@@ -159,36 +184,45 @@ export default function RegisterPage() {
     );
   }
 
+  function handleResumeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setResume(e.target.files?.[0] ?? null);
+    setErrors((er) => (er.resume ? { ...er, resume: undefined } : er));
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
 
-    const found = validate(values, agreements);
-    if (Object.keys(found).length > 0) {
+    const found = validate(values, agreements, resume);
+    if (Object.keys(found).length > 0 || !resume) {
       setErrors(found);
       return;
     }
 
     setStatus("submitting");
     try {
+      // Multipart because of the file — every field becomes a string, and
+      // the server parses "true"/"false" for the checkboxes accordingly.
+      const formData = new FormData();
+      formData.append("firstName", values.firstName.trim());
+      formData.append("lastName", values.lastName.trim());
+      formData.append("email", values.email.trim());
+      formData.append("phone", values.phone.trim());
+      formData.append("age", values.age);
+      formData.append("school", values.school);
+      formData.append("levelOfStudy", values.levelOfStudy);
+      formData.append("country", values.country);
+      formData.append("mlhCodeOfConduct", String(agreements.codeOfConduct));
+      formData.append("mlhDataSharing", String(agreements.dataSharing));
+      formData.append("mlhEmails", String(agreements.emails));
+      formData.append("website", values.website);
+      formData.append("turnstileToken", turnstileToken ?? "");
+      formData.append("resume", resume);
+
+      // No Content-Type header: the browser sets the multipart boundary.
       const res = await fetch(`${API_URL}/registrations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: values.firstName.trim(),
-          lastName: values.lastName.trim(),
-          email: values.email.trim(),
-          phone: values.phone.trim(),
-          age: Number(values.age),
-          school: values.school,
-          levelOfStudy: values.levelOfStudy,
-          country: values.country,
-          mlhCodeOfConduct: agreements.codeOfConduct,
-          mlhDataSharing: agreements.dataSharing,
-          mlhEmails: agreements.emails,
-          website: values.website,
-          turnstileToken: turnstileToken ?? "",
-        }),
+        body: formData,
       });
 
       if (res.status === 409) {
@@ -486,6 +520,51 @@ export default function RegisterPage() {
               {errors.country && (
                 <p className="register-error" id="country-error">
                   {errors.country}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <label className="register-label" htmlFor="resume">
+                Resume
+                <RequiredMark />
+              </label>
+              {/* The real input stays visually hidden (file inputs resist
+                  styling); the button below proxies clicks to it and shows
+                  the chosen filename. */}
+              <input
+                ref={resumeInputRef}
+                id="resume"
+                name="resume"
+                type="file"
+                accept={RESUME_ACCEPT}
+                className="sr-only"
+                onChange={handleResumeChange}
+                disabled={submitting}
+                aria-invalid={!!errors.resume}
+                aria-describedby={errors.resume ? "resume-error" : "resume-help"}
+              />
+              <button
+                type="button"
+                className="register-input text-left cursor-pointer"
+                onClick={() => resumeInputRef.current?.click()}
+                disabled={submitting}
+              >
+                {resume ? (
+                  <span className="break-all">{resume.name}</span>
+                ) : (
+                  <span className="text-text-muted">Attach your resume…</span>
+                )}
+              </button>
+              <p
+                className="font-body text-xs text-text-muted mt-2"
+                id="resume-help"
+              >
+                PDF, DOC, or DOCX, up to 4 MB.
+              </p>
+              {errors.resume && (
+                <p className="register-error" id="resume-error">
+                  {errors.resume}
                 </p>
               )}
             </div>
