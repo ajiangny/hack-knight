@@ -1,22 +1,22 @@
-# HackKnight — Design System (MASTER)
+# HackKnight - Design System (MASTER)
 
 > Single source of truth for all visual decisions. The canonical tokens live in
 > [`frontend/src/index.css`](frontend/src/index.css) (Tailwind v4 `@theme`); this
 > document explains how to use them and defines the **Admin (backstage) layer**.
-> No magic numbers, no rogue hex values — every color, spacing, radius, shadow,
+> No magic numbers, no rogue hex values: every color, spacing, radius, shadow,
 > duration, and easing in the codebase must resolve to a token below.
 
 ---
 
 ## 1. Theses
 
-**Visual** — The admin is HackKnight's backstage: same void/surface palette,
+**Visual.** The admin is HackKnight's backstage: same void/surface palette,
 ultraviolet accent and glow shadows, Space Grotesk headings with JetBrains Mono
-uppercase labels, 1rem-radius bordered surface panels — but denser and calmer
+uppercase labels, 1rem-radius bordered surface panels, but denser and calmer
 than the public site: tighter spacing, no pulsing CTAs, glow reserved for
 primary actions, drag states, and unsaved-change indicators.
 
-**Interaction** — Functional, minimal motion. Fast transitions (150–250ms,
+**Interaction.** Functional, minimal motion. Fast transitions (150-250ms,
 `ease-brand`), hover = border/glow shift (no scale on dense controls),
 drag-to-reorder cards lift with a subtle scale + ultraviolet glow, staged
 changes reviewed in a plain fade-in diff modal before saving.
@@ -42,7 +42,7 @@ scroll-triggered animation, any transition over 300ms.
 | `text-secondary` | `#a1a1aa` | Labels, descriptions |
 | `text-muted` | `#52525b` | Placeholders, disabled, empty states |
 
-**Semantic (admin layer, derived — not new hues):**
+**Semantic (admin layer, derived from existing hues, never new ones):**
 
 | Role | Token expression |
 |---|---|
@@ -99,50 +99,50 @@ Borders: `1px` everywhere; `border-border/40` resting → `border-border/60` or
 Rules: animate only `transform`/`opacity`; enter = ease-out feel (fade + ≤8px
 translate or scale 0.97→1), exit = fade only; `AnimatePresence` for conditional
 UI; dragged card = `scale 1.03` + `shadow-glow`; `prefers-reduced-motion`
-already globally zeroes durations in `index.css` — never opt out of it.
+already globally zeroes durations in `index.css`; never opt out of it.
 
-## 7. Components (admin kit — `frontend/src/components/admin/ui.jsx` + `styles/admin.css`)
+## 7. Components (admin kit: `frontend/src/components/admin/ui.tsx` + `styles/admin.css`)
 
-Shared modules live at the `admin/` root: `ui.jsx` (the kit below), `icons.jsx`
-(the SVG glyph set — never inline new SVGs in tabs), and `useObjectUrls.js`
+Shared modules live at the `admin/` root: `ui.tsx` (the kit below), `icons.tsx`
+(the SVG glyph set; never inline new SVGs in tabs), and `useObjectUrls.ts`
 (object-URL lifecycle for staged image previews). Each large tab is a folder
-(`schedule/`, `gallery/`, `team/`, `sponsors/`) holding the tab plus its
-modals, panels, and utils; `MiscTab.jsx` stays flat.
+(`schedule/`, `gallery/`, `team/`, `sponsors/`, `registrations/`) holding the
+tab plus its modals, panels, and utils; `MiscTab.tsx` stays flat.
 
-- **Panel** — `bg-surface border border-border/40 rounded-card p-5 shadow-card`,
+- **Panel:** `bg-surface border border-border/40 rounded-card p-5 shadow-card`,
   title row: display-bold title + optional mono count pill.
-- **Field** — mono uppercase `text-xs` label above control; inputs
+- **Field:** mono uppercase `text-xs` label above control; inputs
   `bg-black/30 border border-border/40 rounded-lg px-3 py-2 text-sm`,
   focus `border-ultraviolet` + `outline-none`. 5 states: default / hover /
   focus / active / disabled (`opacity-50`).
-- **Buttons** — mono uppercase, `rounded-lg`:
+- **Buttons:** mono uppercase, `rounded-lg`:
   *primary* `bg-ultraviolet hover:bg-violet-light active:bg-violet-dark hover:shadow-glow`;
   *ghost* `border border-border/40 hover:border-ultraviolet/60 hover:text-text-primary`;
   *danger* `border border-red-500/40 text-red-400 hover:bg-red-500/10`.
   Disabled while async ops run. No `animate-pulse-glow` in the admin.
-- **Tab bar** — mono uppercase tabs, active = `text-text-primary` + ultraviolet
+- **Tab bar:** mono uppercase tabs, active = `text-text-primary` + ultraviolet
   underline (shared `layoutId`), inactive = `text-text-secondary`. Unsaved dot:
   2px ultraviolet circle after the label.
-- **SaveBar** — sticky bottom bar inside each tab; hidden when clean; when dirty:
+- **SaveBar:** sticky bottom bar inside each tab; hidden when clean; when dirty:
   surface panel with mono "N UNSAVED CHANGES", ghost *Discard* + primary
   *Save Changes*.
-- **DiffModal** — surface modal (`rounded-card`, `shadow-card`, backdrop
+- **DiffModal:** surface modal (`rounded-card`, `shadow-card`, backdrop
   `bg-black/60 backdrop-blur-sm`) listing staged changes grouped by kind with
   semantic chips: `+ ADD` teal · `~ EDIT` yellow · `− DELETE` red · `⇅ REORDER`
   ultraviolet. Confirm = primary button; per-op errors surface inline.
-- **DragGrid** — HTML5 drag + `motion` `layout` shuffle. Grabbed card:
+- **DragGrid:** HTML5 drag + `motion` `layout` shuffle. Grabbed card:
   `scale 1.03`, `shadow-glow`, `border-ultraviolet/60`; drop targets keep
   resting style. Keyboard fallback: ← → move buttons on card focus.
-- **Empty state** — mono `text-text-muted` message centered in a dashed
+- **Empty state:** mono `text-text-muted` message centered in a dashed
   `border-border/40` box.
-- **Toggle** — pill switch (`role="switch"`), ultraviolet when on,
+- **Toggle:** pill switch (`role="switch"`), ultraviolet when on,
   `black/30` + border when off; 150ms color/translate transitions.
-- **CollapseTitle** — panel title as a toggle button with a rotating chevron
+- **CollapseTitle:** panel title as a toggle button with a rotating chevron
   (`aria-expanded`); used by collapsible panels (Companies, Other Companies).
-- **CardOverlay / CardMoveButtons** — hover/focus-revealed icon-button
+- **CardOverlay / CardMoveButtons:** hover/focus-revealed icon-button
   clusters pinned to a drag card's corners; move buttons are the keyboard
   fallback for drag-to-reorder.
-- **ScaledPreview** — shrink-to-fit wrapper for live previews of public
+- **ScaledPreview:** shrink-to-fit wrapper for live previews of public
   components (which size themselves to the viewport): measures natural size
   with a `ResizeObserver` and scales down (never up) so previews never
   horizontally scroll their panel.

@@ -21,7 +21,7 @@ strict mode enabled.
 
 ```
 frontend/
-├── index.html              # Entry HTML — Google Fonts are loaded HERE and only here
+├── index.html              # Entry HTML. Google Fonts are loaded HERE and only here
 ├── vite.config.ts          # Vite + React + Tailwind plugins
 ├── eslint.config.js        # ESLint flat config
 ├── tsconfig.json           # Project references → tsconfig.app.json + tsconfig.node.json
@@ -32,7 +32,7 @@ frontend/
     ├── App.tsx             # Router, page transitions, auth guard
     ├── types.ts            # Shared domain types (ScheduleEvent, Sponsor, TeamMember, ...)
     ├── vite-env.d.ts       # import.meta.env typing (VITE_API_URL, VITE_SUPABASE_*, VITE_TURNSTILE_SITE_KEY)
-    ├── index.css           # Tailwind v4 entry + base layer
+    ├── index.css           # Tailwind v4 entry: design tokens (@theme) + base layer
     ├── pages/              # Route-level components (Home, SchedulePage, RegisterPage, AdminPage, ...)
     ├── components/
     │   ├── site/           # Public site components (Navbar, Hero, CountdownTimer, TeamSection,
@@ -54,7 +54,7 @@ frontend/
     ├── data/               # Static fallback data used when the API is unreachable
     ├── lib/
     │   ├── api.ts          # Auth-aware fetch helper (token from the Supabase session) + compressImage
-    │   ├── supabase.ts     # Browser Supabase client — admin Google sign-in only, never data
+    │   ├── supabase.ts     # Browser Supabase client. Admin Google sign-in only, never data
     │   ├── mlh.ts          # MLH trust badge constants (shared by Navbar + admin preview)
     │   ├── registrationOptions.ts  # Age/level-of-study/country/demographic/major options (mirrors the backend's copy)
     │   ├── schools.ts      # MLH-verified school list (mirrors the backend's copy)
@@ -74,7 +74,7 @@ sign-in and session. All data goes through the Express API (see
   `useTeam`, `useSponsors`, `useSiteSettings`, `useCountdown`). Each hook
   fetches from the API and **falls back to the static data in `src/data/`**
   (or a sensible default for site settings) if the API is down or returns
-  nothing. This means the site never renders empty — keep the static data
+  nothing. This means the site never renders empty, so keep the static data
   reasonably fresh. All of these sit on `useApiData`, which keeps an
   in-memory cache per API path for the session and dedupes concurrent
   requests, so navigating between pages renders instantly from cache
@@ -88,7 +88,7 @@ sign-in and session. All data goes through the Express API (see
   `App.tsx` bounces back to login; a 403 means "signed in but not on the
   backend's `ADMIN_EMAILS` allowlist" and shows a not-authorized screen instead.
 - **The registration form** (`pages/RegisterPage.tsx`, at `/register`) POSTs to
-  the public `/api/registrations` endpoint as `FormData` — a resume attachment
+  the public `/api/registrations` endpoint as `FormData`. A resume attachment
   (PDF/DOC/DOCX ≤ 4 MB) is mandatory, so the body is multipart rather than
   JSON and the checkboxes travel as `"true"`/`"false"` strings (multi-selects
   like dietary restrictions and race/ethnicity go as JSON arrays). Besides the
@@ -135,15 +135,15 @@ cp .env.example .env.local
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_URL` | Base URL of the Express API, **including the `/api` prefix** — e.g. `http://localhost:3000/api` |
+| `VITE_API_URL` | Base URL of the Express API, **including the `/api` prefix**, e.g. `http://localhost:3000/api` |
 | `VITE_SUPABASE_URL` | Supabase project URL (local stack: `http://127.0.0.1:54321`) |
-| `VITE_SUPABASE_ANON_KEY` | Supabase publishable (anon) key — safe in the browser; used only for admin Google sign-in |
+| `VITE_SUPABASE_ANON_KEY` | Supabase publishable (anon) key. Safe in the browser; used only for admin Google sign-in |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (public). The registration form only renders the captcha when set; use Cloudflare's always-passing test key `1x00000000000000000000AA` for local dev |
 
 Rules to know:
 
 - Vite only exposes variables prefixed with `VITE_` to the browser. Anything
-  in a frontend env file is **public** — never put secrets here. The Supabase
+  in a frontend env file is **public**, so never put secrets here. The Supabase
   **secret** key and the Turnstile **secret** key belong in `backend/.env` only.
 - Access them via `import.meta.env.VITE_API_URL` (not `process.env`), and add
   new ones to the typing in `src/vite-env.d.ts`.
@@ -154,7 +154,7 @@ Rules to know:
 
 ## Installing and updating packages
 
-Always run npm commands **inside `frontend/`** — the frontend and backend have
+Always run npm commands **inside `frontend/`**. The frontend and backend have
 separate `package.json` files.
 
 ```bash
@@ -180,15 +180,15 @@ After any dependency change:
   (Space Grotesk, Lexend, JetBrains Mono). Do not re-import fonts in
   component files or CSS.
 - **Design tokens:** colors like `void`, `surface`, `ultraviolet`, and the
-  sponsor tier colors are defined in the Tailwind setup — use the tokens, not
-  raw hex values. See `frontend/SETUP_CHANGELOG.md` for the full token table
-  and [MASTER.md](MASTER.md) for the design system (including the admin layer).
+  sponsor tier colors are defined in the `@theme` block of `src/index.css`.
+  Use the tokens, not raw hex values. See [MASTER.md](MASTER.md) for the
+  design system (including the admin layer).
 - **Component halves:** public site components live in `components/site/`,
   admin components in `components/admin/`. Each large admin tab is a folder
   (tab + its modals/panels/utils); shared admin pieces live at the `admin/`
   root (`ui.tsx`, `icons.tsx`, `useObjectUrls.ts`, `adminTypes.ts`).
 - **Admin routes** (`/admin/*`) render standalone without the public
-  Navbar/Footer — `App.tsx` checks `location.pathname.startsWith("/admin")`.
+  Navbar/Footer; `App.tsx` checks `location.pathname.startsWith("/admin")`.
 - New pages get a `<Route>` in `App.tsx` wrapped in `PageTransition`.
 
 ## Deployment
@@ -196,6 +196,6 @@ After any dependency change:
 The frontend deploys to Vercel as its own project (separate from the backend).
 `frontend/vercel.json` rewrites every path to `index.html` so React Router can
 handle client-side routes. Set all four env vars from the table above in the
-Vercel project settings — `VITE_API_URL` pointing at the deployed backend
+Vercel project settings: `VITE_API_URL` pointing at the deployed backend
 (again, including `/api`), the cloud Supabase URL + anon key, and the real
 (non-test) Turnstile site key.
