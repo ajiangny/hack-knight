@@ -163,6 +163,10 @@ export default function CustomCursor() {
   return (
     <motion.div
       aria-hidden="true"
+      // .custom-cursor lets CSS hide it while data-cursor-native regions are
+      // hovered (see index.css) — visibility, so it never fights the
+      // motion-driven opacity below.
+      className="custom-cursor"
       style={{
         position: 'fixed',
         top: 0,
