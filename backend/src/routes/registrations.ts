@@ -110,7 +110,6 @@ registrationsRouter.post(
     const email = (body.email ?? "").trim().toLowerCase();
     const phone = (body.phone ?? "").trim();
     const age = Number(body.age);
-    const major = (body.major ?? "").trim();
     // Must match MLH's verified school list exactly (the form's combobox only
     // submits list entries) — uniform names, no deduping at check-in.
     const school = (body.school ?? "").trim();
@@ -126,7 +125,6 @@ registrationsRouter.post(
       !lastName ||
       !email ||
       !phone ||
-      !major ||
       !school ||
       !levelOfStudy ||
       !country
@@ -139,11 +137,10 @@ registrationsRouter.post(
     // below, which bounds it more tightly than any length cap.
     if (
       firstName.length > MAX_FIELD_LENGTH ||
-      lastName.length > MAX_FIELD_LENGTH ||
-      major.length > MAX_FIELD_LENGTH
+      lastName.length > MAX_FIELD_LENGTH
     ) {
       res.status(422).json({
-        message: `Name and major must be ${MAX_FIELD_LENGTH} characters or fewer`,
+        message: `Name must be ${MAX_FIELD_LENGTH} characters or fewer`,
       });
       return;
     }
@@ -223,7 +220,6 @@ registrationsRouter.post(
       email,
       phone,
       age,
-      major,
       school,
       level_of_study: levelOfStudy,
       country,
@@ -256,7 +252,6 @@ const SEARCHABLE = [
   "last_name",
   "email",
   "phone",
-  "major",
   "school",
   "level_of_study",
   "country",
@@ -320,7 +315,6 @@ const CSV_COLUMNS: Array<[header: string, key: keyof Registration]> = [
   ["School", "school"],
   ["Level of Study", "level_of_study"],
   ["Country of Residence", "country"],
-  ["Major", "major"],
   ["MLH Code of Conduct", "mlh_code_of_conduct"],
   ["MLH Data Sharing", "mlh_data_sharing"],
   ["MLH Email Opt-In", "mlh_emails"],

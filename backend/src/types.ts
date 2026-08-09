@@ -106,7 +106,6 @@ export interface Registration {
   email: string;
   phone: string;
   age: number;
-  major: string;
   school: string;
   level_of_study: string;
   country: string;
@@ -122,7 +121,6 @@ export interface CreateRegistrationBody {
   email: string;
   phone: string;
   age: number;
-  major: string;
   school: string;
   levelOfStudy: string;
   country: string;
