@@ -15,12 +15,16 @@ const MIN_SCROLLBAR_THUMB = 20;
 // scroll events can stand in for the mousemoves the drag swallows.
 interface ScrollbarDrag {
   el: HTMLElement;
-  baseY: number;
-  baseScrollTop: number;
-  /** Cursor px per scrollTop px: thumb travel / scroll range. */
+  /** Which scrollbar the press landed on: 'y' vertical, 'x' horizontal. */
+  axis: 'x' | 'y';
+  /** clientY (vertical) or clientX (horizontal) at the press. */
+  base: number;
+  /** scrollTop (vertical) or scrollLeft (horizontal) at the press. */
+  baseScrollPos: number;
+  /** Cursor px per scrolled px: thumb travel / scroll range. */
   scale: number;
-  minY: number;
-  maxY: number;
+  min: number;
+  max: number;
 }
 
 // Only render the custom cursor on devices with a precise pointer (mouse/trackpad).
@@ -70,8 +74,8 @@ export default function CustomCursor() {
 
       // Dragging a native scrollbar swallows every mouse event until release,
       // which would freeze the custom cursor mid-drag. The element still
-      // fires scroll events, so when a press lands on a vertical scrollbar
-      // thumb, record enough geometry to move the cursor with the thumb.
+      // fires scroll events, so when a press lands on a scrollbar thumb
+      // (either axis), record enough geometry to move the cursor with it.
       const el = e.target;
       if (
         !(el instanceof HTMLElement) ||
@@ -79,27 +83,36 @@ export default function CustomCursor() {
         el === document.body
       )
         return;
-      const scrollRange = el.scrollHeight - el.clientHeight;
-      // offsetX is relative to the padding box, whose width (clientWidth)
-      // excludes the scrollbar — beyond it means the press is on the bar.
-      if (scrollRange <= 0 || e.offsetX < el.clientWidth) return;
-      const trackH = el.clientHeight;
-      const thumbH = Math.max(
-        (trackH * el.clientHeight) / el.scrollHeight,
-        MIN_SCROLLBAR_THUMB,
-      );
-      const thumbTop = (el.scrollTop / scrollRange) * (trackH - thumbH);
+      // offsetX/Y are relative to the padding box, whose client sizes
+      // exclude the scrollbars — beyond either edge means the press is on
+      // that bar. Beyond both is the dead corner square between the bars.
+      const onVBar =
+        el.scrollHeight > el.clientHeight && e.offsetX >= el.clientWidth;
+      const onHBar =
+        el.scrollWidth > el.clientWidth && e.offsetY >= el.clientHeight;
+      if (onVBar === onHBar) return;
+      const scrollRange = onVBar
+        ? el.scrollHeight - el.clientHeight
+        : el.scrollWidth - el.clientWidth;
+      const track = onVBar ? el.clientHeight : el.clientWidth;
+      const content = onVBar ? el.scrollHeight : el.scrollWidth;
+      const thumbLen = Math.max((track * track) / content, MIN_SCROLLBAR_THUMB);
+      const scrollPos = onVBar ? el.scrollTop : el.scrollLeft;
+      const thumbStart = (scrollPos / scrollRange) * (track - thumbLen);
       // Track clicks jump the content without moving the mouse — only a
       // press on the thumb itself starts a drag worth following.
-      if (e.offsetY < thumbTop - 4 || e.offsetY > thumbTop + thumbH + 4) return;
+      const alongBar = onVBar ? e.offsetY : e.offsetX;
+      if (alongBar < thumbStart - 4 || alongBar > thumbStart + thumbLen + 4)
+        return;
       const rect = el.getBoundingClientRect();
       scrollDrag.current = {
         el,
-        baseY: e.clientY,
-        baseScrollTop: el.scrollTop,
-        scale: (trackH - thumbH) / scrollRange,
-        minY: rect.top,
-        maxY: rect.bottom,
+        axis: onVBar ? 'y' : 'x',
+        base: onVBar ? e.clientY : e.clientX,
+        baseScrollPos: scrollPos,
+        scale: (track - thumbLen) / scrollRange,
+        min: onVBar ? rect.top : rect.left,
+        max: onVBar ? rect.bottom : rect.right,
       };
     };
 
@@ -110,8 +123,10 @@ export default function CustomCursor() {
     const onScroll = (e: Event) => {
       const drag = scrollDrag.current;
       if (!drag || e.target !== drag.el) return;
-      const dy = (drag.el.scrollTop - drag.baseScrollTop) * drag.scale;
-      y.set(Math.min(Math.max(drag.baseY + dy, drag.minY), drag.maxY));
+      const scrollPos = drag.axis === 'y' ? drag.el.scrollTop : drag.el.scrollLeft;
+      const delta = (scrollPos - drag.baseScrollPos) * drag.scale;
+      const along = drag.axis === 'y' ? y : x;
+      along.set(Math.min(Math.max(drag.base + delta, drag.min), drag.max));
     };
 
     // Crossing into an iframe stops mousemove in this document entirely, so
