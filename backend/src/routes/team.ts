@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { randomUUID } from "node:crypto";
-import { supabase } from "../db/supabase.js";
+import { IMMUTABLE_CACHE, supabase } from "../db/supabase.js";
 import { authenticateAdmin } from "../middleware/auth.js";
 import {
   Company,
@@ -44,7 +44,11 @@ async function uploadToStorage(
 
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, file.buffer, { contentType: file.mimetype, upsert: false });
+    .upload(path, file.buffer, {
+      contentType: file.mimetype,
+      cacheControl: IMMUTABLE_CACHE,
+      upsert: false,
+    });
 
   if (error) return null;
 

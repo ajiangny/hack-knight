@@ -7,16 +7,13 @@ import { useGallery } from "../../hooks/useGallery";
 export default function PhotoGallery() {
   const { galleryData } = useGallery(); // Fetch from API (static fallback)
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
   const [activePhoto, setActivePhoto] = useState<ActivePhoto | null>(null);
 
   function handleNext() {
-    setDirection(1);
     setIndex((prev) => (prev + 1) % galleryData.length);
   }
 
   function handlePrev() {
-    setDirection(-1);
     setIndex((prev) => (prev - 1 + galleryData.length) % galleryData.length);
   }
 
@@ -67,18 +64,26 @@ export default function PhotoGallery() {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
         </button>
 
-        {/* Sliding viewport */}
-        <div className="relative w-full overflow-hidden px-12 md:px-5 py-2">
-          <AnimatePresence mode="wait" custom={direction}>
-            <Slideshow
-              key={current.year}
-              year={current.year}
-              photos={current.photos}
-              direction={direction}
-              onPhotoClick={(photo, idx) => setActivePhoto({ photo, year: current.year, idx })}
-              activePhoto={activePhoto}
-            />
-          </AnimatePresence>
+        {/* Sliding viewport. Every year stays mounted, stacked in the same
+            spot, and only the active one is visible — unmounting a year would
+            drop its <img> elements and re-request every photo on each switch
+            (including the 10s auto-advance). The inactive wrappers are
+            absolute so the active year alone sets the container height. */}
+        <div className="relative w-full overflow-hidden py-2">
+          {galleryData.map((slide, i) => (
+            <div
+              key={slide.year}
+              className={`w-full px-12 md:px-5 ${i === index ? "" : "absolute inset-0 pointer-events-none"}`}
+            >
+              <Slideshow
+                year={slide.year}
+                photos={slide.photos}
+                active={i === index}
+                onPhotoClick={(photo, idx) => setActivePhoto({ photo, year: slide.year, idx })}
+                activePhoto={activePhoto}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Right Arrow */}

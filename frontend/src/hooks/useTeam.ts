@@ -1,11 +1,12 @@
 // Fetches team members from the Express API.
 // Falls back to the bundled static data if the API is unreachable.
+// Cached across navigations by useApiData, so revisiting the page renders
+// the fetched members immediately instead of re-requesting them.
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useApiData } from "./useApiData";
 import { teamMembers as staticTeam } from "../data/team";
 import type { TeamMember } from "../types";
-
-const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 /** Raw row from the Express API (snake_case DB columns). */
 interface TeamMemberRow {
@@ -41,34 +42,13 @@ function mapMember(m: TeamMemberRow): TeamMember {
 }
 
 export function useTeam() {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(staticTeam);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch(`${API_URL}/team`);
-        if (!res.ok) throw new Error("Failed to fetch team");
-        const data: TeamMemberRow[] = await res.json();
-        if (cancelled) return;
-        if (Array.isArray(data) && data.length > 0) {
-          setTeamMembers(data.map(mapMember));
-        }
-      } catch (err) {
-        if (!cancelled) setError(err as Error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+  const { data, loading, error } = useApiData<TeamMemberRow[]>("/team");
+  const teamMembers = useMemo(
+    () =>
+      Array.isArray(data) && data.length > 0
+        ? data.map(mapMember)
+        : staticTeam,
+    [data],
+  );
   return { teamMembers, loading, error };
 }

@@ -1,12 +1,13 @@
 // Fetches sponsors from the Express API (backed by the companies table —
 // a company is a sponsor once it has a sponsor_tier).
 // Falls back to the bundled static data if the API is unreachable.
+// Cached across navigations by useApiData, so revisiting the page renders
+// the fetched sponsors immediately instead of re-requesting them.
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useApiData } from "./useApiData";
 import { sponsors as staticSponsors } from "../data/sponsors";
 import type { Sponsor, SponsorTier } from "../types";
-
-const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 const TIER_RANK: Record<SponsorTier, number> = {
   platinum: 0,
@@ -37,43 +38,20 @@ function mapCompany(c: CompanyRow & { sponsor_tier: SponsorTier }): Sponsor {
 }
 
 export function useSponsors() {
-  const [sponsors, setSponsors] = useState<Sponsor[]>(staticSponsors);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch(`${API_URL}/companies`);
-        if (!res.ok) throw new Error("Failed to fetch sponsors");
-        const data: CompanyRow[] = await res.json();
-        if (cancelled) return;
-        const mapped = (Array.isArray(data) ? data : [])
-          .filter(
-            (c): c is CompanyRow & { sponsor_tier: SponsorTier } =>
-              !!c.sponsor_tier,
-          )
-          .map(mapCompany)
-          .sort(
-            (a, b) =>
-              TIER_RANK[a.tier] - TIER_RANK[b.tier] ||
-              a.name.localeCompare(b.name),
-          );
-        if (mapped.length > 0) setSponsors(mapped);
-      } catch (err) {
-        if (!cancelled) setError(err as Error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+  const { data, loading, error } = useApiData<CompanyRow[]>("/companies");
+  const sponsors = useMemo(() => {
+    const mapped = (Array.isArray(data) ? data : [])
+      .filter(
+        (c): c is CompanyRow & { sponsor_tier: SponsorTier } =>
+          !!c.sponsor_tier,
+      )
+      .map(mapCompany)
+      .sort(
+        (a, b) =>
+          TIER_RANK[a.tier] - TIER_RANK[b.tier] ||
+          a.name.localeCompare(b.name),
+      );
+    return mapped.length > 0 ? mapped : staticSponsors;
+  }, [data]);
   return { sponsors, loading, error };
 }
