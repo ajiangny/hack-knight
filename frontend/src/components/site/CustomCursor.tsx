@@ -1,11 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, type Transition } from 'motion/react';
 
 const POINTER_SELECTOR =
-  'a, button, [role="button"], select, label[for], summary, [tabindex]:not([tabindex="-1"]), [data-cursor="pointer"]';
+  'a, button, [role="button"], [role="option"], select, label[for], summary, [tabindex]:not([tabindex="-1"]), [data-cursor="pointer"]';
 
 // Spring config for the morph transition between cursor states
 const morphSpring: Transition = { type: 'spring', stiffness: 500, damping: 28, mass: 0.5 };
+
+// Chromium enforces a minimum thumb length on styled scrollbars; 2× the 10px
+// bar width is close enough for the drag-travel math below.
+const MIN_SCROLLBAR_THUMB = 20;
+
+// Geometry captured when a press lands on an element's scrollbar thumb, so
+// scroll events can stand in for the mousemoves the drag swallows.
+interface ScrollbarDrag {
+  el: HTMLElement;
+  baseY: number;
+  baseScrollTop: number;
+  /** Cursor px per scrollTop px: thumb travel / scroll range. */
+  scale: number;
+  minY: number;
+  maxY: number;
+}
 
 // Only render the custom cursor on devices with a precise pointer (mouse/trackpad).
 // On touch/mobile devices we return null so the native tap indicator is preserved.
@@ -18,11 +34,14 @@ export default function CustomCursor() {
 
   const [isPointer, setIsPointer] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const scrollDrag = useRef<ScrollbarDrag | null>(null);
 
   useEffect(() => {
     if (!hasFinePointer) return;
 
     const onMove = (e: MouseEvent) => {
+      // Mouse events resuming means any scrollbar drag is over.
+      scrollDrag.current = null;
       x.set(e.clientX);
       y.set(e.clientY);
       const target = e.target as Element | null;
@@ -46,6 +65,51 @@ export default function CustomCursor() {
     // popup has closed, and shows it again.
     const onPointerDown = (e: PointerEvent) => {
       if ((e.target as Element | null)?.closest('select')) setIsVisible(false);
+
+      // Dragging a native scrollbar swallows every mouse event until release,
+      // which would freeze the custom cursor mid-drag. The element still
+      // fires scroll events, so when a press lands on a vertical scrollbar
+      // thumb, record enough geometry to move the cursor with the thumb.
+      const el = e.target;
+      if (
+        !(el instanceof HTMLElement) ||
+        el === document.documentElement ||
+        el === document.body
+      )
+        return;
+      const scrollRange = el.scrollHeight - el.clientHeight;
+      // offsetX is relative to the padding box, whose width (clientWidth)
+      // excludes the scrollbar — beyond it means the press is on the bar.
+      if (scrollRange <= 0 || e.offsetX < el.clientWidth) return;
+      const trackH = el.clientHeight;
+      const thumbH = Math.max(
+        (trackH * el.clientHeight) / el.scrollHeight,
+        MIN_SCROLLBAR_THUMB,
+      );
+      const thumbTop = (el.scrollTop / scrollRange) * (trackH - thumbH);
+      // Track clicks jump the content without moving the mouse — only a
+      // press on the thumb itself starts a drag worth following.
+      if (e.offsetY < thumbTop - 4 || e.offsetY > thumbTop + thumbH + 4) return;
+      const rect = el.getBoundingClientRect();
+      scrollDrag.current = {
+        el,
+        baseY: e.clientY,
+        baseScrollTop: el.scrollTop,
+        scale: (trackH - thumbH) / scrollRange,
+        minY: rect.top,
+        maxY: rect.bottom,
+      };
+    };
+
+    const onPointerUp = () => {
+      scrollDrag.current = null;
+    };
+
+    const onScroll = (e: Event) => {
+      const drag = scrollDrag.current;
+      if (!drag || e.target !== drag.el) return;
+      const dy = (drag.el.scrollTop - drag.baseScrollTop) * drag.scale;
+      y.set(Math.min(Math.max(drag.baseY + dy, drag.minY), drag.maxY));
     };
 
     // Crossing into an iframe stops mousemove in this document entirely, so
@@ -60,14 +124,19 @@ export default function CustomCursor() {
     document.addEventListener('mouseleave', onLeave);
     document.addEventListener('mouseenter', onEnter);
     document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('pointerup', onPointerUp, true);
     document.addEventListener('mouseout', onOut);
+    // Capture phase: scroll events on elements don't bubble to document.
+    document.addEventListener('scroll', onScroll, true);
 
     return () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', onLeave);
       document.removeEventListener('mouseenter', onEnter);
       document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
       document.removeEventListener('mouseout', onOut);
+      document.removeEventListener('scroll', onScroll, true);
     };
   }, [x, y]);
 
