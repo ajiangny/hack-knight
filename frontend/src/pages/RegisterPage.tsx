@@ -15,7 +15,7 @@
 // Client-side validation here mirrors the server's rules for fast feedback
 // only — POST /api/registrations is the authority and re-checks everything.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteSettings } from "../hooks/useSiteSettings";
 import {
@@ -305,6 +305,13 @@ export default function RegisterPage() {
     "idle",
   );
   const [formError, setFormError] = useState<string | null>(null);
+
+  // The submit button sits at the bottom of a tall form. When the short
+  // success card replaces it, the browser keeps the old scroll offset, which
+  // now points past the end of the content and shows only the footer.
+  useEffect(() => {
+    if (status === "success") window.scrollTo(0, 0);
+  }, [status]);
 
   function setField(field: keyof FormValues, value: string) {
     setValues((v) => ({ ...v, [field]: value }));
