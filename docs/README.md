@@ -27,7 +27,6 @@ npm run dev                        # http://localhost:3000
 # 3. Frontend (new terminal)
 cd frontend
 npm install
-# create frontend/.env.local with this one line:
-#   VITE_API_URL=http://localhost:3000/api
+cp .env.example .env.local         # fill in values — see frontend-stack.md
 npm run dev                        # http://localhost:5173
 ```

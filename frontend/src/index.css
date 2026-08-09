@@ -127,4 +127,51 @@
       cursor: none !important;
     }
   }
+
+  /* ── Scrollbars — replace the default bars with site-themed ones ──
+     Chromium/WebKit get the fully styled pill thumb below. Firefox does not
+     support ::-webkit-scrollbar, so it gets the standard properties instead;
+     the @supports guard keeps them away from Chromium, where scrollbar-color
+     would override and disable the ::-webkit-scrollbar styling. Native OS
+     surfaces (a <select>'s option popup, cross-origin iframes) draw their own
+     scrollbars and cannot be themed from page CSS. */
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-violet-dark) var(--color-surface);
+    }
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+
+  /* Transparent-border + padding-box trick: the thumb reads as a slim pill
+     floating inside the track instead of a full-width block. */
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-violet-dark);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ultraviolet);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--color-violet-light);
+    background-clip: padding-box;
+  }
+
+  /* Where the horizontal and vertical bars meet */
+  ::-webkit-scrollbar-corner {
+    background: var(--color-surface);
+  }
 }

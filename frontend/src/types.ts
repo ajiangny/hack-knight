@@ -66,3 +66,21 @@ export interface Faq {
 
 /** Key/value map from the site_settings table (Misc admin tab). */
 export type SiteSettings = Record<string, string>;
+
+/** A registration row, mapped from snake_case by useRegistrations. */
+export interface Registration {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  age: number;
+  school: string;
+  levelOfStudy: string;
+  country: string;
+  mlhCodeOfConduct: boolean;
+  mlhDataSharing: boolean;
+  mlhEmails: boolean;
+  createdAt?: string;
+}
+

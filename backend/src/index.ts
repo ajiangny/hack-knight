@@ -7,16 +7,17 @@ import galleryRouter from "./routes/gallery.js";
 import teamRouter from "./routes/team.js";
 import companiesRouter from "./routes/companies.js";
 import settingsRouter from "./routes/settings.js";
+import registrationsRouter from "./routes/registrations.js";
 import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const requiredEnvVars = [
-  "JWT_SECRET",
-  "ADMIN_PASSWORD_HASH",
   "FRONTEND_URL",
   "SUPABASE_URL",
   "SUPABASE_SECRET_KEY",
+  "SUPABASE_ANON_KEY",
+  "ADMIN_EMAILS",
 ];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
@@ -27,6 +28,9 @@ for (const envVar of requiredEnvVars) {
 
 // Middleware
 app.use(morgan("dev"));
+// This per-origin check is the only CORS policy. vercel.json must not set
+// Access-Control-Allow-Origin — a blanket "*" there overrides this and lets
+// any site call the API with a bearer token it managed to obtain.
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -61,6 +65,7 @@ app.use("/api/gallery", galleryRouter);
 app.use("/api/team", teamRouter);
 app.use("/api/companies", companiesRouter);
 app.use("/api/settings", settingsRouter);
+app.use("/api/registrations", registrationsRouter);
 
 // Start server
 app.listen(PORT, () => {

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -13,14 +13,51 @@ import CustomCursor from "./components/site/CustomCursor";
 import Home from "./pages/Home";
 import Schedule from "./pages/SchedulePage";
 import Sponsors from "./pages/SponsorsPage";
-import ComingSoon from "./components/site/ComingSoon";
+import RegisterPage from "./pages/RegisterPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPage from "./pages/AdminPage";
-import { isAuthenticated } from "./lib/api";
+import { useAuth } from "./hooks/useAuth";
+import { apiGet } from "./lib/api";
 
-// Redirects to the login page when there is no valid admin token.
+// Redirects to the login page when there is no *authorized* admin session.
+// A Supabase session only proves a Google sign-in — any Google account has
+// one after OAuth, and the OAuth redirect lands here directly, skipping the
+// login page. So this guard asks the backend (GET /auth/me, which enforces
+// ADMIN_EMAILS) before rendering the dashboard; a session alone is not access.
+//
+// On 403 the user goes to the login page, whose own /auth/me check shows the
+// "not authorized" message and sign-out button. On 401 apiGet signs out,
+// flipping isAuthed. Renders nothing while Supabase restores a persisted
+// session or while the check is in flight — deciding early would bounce a
+// legitimate admin to login on every refresh.
 function RequireAuth({ children }: { children: ReactNode }) {
-  return isAuthenticated() ? children : <Navigate to="/admin/login" replace />;
+  const { isAuthed, loading, session } = useAuth();
+  const userId = session?.user.id;
+  // The result is stored with the user it belongs to, so switching accounts
+  // invalidates it by derivation instead of a synchronous reset in the effect.
+  const [check, setCheck] = useState<{ userId: string; ok: boolean } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (loading || !userId) return;
+    let cancelled = false;
+
+    apiGet("/auth/me")
+      .then(() => !cancelled && setCheck({ userId, ok: true }))
+      .catch(() => !cancelled && setCheck({ userId, ok: false }));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, userId]);
+
+  const authorized = check && check.userId === userId ? check.ok : null;
+
+  if (loading) return null;
+  if (!isAuthed || authorized === false) return <Navigate to="/admin/login" replace />;
+  if (authorized === null) return null;
+  return children;
 }
 
 function useScrollToHash() {
@@ -30,7 +67,10 @@ function useScrollToHash() {
     if (hash) {
       // Small timeout ensures DOM elements render before browser tries to seek them
       setTimeout(() => {
-        const el = document.querySelector(hash);
+        // getElementById, not querySelector: the hash can be arbitrary data
+        // (e.g. Supabase's OAuth redirect lands with #access_token=...),
+        // which querySelector would reject as an invalid selector and throw.
+        const el = document.getElementById(hash.slice(1));
         if (el) el.scrollIntoView({ behavior: "smooth" });
       }, 10);
     } else {
@@ -67,7 +107,8 @@ function AppContent() {
           <Route path="/" element={<PageTransition><Home /></PageTransition>} />
           <Route path="/schedule" element={<PageTransition><Schedule /></PageTransition>} />
           <Route path="/sponsors" element={<PageTransition><Sponsors /></PageTransition>} />
-          <Route path="/register" element={<PageTransition><ComingSoon /></PageTransition>} />
+          {/* RegisterPage renders ComingSoon itself when registration is closed. */}
+          <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"

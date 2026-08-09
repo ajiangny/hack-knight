@@ -3,6 +3,7 @@
 
 import { Link } from 'react-router-dom';            // Link for internal page navigation
 import logoUrl from '../../assets/brand/logoprimary.svg';
+import { MLH_CODE_OF_CONDUCT_URL } from '../../lib/mlh';
 
 export default function Footer() {
   return (
@@ -38,7 +39,7 @@ export default function Footer() {
         {/* Legal column */}
         <div className="flex flex-col">
           <h4 className="font-display text-text-primary mb-4">Legal</h4>                              {/* column heading */}
-          <a href="https://github.com/MLH/mlh-policies/blob/main/code-of-conduct.md" className="navbar-link mb-2 text-sm">MLH Code of Conduct</a>         {/* placeholder href — replace with real MLH link later */}
+          <a href={MLH_CODE_OF_CONDUCT_URL} className="navbar-link mb-2 text-sm">MLH Code of Conduct</a>
         </div>
       </div>
 

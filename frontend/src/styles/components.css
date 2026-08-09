@@ -16,6 +16,64 @@
            hover:bg-ultraviolet/10 hover:shadow-glow;
   }
 
+  /* ── Registration form (public layer) ────────────── */
+
+  .register-label {
+    @apply block font-mono uppercase text-xs tracking-widest
+           text-text-secondary mb-2;
+  }
+
+  /* Listed together rather than @apply-ing .register-input into .register-select
+     — Tailwind v4 cannot apply a custom component class from the same layer. */
+  .register-input,
+  .register-select {
+    @apply w-full bg-void border border-border rounded-xl px-4 py-3
+           font-body text-text-primary placeholder:text-text-muted
+           transition-colors duration-300 ease-brand
+           hover:border-border/80
+           focus:border-ultraviolet focus:outline-none
+           disabled:opacity-50;
+  }
+
+  .register-select {
+    @apply appearance-none pr-10 bg-no-repeat cursor-pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-position: right 1rem center;
+  }
+
+  .register-select option {
+    @apply bg-surface text-text-primary;
+  }
+
+  .register-error {
+    @apply font-mono text-xs text-red-400 mt-2;
+  }
+
+  /* School combobox (SchoolCombobox): dropdown of matches under the input. */
+  .register-combobox-list {
+    @apply absolute z-20 mt-2 w-full max-h-64 overflow-y-auto
+           bg-surface border border-border rounded-xl shadow-card p-1;
+  }
+
+  .register-combobox-option {
+    @apply px-3 py-2 rounded-lg font-body text-sm text-text-primary
+           cursor-pointer;
+  }
+
+  .register-combobox-option[aria-selected="true"] {
+    @apply bg-ultraviolet/20;
+  }
+
+  /* Honeypot: off-screen rather than display:none, because some bots skip
+     hidden inputs. Real users never reach it (tabIndex -1, aria-hidden). */
+  .register-honeypot {
+    @apply absolute opacity-0 pointer-events-none;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+  }
+
   /* ── Cards ───────────────────────────────────────── */
 
   .card {

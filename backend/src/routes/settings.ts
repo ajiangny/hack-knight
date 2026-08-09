@@ -20,7 +20,13 @@ settingsRouter.get("/", async (_req: Request, res: Response) => {
   res.json(map);
 });
 
-// PUT /api/settings/:key  (admin) — update an existing setting's value
+// PUT /api/settings/:key  (admin) — write a setting's value.
+//
+// Upsert, not update: migrations deliberately do not seed site_settings (the
+// rows come from the production dump in supabase/seed.sql, and seeding a key in
+// both places breaks `db reset` on a duplicate key). So a brand-new setting has
+// no row until an admin saves it, and callers must treat a missing key as its
+// default rather than expecting one to exist.
 settingsRouter.put(
   "/:key",
   authenticateAdmin,
@@ -35,17 +41,19 @@ settingsRouter.put(
 
     const { data, error } = await supabase
       .from("site_settings")
-      .update({ value: req.body.value, updated_at: new Date().toISOString() })
-      .eq("key", req.params.key)
+      .upsert(
+        {
+          key: req.params.key,
+          value: req.body.value,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      )
       .select()
       .maybeSingle();
 
     if (error) {
       res.status(500).json({ message: "Server error" });
-      return;
-    }
-    if (!data) {
-      res.status(404).json({ message: "Setting not found" });
       return;
     }
     res.json(data);

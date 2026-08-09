@@ -217,11 +217,42 @@
     @apply font-display font-bold text-lg text-text-primary mb-4;
   }
 
+  /* ── Data table (read-only tabs) ── */
+
+  /* Wrapper owns the horizontal scroll so the page body never does. */
+  .admin-table-scroll {
+    @apply overflow-x-auto -mx-1 px-1;
+  }
+
+  .admin-table {
+    @apply w-full border-collapse text-left;
+  }
+
+  .admin-table th {
+    @apply font-mono text-xs uppercase tracking-widest text-text-secondary
+           border-b border-border/40 px-3 py-2 whitespace-nowrap;
+  }
+
+  .admin-table td {
+    @apply font-body text-sm text-text-primary
+           border-b border-border/20 px-3 py-2.5 align-middle;
+  }
+
+  .admin-table tbody tr {
+    @apply transition-colors duration-150 ease-brand hover:bg-white/[0.03];
+  }
+
   /* ── Misc ── */
 
   .admin-error {
     @apply font-mono text-sm text-red-400 bg-red-500/10
            border border-red-500/30 rounded-lg px-3 py-2 mb-4;
+  }
+
+  /* Session-expiry warning — "pending" semantics (MASTER.md §2) */
+  .admin-warning {
+    @apply font-mono text-sm text-signal-yellow bg-signal-yellow/10
+           border border-signal-yellow/30 rounded-lg px-3 py-2 mb-4;
   }
 
   .admin-empty {

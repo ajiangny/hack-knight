@@ -1,6 +1,7 @@
 // Misc admin tab — one-off site settings that don't warrant their own tab.
 // Countdown target date (staged + previewed live through the real public
-// CountdownTimer component) and the MLH trust badge toggle.
+// CountdownTimer component), the registration toggles, and the MLH trust
+// badge toggle.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../../lib/api";
@@ -11,6 +12,8 @@ import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview, type Change } 
 
 const COUNTDOWN_KEY = "countdown_target";
 const MLH_KEY = "mlh_badge_enabled";
+const REGISTRATION_KEY = "registration_open";
+const MLH_DISCLAIMER_KEY = "mlh_disclaimer_enabled";
 
 type AppliedChange = Change & { apply: () => Promise<unknown> };
 
@@ -90,6 +93,36 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
       });
     }
 
+    if (draftSettings[REGISTRATION_KEY] !== serverSettings[REGISTRATION_KEY]) {
+      const open = draftSettings[REGISTRATION_KEY] === "true";
+      list.push({
+        kind: "edit",
+        summary: "Registration",
+        detail: open
+          ? "Closed → /register accepts submissions"
+          : "Open → /register shows the coming-soon page",
+        apply: () =>
+          apiPut(`/settings/${REGISTRATION_KEY}`, {
+            value: draftSettings[REGISTRATION_KEY],
+          }),
+      });
+    }
+
+    if (draftSettings[MLH_DISCLAIMER_KEY] !== serverSettings[MLH_DISCLAIMER_KEY]) {
+      const on = draftSettings[MLH_DISCLAIMER_KEY] === "true";
+      list.push({
+        kind: "edit",
+        summary: "MLH pre-partnership disclaimer",
+        detail: on
+          ? "Hidden → shown on the registration form"
+          : "Shown → hidden on the registration form",
+        apply: () =>
+          apiPut(`/settings/${MLH_DISCLAIMER_KEY}`, {
+            value: draftSettings[MLH_DISCLAIMER_KEY],
+          }),
+      });
+    }
+
     return list;
   }, [serverSettings, draftSettings]);
 
@@ -123,6 +156,11 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
   const countdownValue = draftSettings[COUNTDOWN_KEY] ?? "";
   const { date, time } = splitDateTime(countdownValue);
   const mlhOn = draftSettings[MLH_KEY] === "true";
+  // Absent key = closed, matching how the backend reads it.
+  const registrationOpen = draftSettings[REGISTRATION_KEY] === "true";
+  // Absent key = shown — the disclaimer must stay up until MLH membership is
+  // official, so only an explicit "false" hides it.
+  const disclaimerOn = draftSettings[MLH_DISCLAIMER_KEY] !== "false";
 
   return (
     <div>
@@ -158,6 +196,56 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                   }
                 />
               </Field>
+            </div>
+          </Panel>
+
+          <Panel title="Registration">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <label
+                  className="admin-label mb-0.5 cursor-pointer"
+                  htmlFor="registration-open-toggle"
+                >
+                  Accept registrations
+                </label>
+                <p className="admin-help">
+                  When off, /register shows the coming-soon page and the API
+                  rejects submissions. Turn on when applications open.
+                </p>
+              </div>
+              <Toggle
+                id="registration-open-toggle"
+                label="Accept registrations"
+                checked={registrationOpen}
+                onChange={(next) =>
+                  setDraft(REGISTRATION_KEY, next ? "true" : "false")
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 mt-5 pt-5 border-t border-border/40">
+              <div className="min-w-0">
+                <label
+                  className="admin-label mb-0.5 cursor-pointer"
+                  htmlFor="mlh-disclaimer-toggle"
+                >
+                  Pre-partnership disclaimer
+                </label>
+                <p className="admin-help">
+                  Shows the &quot;we are in the process of partnering with
+                  MLH&quot; note above the MLH checkboxes on the registration
+                  form. Leave on until HackKnight is an official MLH
+                  member event.
+                </p>
+              </div>
+              <Toggle
+                id="mlh-disclaimer-toggle"
+                label="Show MLH pre-partnership disclaimer"
+                checked={disclaimerOn}
+                onChange={(next) =>
+                  setDraft(MLH_DISCLAIMER_KEY, next ? "true" : "false")
+                }
+              />
             </div>
           </Panel>
 

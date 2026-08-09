@@ -99,6 +99,40 @@ export interface ReorderBody {
   order: { id: string; sort_order: number }[];
 }
 
+export interface Registration {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  age: number;
+  school: string;
+  level_of_study: string;
+  country: string;
+  mlh_code_of_conduct: boolean;
+  mlh_data_sharing: boolean;
+  mlh_emails: boolean;
+  created_at?: string;
+}
+
+export interface CreateRegistrationBody {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  age: number;
+  school: string;
+  levelOfStudy: string;
+  country: string;
+  // MLH member-event checkboxes: the first two must be true to register,
+  // mlhEmails is the optional opt-in.
+  mlhCodeOfConduct: boolean;
+  mlhDataSharing: boolean;
+  mlhEmails: boolean;
+  turnstileToken: string;
+  website?: string; // honeypot
+}
+
 export interface SiteSetting {
   key: string;
   value: string;

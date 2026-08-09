@@ -3,10 +3,12 @@
 // survive switching between them; each tab reports its unsaved-change
 // count so its nav label can show the ultraviolet dot.
 
-import { useCallback, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion as Motion, MotionConfig } from "motion/react";
-import { logout } from "../lib/api";
+import type { Session } from "@supabase/supabase-js";
+import { useAuth } from "../hooks/useAuth";
+import RegistrationsTab from "../components/admin/registrations/RegistrationsTab";
 import ScheduleTab from "../components/admin/schedule/ScheduleTab";
 import GalleryTab from "../components/admin/gallery/GalleryTab";
 import TeamTab from "../components/admin/team/TeamTab";
@@ -20,6 +22,8 @@ interface AdminTab {
 }
 
 const TABS: AdminTab[] = [
+  // First: during the event this is the tab people open most.
+  { key: "registrations", label: "Registrations", Component: RegistrationsTab },
   { key: "schedule", label: "Schedule", Component: ScheduleTab },
   { key: "gallery", label: "Gallery", Component: GalleryTab },
   { key: "team", label: "Team", Component: TeamTab },
@@ -27,13 +31,56 @@ const TABS: AdminTab[] = [
   { key: "misc", label: "Misc", Component: MiscTab },
 ];
 
+const WARN_BEFORE_MS = 5 * 60 * 1000;
+const EXPIRY_POLL_MS = 60 * 1000;
+
+/**
+ * Warns before the session lapses. Supabase refreshes the token well ahead of
+ * expiry, so this normally stays hidden — it is the safety net for a refresh
+ * that cannot succeed, e.g. the Google account's access was revoked mid-visit.
+ * Every tab holds its staged changes in memory, so the warning is the chance
+ * to hit Save while saving still works.
+ *
+ * Deliberately does not sign out on expiry: a tab that slept past expires_at
+ * gets a fresh token the moment it wakes, and forcing a sign-out would break
+ * that. A genuinely dead session surfaces as a 401, which does redirect.
+ */
+function useSessionExpiryWarning(session: Session | null): number | null {
+  const [minutesLeft, setMinutesLeft] = useState<number | null>(null);
+  const expiresAt = session?.expires_at ?? null;
+
+  useEffect(() => {
+    if (expiresAt === null) return;
+    const expiresAtMs = expiresAt * 1000;
+
+    function check() {
+      const remaining = expiresAtMs - Date.now();
+      setMinutesLeft(
+        remaining > 0 && remaining <= WARN_BEFORE_MS
+          ? Math.ceil(remaining / 60_000)
+          : null,
+      );
+    }
+
+    check();
+    const id = setInterval(check, EXPIRY_POLL_MS);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
+  // Derived, not stored: no session means no warning, without a setState that
+  // would cascade an extra render.
+  return expiresAt === null ? null : minutesLeft;
+}
+
 export default function AdminPage() {
   const navigate = useNavigate();
-  const [active, setActive] = useState("schedule");
+  const [active, setActive] = useState("registrations");
   const [dirty, setDirty] = useState<Record<string, number>>({});
+  const { session, email, logout } = useAuth();
+  const minutesLeft = useSessionExpiryWarning(session);
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate("/admin/login");
   }
 
@@ -52,6 +99,14 @@ export default function AdminPage() {
             <h1 className="admin-title">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-2">
+            {email && (
+              <span
+                className="hidden sm:inline font-mono text-xs text-text-secondary mr-1 truncate max-w-[16rem]"
+                title={email}
+              >
+                {email}
+              </span>
+            )}
             <Link to="/" className="admin-btn-ghost">
               View Site
             </Link>
@@ -60,6 +115,14 @@ export default function AdminPage() {
             </button>
           </div>
         </header>
+
+        {minutesLeft !== null && (
+          <p className="admin-warning" role="status">
+            Your session expires in {minutesLeft} minute
+            {minutesLeft === 1 ? "" : "s"} — save any unsaved changes now, then
+            log in again.
+          </p>
+        )}
 
         <nav className="admin-tabs" aria-label="Admin sections">
           {TABS.map((tab) => (

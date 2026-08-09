@@ -1,9 +1,10 @@
 # Backend Stack
 
 The backend is a TypeScript Express API in `backend/`. It is the **only**
-client of Supabase — the frontend never touches the database or storage
-directly. Express holds the Supabase secret (service-role) key, which bypasses
-Row Level Security, so it must never be exposed to the browser.
+client of Supabase's database and storage — the frontend talks to Supabase
+solely for Google sign-in (Auth), never for data. Express holds the Supabase
+secret (service-role) key, which bypasses Row Level Security, so it must never
+be exposed to the browser.
 
 ```
 Visitor / Admin ──► Frontend (Vite + React, Vercel)
@@ -23,7 +24,8 @@ Visitor / Admin ──► Frontend (Vite + React, Vercel)
 | Runtime | Node.js (LTS) + TypeScript 6 | Strict mode, config extends `@tsconfig/node-lts` |
 | Framework | Express 5 | ESM (`import`/`export`) throughout |
 | Database + storage | Supabase (`@supabase/supabase-js`) | One client for Postgres queries **and** Storage |
-| Auth | `bcryptjs` + `jsonwebtoken` | Single admin password → 8-hour JWT; no Supabase Auth |
+| Auth | Supabase Auth (Google sign-in) | Browser signs in with Google; backend verifies the access token and checks the `ADMIN_EMAILS` allowlist |
+| Captcha | Cloudflare Turnstile | Server-side verification of the public registration form (`lib/turnstile.ts`) |
 | Uploads | `multer` (in-memory) | Multipart photos → Supabase Storage |
 | Middleware | `cors`, `morgan` | CORS locked to `FRONTEND_URL` |
 | Dev runner | `tsx watch` | Auto-restarts on file changes |
@@ -40,21 +42,27 @@ backend/
 └── src/
     ├── index.ts            # App entry: env checks, middleware, route mounting
     ├── types.ts            # Shared row/request types
-    ├── db/supabase.ts      # The single shared Supabase client
-    ├── middleware/auth.ts  # authenticateAdmin — verifies the Bearer JWT
+    ├── db/supabase.ts      # Two Supabase clients: secret-key (data) + anon-key (token verification)
+    ├── middleware/auth.ts  # authenticateAdmin — verifies the Supabase token + ADMIN_EMAILS allowlist
+    ├── lib/
+    │   ├── registrationOptions.ts  # Age range, level-of-study and country lists (mirrored in frontend)
+    │   ├── schools.ts              # MLH-verified school list (mirrored in frontend)
+    │   └── turnstile.ts            # Cloudflare Turnstile server-side verification
     └── routes/
-        ├── auth.ts         # POST /api/auth/login
+        ├── auth.ts         # GET /api/auth/me — identity for the dashboard header
         ├── schedule.ts     # /api/schedule + /api/schedule/days
         ├── gallery.ts      # /api/gallery (years, photos, uploads, replace, reorder)
         ├── team.ts         # /api/team (members, photo/badge uploads, reorder)
         ├── companies.ts    # /api/companies (team badges + sponsors, logo upload, reorder)
-        └── settings.ts     # /api/settings (site settings key/value store)
+        ├── settings.ts     # /api/settings (site settings key/value store)
+        └── registrations.ts  # /api/registrations (public submit + admin reads/export)
 ```
 
 ## API surface
 
 - `GET /api/health` — health check
-- `POST /api/auth/login` — password in, `{ token }` out (JWT, 8 h expiry)
+- `GET /api/auth/me` — admin only; returns the signed-in admin's email, name,
+  and avatar for the dashboard header
 - `GET /api/schedule`, `GET /api/schedule/days` — public reads
 - `POST/PUT/DELETE /api/schedule/...` — admin only
 - `GET /api/gallery` — public; year/photo writes, uploads, replaces, and
@@ -65,10 +73,25 @@ backend/
   sponsor when it has a `sponsor_tier`. CRUD with logo upload and
   `PUT /api/companies/reorder` (tier display order) admin only
 - `GET /api/settings` — public read of all site settings (e.g.
-  `countdown_target`, `mlh_badge_enabled`); `PUT /api/settings/:key` admin only
+  `countdown_target`, `mlh_badge_enabled`, `registration_open`);
+  `PUT /api/settings/:key` admin only
+- `POST /api/registrations` — **the only public write endpoint.** Validates
+  the MLH-required fields (name, email, phone, age, school from the MLH list,
+  level of study, ISO 3166-1 country, MLH agreements), then applies the abuse
+  gauntlet: honeypot field, per-IP rate limit, Turnstile captcha, and the
+  `registration_open` setting (closed unless explicitly opened). Duplicate
+  email → 409.
+- `GET /api/registrations` (+ `?search=`), `GET /api/registrations/export`
+  (CSV download), `DELETE /api/registrations/:id` — admin only; the table
+  holds student PII, so there are no public reads
 
-"Admin only" routes use the `authenticateAdmin` middleware, which verifies the
-`Authorization: Bearer <token>` header against `JWT_SECRET`.
+"Admin only" routes use the `authenticateAdmin` middleware. Sign-in itself
+happens in the browser against Supabase Auth (Google provider); the middleware
+verifies the `Authorization: Bearer <token>` header by asking Supabase who the
+token belongs to, then checks that email against the `ADMIN_EMAILS`
+allowlist. A valid Google sign-in alone grants nothing — the allowlist is the
+actual gate. Valid token but not allowlisted → 403 (not 401, so the frontend
+shows "not authorized" instead of looping through login).
 
 ## Environment variables
 
@@ -83,23 +106,12 @@ cp .env.example .env
 | Variable | Purpose |
 |---|---|
 | `PORT` | Local port (optional, defaults to 3000) |
-| `JWT_SECRET` | Signs admin JWTs — any long random string |
-| `ADMIN_PASSWORD_HASH` | bcrypt hash of the admin password (see below) |
 | `FRONTEND_URL` | CORS allowlist origin, e.g. `http://localhost:5173` |
 | `SUPABASE_URL` | Supabase project URL (local or cloud) |
 | `SUPABASE_SECRET_KEY` | Supabase secret / service-role key — server-side only |
-
-Generate values:
-
-```bash
-# ADMIN_PASSWORD_HASH — bcrypt-hash your chosen admin password
-node -e "console.log(require('bcryptjs').hashSync('your-password-here', 10))"
-
-# JWT_SECRET — random 64-char hex string
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Run those from inside `backend/` so `bcryptjs` resolves.
+| `SUPABASE_ANON_KEY` | Publishable (anon) key — used only to verify admin access tokens |
+| `ADMIN_EMAILS` | Comma-separated Google accounts allowed into the admin dashboard |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret for the registration captcha. Optional locally (verification is skipped, loudly); **required in production** or the captcha is decorative |
 
 ## Running locally
 
@@ -173,8 +185,9 @@ Schema lives in two places, deliberately:
 
 - `supabase/migrations/*.sql` — ordered migration files the CLI applies.
   Currently: initial schema, the `photos` storage bucket and its policies,
-  the `companies` table + member badge columns, and the sponsor fields +
-  `site_settings` table.
+  the `companies` table + member badge columns, the sponsor fields +
+  `site_settings` table, and the `registrations` table (plus follow-ups that
+  added the MLH-required fields and dropped the old `major` column).
 - `backend/schema.sql` — the flat, human-readable canonical schema, run once
   in the cloud project's SQL editor.
 
