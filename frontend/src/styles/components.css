@@ -49,6 +49,21 @@
     @apply font-mono text-xs text-red-400 mt-2;
   }
 
+  /* School combobox (SchoolCombobox): dropdown of matches under the input. */
+  .register-combobox-list {
+    @apply absolute z-20 mt-2 w-full max-h-64 overflow-y-auto
+           bg-surface border border-border rounded-xl shadow-card p-1;
+  }
+
+  .register-combobox-option {
+    @apply px-3 py-2 rounded-lg font-body text-sm text-text-primary
+           cursor-pointer;
+  }
+
+  .register-combobox-option[aria-selected="true"] {
+    @apply bg-ultraviolet/20;
+  }
+
   /* Honeypot: off-screen rather than display:none, because some bots skip
      hidden inputs. Real users never reach it (tabIndex -1, aria-hidden). */
   .register-honeypot {

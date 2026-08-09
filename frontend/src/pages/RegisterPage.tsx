@@ -2,14 +2,31 @@
 // it is off this renders the existing coming-soon page, which is why that
 // component stayed put rather than being replaced.
 //
+// Fields follow MLH's member-event requirements (first/last name, email,
+// phone, age, school, level of study, country of residence, plus the three
+// MLH agreement checkboxes):
+// https://guide.mlh.com/general-information/managing-registrations/registrations
+//
 // Client-side validation here mirrors the server's rules for fast feedback
 // only — POST /api/registrations is the authority and re-checks everything.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteSettings } from "../hooks/useSiteSettings";
-import { CUNY_SCHOOLS } from "../lib/cunySchools";
+import {
+  AGE_MAX,
+  AGE_MIN,
+  COUNTRIES,
+  LEVELS_OF_STUDY,
+} from "../lib/registrationOptions";
+import {
+  MLH_CODE_OF_CONDUCT_URL,
+  MLH_CONTEST_TERMS_URL,
+  MLH_DEV_URL,
+  MLH_PRIVACY_POLICY_URL,
+} from "../lib/mlh";
 import ComingSoon from "../components/site/ComingSoon";
+import SchoolCombobox from "../components/site/SchoolCombobox";
 import TurnstileWidget from "../components/site/TurnstileWidget";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
@@ -17,13 +34,24 @@ const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "";
 
 const MAX_FIELD_LENGTH = 100;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Mirrors the server: loose shape check plus a 7–15 digit count (E.164 bound).
+const PHONE_RE = /^\+?[\d\s().-]+$/;
+
+const AGES = Array.from(
+  { length: AGE_MAX - AGE_MIN + 1 },
+  (_, i) => AGE_MIN + i,
+);
 
 interface FormValues {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
+  age: string; // select value; sent as a number
   major: string;
-  cunySchool: string;
+  school: string; // always an MLH-list entry or "", enforced by SchoolCombobox
+  levelOfStudy: string;
+  country: string;
   website: string; // honeypot
 }
 
@@ -31,14 +59,33 @@ const EMPTY: FormValues = {
   firstName: "",
   lastName: "",
   email: "",
+  phone: "",
+  age: "",
   major: "",
-  cunySchool: "",
+  school: "",
+  levelOfStudy: "",
+  country: "United States",
   website: "",
 };
 
-type FieldErrors = Partial<Record<keyof FormValues, string>>;
+// The three MLH checkboxes: the first two are required to register, the
+// email opt-in is genuinely optional.
+interface Agreements {
+  codeOfConduct: boolean;
+  dataSharing: boolean;
+  emails: boolean;
+}
 
-function validate(values: FormValues): FieldErrors {
+const NO_AGREEMENTS: Agreements = {
+  codeOfConduct: false,
+  dataSharing: false,
+  emails: false,
+};
+
+type ErrorKey = keyof FormValues | "codeOfConduct" | "dataSharing";
+type FieldErrors = Partial<Record<ErrorKey, string>>;
+
+function validate(values: FormValues, agreements: Agreements): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!values.firstName.trim()) errors.firstName = "First name is required";
@@ -53,11 +100,31 @@ function validate(values: FormValues): FieldErrors {
   else if (!EMAIL_RE.test(values.email.trim()))
     errors.email = "Enter a valid email address";
 
+  const phone = values.phone.trim();
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (!phone) errors.phone = "Phone number is required";
+  else if (
+    !PHONE_RE.test(phone) ||
+    phoneDigits.length < 7 ||
+    phoneDigits.length > 15
+  )
+    errors.phone = "Enter a valid phone number";
+
+  if (!values.age) errors.age = "Select your age";
+
   if (!values.major.trim()) errors.major = "Major is required";
   else if (values.major.trim().length > MAX_FIELD_LENGTH)
     errors.major = `Must be ${MAX_FIELD_LENGTH} characters or fewer`;
 
-  if (!values.cunySchool) errors.cunySchool = "Select your school";
+  if (!values.school) errors.school = "Select your school from the list";
+
+  if (!values.levelOfStudy) errors.levelOfStudy = "Select your level of study";
+
+  if (!values.country) errors.country = "Select your country of residence";
+
+  if (!agreements.codeOfConduct)
+    errors.codeOfConduct = "Required to participate";
+  if (!agreements.dataSharing) errors.dataSharing = "Required to participate";
 
   return errors;
 }
@@ -65,6 +132,7 @@ function validate(values: FormValues): FieldErrors {
 export default function RegisterPage() {
   const { settings, loading } = useSiteSettings();
   const [values, setValues] = useState<FormValues>(EMPTY);
+  const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "success">(
@@ -78,11 +146,18 @@ export default function RegisterPage() {
     setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
   }
 
+  function setAgreement(field: keyof Agreements, checked: boolean) {
+    setAgreements((a) => ({ ...a, [field]: checked }));
+    setErrors((e) =>
+      field !== "emails" && e[field] ? { ...e, [field]: undefined } : e,
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
 
-    const found = validate(values);
+    const found = validate(values, agreements);
     if (Object.keys(found).length > 0) {
       setErrors(found);
       return;
@@ -97,8 +172,15 @@ export default function RegisterPage() {
           firstName: values.firstName.trim(),
           lastName: values.lastName.trim(),
           email: values.email.trim(),
+          phone: values.phone.trim(),
+          age: Number(values.age),
           major: values.major.trim(),
-          cunySchool: values.cunySchool,
+          school: values.school,
+          levelOfStudy: values.levelOfStudy,
+          country: values.country,
+          mlhCodeOfConduct: agreements.codeOfConduct,
+          mlhDataSharing: agreements.dataSharing,
+          mlhEmails: agreements.emails,
           website: values.website,
           turnstileToken: turnstileToken ?? "",
         }),
@@ -173,8 +255,7 @@ export default function RegisterPage() {
       ) : (
         <>
           <p className="section-subtitle text-center max-w-xl mx-auto">
-            Open to students at the CUNY senior colleges. One registration per
-            email address.
+            Open to all college students. One registration per email address.
           </p>
 
           <form
@@ -268,58 +349,277 @@ export default function RegisterPage() {
               )}
             </div>
 
+            <div className="grid sm:grid-cols-2 gap-5 mt-5">
+              <div>
+                <label className="register-label" htmlFor="phone">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  className="register-input"
+                  value={values.phone}
+                  onChange={(e) => setField("phone", e.target.value)}
+                  maxLength={20}
+                  placeholder="+1 (212) 555-0100"
+                  autoComplete="tel"
+                  disabled={submitting}
+                  aria-invalid={!!errors.phone}
+                  aria-describedby={errors.phone ? "phone-error" : undefined}
+                />
+                {errors.phone && (
+                  <p className="register-error" id="phone-error">
+                    {errors.phone}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="register-label" htmlFor="age">
+                  Age
+                </label>
+                <select
+                  id="age"
+                  name="age"
+                  className="register-select"
+                  value={values.age}
+                  onChange={(e) => setField("age", e.target.value)}
+                  disabled={submitting}
+                  aria-invalid={!!errors.age}
+                  aria-describedby={errors.age ? "age-error" : undefined}
+                >
+                  <option value="">Select your age…</option>
+                  {AGES.map((age) => (
+                    <option key={age} value={age}>
+                      {age}
+                    </option>
+                  ))}
+                </select>
+                {errors.age && (
+                  <p className="register-error" id="age-error">
+                    {errors.age}
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="mt-5">
-              <label className="register-label" htmlFor="major">
-                Major
+              <label className="register-label" htmlFor="school">
+                School
               </label>
-              <input
-                id="major"
-                name="major"
-                className="register-input"
-                value={values.major}
-                onChange={(e) => setField("major", e.target.value)}
-                maxLength={MAX_FIELD_LENGTH}
-                placeholder="e.g. Computer Science"
+              <SchoolCombobox
+                id="school"
+                value={values.school}
+                onChange={(school) => setField("school", school)}
                 disabled={submitting}
-                aria-invalid={!!errors.major}
-                aria-describedby={errors.major ? "major-error" : undefined}
+                invalid={!!errors.school}
+                describedBy={errors.school ? "school-error" : undefined}
               />
-              {errors.major && (
-                <p className="register-error" id="major-error">
-                  {errors.major}
+              {errors.school && (
+                <p className="register-error" id="school-error">
+                  {errors.school}
                 </p>
               )}
             </div>
 
             <div className="mt-5">
-              <label className="register-label" htmlFor="cunySchool">
-                CUNY School
+              <label className="register-label" htmlFor="levelOfStudy">
+                Level of Study
               </label>
-              {/* A select, never free text — deduping typed school names
-                  afterwards is miserable. */}
               <select
-                id="cunySchool"
-                name="cunySchool"
+                id="levelOfStudy"
+                name="levelOfStudy"
                 className="register-select"
-                value={values.cunySchool}
-                onChange={(e) => setField("cunySchool", e.target.value)}
+                value={values.levelOfStudy}
+                onChange={(e) => setField("levelOfStudy", e.target.value)}
                 disabled={submitting}
-                aria-invalid={!!errors.cunySchool}
-                aria-describedby={errors.cunySchool ? "cunySchool-error" : undefined}
+                aria-invalid={!!errors.levelOfStudy}
+                aria-describedby={
+                  errors.levelOfStudy ? "levelOfStudy-error" : undefined
+                }
               >
-                <option value="">Select your school…</option>
-                {CUNY_SCHOOLS.map((school) => (
-                  <option key={school} value={school}>
-                    {school}
+                <option value="">Select your level of study…</option>
+                {LEVELS_OF_STUDY.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
                   </option>
                 ))}
               </select>
-              {errors.cunySchool && (
-                <p className="register-error" id="cunySchool-error">
-                  {errors.cunySchool}
+              {errors.levelOfStudy && (
+                <p className="register-error" id="levelOfStudy-error">
+                  {errors.levelOfStudy}
                 </p>
               )}
             </div>
+
+            <div className="grid sm:grid-cols-2 gap-5 mt-5">
+              <div>
+                <label className="register-label" htmlFor="country">
+                  Country of Residence
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  className="register-select"
+                  value={values.country}
+                  onChange={(e) => setField("country", e.target.value)}
+                  autoComplete="country-name"
+                  disabled={submitting}
+                  aria-invalid={!!errors.country}
+                  aria-describedby={errors.country ? "country-error" : undefined}
+                >
+                  {COUNTRIES.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+                {errors.country && (
+                  <p className="register-error" id="country-error">
+                    {errors.country}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="register-label" htmlFor="major">
+                  Major
+                </label>
+                <input
+                  id="major"
+                  name="major"
+                  className="register-input"
+                  value={values.major}
+                  onChange={(e) => setField("major", e.target.value)}
+                  maxLength={MAX_FIELD_LENGTH}
+                  placeholder="e.g. Computer Science"
+                  disabled={submitting}
+                  aria-invalid={!!errors.major}
+                  aria-describedby={errors.major ? "major-error" : undefined}
+                />
+                {errors.major && (
+                  <p className="register-error" id="major-error">
+                    {errors.major}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* MLH agreements — wording is MLH's, required verbatim for member
+                events. The disclaimer can be removed once HackKnight reaches
+                MLH's official membership stage. */}
+            <fieldset className="mt-8 border border-border rounded-xl p-5">
+              <legend className="register-label px-2 mb-0">
+                MLH Agreements
+              </legend>
+
+              <p className="font-body text-xs text-text-muted mb-4">
+                We are currently in the process of partnering with MLH. The
+                following 3 checkboxes are for this partnership. If we do not
+                end up partnering with MLH, your information will not be
+                shared.
+              </p>
+
+              <label className="flex items-start gap-3 font-body text-sm text-text-secondary">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-ultraviolet"
+                  checked={agreements.codeOfConduct}
+                  onChange={(e) => setAgreement("codeOfConduct", e.target.checked)}
+                  disabled={submitting}
+                  aria-invalid={!!errors.codeOfConduct}
+                  aria-describedby={
+                    errors.codeOfConduct ? "codeOfConduct-error" : undefined
+                  }
+                />
+                <span>
+                  I have read and agree to the{" "}
+                  <a
+                    href={MLH_CODE_OF_CONDUCT_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-ultraviolet hover:underline"
+                  >
+                    MLH Code of Conduct
+                  </a>
+                  .
+                </span>
+              </label>
+              {errors.codeOfConduct && (
+                <p className="register-error" id="codeOfConduct-error">
+                  {errors.codeOfConduct}
+                </p>
+              )}
+
+              <label className="flex items-start gap-3 font-body text-sm text-text-secondary mt-4">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-ultraviolet"
+                  checked={agreements.dataSharing}
+                  onChange={(e) => setAgreement("dataSharing", e.target.checked)}
+                  disabled={submitting}
+                  aria-invalid={!!errors.dataSharing}
+                  aria-describedby={
+                    errors.dataSharing ? "dataSharing-error" : undefined
+                  }
+                />
+                <span>
+                  I authorize you to share my application/registration
+                  information with Major League Hacking for event
+                  administration, ranking, and administration (including the
+                  creation of linked accounts on MLH and DEV (
+                  <a
+                    href={MLH_DEV_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-ultraviolet hover:underline"
+                  >
+                    dev.to
+                  </a>
+                  )) in line with the MLH Privacy Policy. I further agree to
+                  the terms of both the{" "}
+                  <a
+                    href={MLH_CONTEST_TERMS_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-ultraviolet hover:underline"
+                  >
+                    MLH Contest Terms and Conditions
+                  </a>{" "}
+                  and the{" "}
+                  <a
+                    href={MLH_PRIVACY_POLICY_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-ultraviolet hover:underline"
+                  >
+                    MLH Privacy Policy
+                  </a>
+                  .
+                </span>
+              </label>
+              {errors.dataSharing && (
+                <p className="register-error" id="dataSharing-error">
+                  {errors.dataSharing}
+                </p>
+              )}
+
+              <label className="flex items-start gap-3 font-body text-sm text-text-secondary mt-4">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-ultraviolet"
+                  checked={agreements.emails}
+                  onChange={(e) => setAgreement("emails", e.target.checked)}
+                  disabled={submitting}
+                />
+                <span>
+                  I authorize MLH + DEV to send me occasional emails about
+                  relevant events, career opportunities, and community
+                  announcements. <span className="text-text-muted">(Optional)</span>
+                </span>
+              </label>
+            </fieldset>
 
             <div className="mt-6 flex justify-center">
               {TURNSTILE_SITE_KEY ? (
