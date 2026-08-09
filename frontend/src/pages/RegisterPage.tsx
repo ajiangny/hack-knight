@@ -83,6 +83,17 @@ const NO_AGREEMENTS: Agreements = {
 type ErrorKey = keyof FormValues | "codeOfConduct" | "dataSharing";
 type FieldErrors = Partial<Record<ErrorKey, string>>;
 
+// Every visible field is required; the marker is decorative for screen
+// readers because each field already reports its own "required" error.
+function RequiredMark() {
+  return (
+    <span className="text-ultraviolet" aria-hidden="true">
+      {" "}
+      *
+    </span>
+  );
+}
+
 function validate(values: FormValues, agreements: Agreements): FieldErrors {
   const errors: FieldErrors = {};
 
@@ -270,6 +281,7 @@ export default function RegisterPage() {
               <div>
                 <label className="register-label" htmlFor="firstName">
                   First Name
+                  <RequiredMark />
                 </label>
                 <input
                   id="firstName"
@@ -293,6 +305,7 @@ export default function RegisterPage() {
               <div>
                 <label className="register-label" htmlFor="lastName">
                   Last Name
+                  <RequiredMark />
                 </label>
                 <input
                   id="lastName"
@@ -317,6 +330,7 @@ export default function RegisterPage() {
             <div className="mt-5">
               <label className="register-label" htmlFor="email">
                 Email
+                <RequiredMark />
               </label>
               <input
                 id="email"
@@ -342,6 +356,7 @@ export default function RegisterPage() {
               <div>
                 <label className="register-label" htmlFor="phone">
                   Phone Number
+                  <RequiredMark />
                 </label>
                 <input
                   id="phone"
@@ -367,6 +382,7 @@ export default function RegisterPage() {
               <div>
                 <label className="register-label" htmlFor="age">
                   Age
+                  <RequiredMark />
                 </label>
                 <select
                   id="age"
@@ -396,6 +412,7 @@ export default function RegisterPage() {
             <div className="mt-5">
               <label className="register-label" htmlFor="school">
                 School
+                <RequiredMark />
               </label>
               <SchoolCombobox
                 id="school"
@@ -415,6 +432,7 @@ export default function RegisterPage() {
             <div className="mt-5">
               <label className="register-label" htmlFor="levelOfStudy">
                 Level of Study
+                <RequiredMark />
               </label>
               <select
                 id="levelOfStudy"
@@ -445,6 +463,7 @@ export default function RegisterPage() {
             <div className="mt-5">
               <label className="register-label" htmlFor="country">
                 Country of Residence
+                <RequiredMark />
               </label>
               <select
                 id="country"
@@ -511,6 +530,7 @@ export default function RegisterPage() {
                     MLH Code of Conduct
                   </a>
                   .
+                  <RequiredMark />
                 </span>
               </label>
               {errors.codeOfConduct && (
@@ -564,6 +584,7 @@ export default function RegisterPage() {
                     MLH Privacy Policy
                   </a>
                   .
+                  <RequiredMark />
                 </span>
               </label>
               {errors.dataSharing && (
