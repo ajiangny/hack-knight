@@ -75,7 +75,6 @@ export interface Registration {
   email: string;
   phone: string;
   age: number;
-  major: string;
   school: string;
   levelOfStudy: string;
   country: string;

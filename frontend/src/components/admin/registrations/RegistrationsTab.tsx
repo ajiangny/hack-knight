@@ -46,7 +46,6 @@ export default function RegistrationsTab({
         r.lastName,
         r.email,
         r.phone,
-        r.major,
         r.school,
         r.levelOfStudy,
         r.country,
@@ -127,7 +126,7 @@ export default function RegistrationsTab({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name, email, major, or school"
+            placeholder="Name, email, phone, or school"
           />
         </div>
 
@@ -152,7 +151,6 @@ export default function RegistrationsTab({
                     <th scope="col">School</th>
                     <th scope="col">Level of Study</th>
                     <th scope="col">Country</th>
-                    <th scope="col">Major</th>
                     {/* The two required MLH boxes are always true (the API
                         rejects otherwise), so only the optional opt-in earns
                         a column. Full detail is in the CSV export. */}
@@ -178,7 +176,6 @@ export default function RegistrationsTab({
                       <td>{r.school}</td>
                       <td>{r.levelOfStudy}</td>
                       <td className="whitespace-nowrap">{r.country}</td>
-                      <td>{r.major}</td>
                       <td>{r.mlhEmails ? "Yes" : "No"}</td>
                       <td className="whitespace-nowrap font-mono text-xs text-text-secondary">
                         {formatDate(r.createdAt)}

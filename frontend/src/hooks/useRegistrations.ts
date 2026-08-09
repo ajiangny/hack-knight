@@ -14,7 +14,6 @@ interface RegistrationRow {
   email: string;
   phone: string;
   age: number;
-  major: string;
   school: string;
   level_of_study: string;
   country: string;
@@ -32,7 +31,6 @@ function mapRegistration(r: RegistrationRow): Registration {
     email: r.email,
     phone: r.phone,
     age: r.age,
-    major: r.major,
     school: r.school,
     levelOfStudy: r.level_of_study,
     country: r.country,
