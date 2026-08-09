@@ -46,7 +46,7 @@ backend/
     ├── db/supabase.ts      # Two Supabase clients: secret-key (data) + anon-key (token verification)
     ├── middleware/auth.ts  # authenticateAdmin — verifies the Supabase token + ADMIN_EMAILS allowlist
     ├── lib/
-    │   ├── registrationOptions.ts  # Age range, level-of-study and country lists (mirrored in frontend)
+    │   ├── registrationOptions.ts  # Age range, level-of-study/country/demographic/major lists (mirrored in frontend)
     │   ├── schools.ts              # MLH-verified school list (mirrored in frontend)
     │   └── turnstile.ts            # Cloudflare Turnstile server-side verification
     └── routes/
@@ -80,7 +80,11 @@ backend/
   `multipart/form-data` (a resume file rides along, so every field arrives as
   a string). Validates the MLH-required fields (name, email, phone, age,
   school from the MLH list, level of study, ISO 3166-1 country, MLH
-  agreements) plus the mandatory resume (PDF/DOC/DOCX ≤ 4 MB, checked by
+  agreements), the demographic questions (gender, optional pronouns,
+  race/ethnicity, sexual orientation, major — allowlisted options, with the
+  typed text stored in place of any "self-describe"/"other" choice), optional
+  dietary restrictions and LinkedIn URL (normalized to https://, must be
+  linkedin.com), plus the mandatory resume (PDF/DOC/DOCX ≤ 4 MB, checked by
   extension *and* magic bytes), then applies the abuse gauntlet: honeypot
   field, per-IP rate limit, Turnstile captcha, and the `registration_open`
   setting (closed unless explicitly opened). The resume is only written to

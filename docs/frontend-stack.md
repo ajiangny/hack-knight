@@ -55,7 +55,7 @@ frontend/
     │   ├── api.ts          # Auth-aware fetch helper (token from the Supabase session) + compressImage
     │   ├── supabase.ts     # Browser Supabase client — admin Google sign-in only, never data
     │   ├── mlh.ts          # MLH trust badge constants (shared by Navbar + admin preview)
-    │   ├── registrationOptions.ts  # Age/level-of-study/country options (mirrors the backend's copy)
+    │   ├── registrationOptions.ts  # Age/level-of-study/country/demographic/major options (mirrors the backend's copy)
     │   ├── schools.ts      # MLH-verified school list (mirrors the backend's copy)
     │   └── schedulePacking.ts  # Overlap-packing layout math for ScheduleGrid
     ├── styles/             # components.css, admin.css
@@ -84,7 +84,11 @@ sign-in and session. All data goes through the Express API (see
 - **The registration form** (`pages/RegisterPage.tsx`, at `/register`) POSTs to
   the public `/api/registrations` endpoint as `FormData` — a resume attachment
   (PDF/DOC/DOCX ≤ 4 MB) is mandatory, so the body is multipart rather than
-  JSON and the checkboxes travel as `"true"`/`"false"` strings. It mirrors the
+  JSON and the checkboxes travel as `"true"`/`"false"` strings (multi-selects
+  like dietary restrictions and race/ethnicity go as JSON arrays). Besides the
+  MLH-required fields it collects the demographic questions (gender, optional
+  pronouns, race/ethnicity, sexual orientation, major), dietary restrictions,
+  and an optional LinkedIn URL. It mirrors the
   backend's validation for fast feedback (options come from
   `lib/registrationOptions.ts` and `lib/schools.ts`), renders the Turnstile
   captcha when `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
