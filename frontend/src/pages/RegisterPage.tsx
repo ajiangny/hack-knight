@@ -247,14 +247,10 @@ export default function RegisterPage() {
         </div>
       ) : (
         <>
-          <p className="section-subtitle text-center max-w-xl mx-auto">
-            Open to all college students. One registration per email address.
-          </p>
-
           <form
             onSubmit={handleSubmit}
             noValidate
-            className="bg-surface border border-border rounded-card shadow-card
+            className="mt-10 bg-surface border border-border rounded-card shadow-card
                        p-6 sm:p-8 max-w-xl mx-auto relative"
           >
             {/* Honeypot — off-screen, unreachable by keyboard, ignored by
