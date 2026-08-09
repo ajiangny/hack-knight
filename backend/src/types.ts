@@ -112,24 +112,30 @@ export interface Registration {
   mlh_code_of_conduct: boolean;
   mlh_data_sharing: boolean;
   mlh_emails: boolean;
+  // In-bucket path in the private resumes bucket. Null only on rows that
+  // predate the resume requirement.
+  resume_path: string | null;
   created_at?: string;
 }
 
+// POST /api/registrations is multipart/form-data (the resume file rides
+// along), so every field arrives as a string — including age and the MLH
+// checkboxes ("true"/"false"). The route parses them.
 export interface CreateRegistrationBody {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  age: number;
-  school: string;
-  levelOfStudy: string;
-  country: string;
-  // MLH member-event checkboxes: the first two must be true to register,
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  age?: string;
+  school?: string;
+  levelOfStudy?: string;
+  country?: string;
+  // MLH member-event checkboxes: the first two must be "true" to register,
   // mlhEmails is the optional opt-in.
-  mlhCodeOfConduct: boolean;
-  mlhDataSharing: boolean;
-  mlhEmails: boolean;
-  turnstileToken: string;
+  mlhCodeOfConduct?: string;
+  mlhDataSharing?: string;
+  mlhEmails?: string;
+  turnstileToken?: string;
   website?: string; // honeypot
 }
 
