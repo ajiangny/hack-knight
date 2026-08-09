@@ -6,6 +6,9 @@
 // phone, age, school, level of study, country of residence, plus the three
 // MLH agreement checkboxes):
 // https://guide.mlh.com/general-information/managing-registrations/registrations
+// plus MLH's standard demographic questions (gender, pronouns,
+// race/ethnicity, sexual orientation, major), dietary restrictions for
+// catering, and an optional LinkedIn URL for post-event partner connections.
 // A resume (PDF/DOC/DOCX) is also required, which is why the submit is
 // multipart FormData rather than JSON.
 //
@@ -19,7 +22,18 @@ import {
   AGE_MAX,
   AGE_MIN,
   COUNTRIES,
+  DIETARY_RESTRICTIONS,
+  GENDERS,
+  GENDER_SELF_DESCRIBE_OPTION,
   LEVELS_OF_STUDY,
+  MAJORS,
+  MAJOR_OTHER_OPTION,
+  PRONOUNS,
+  PRONOUNS_OTHER_OPTION,
+  RACES_ETHNICITIES,
+  RACE_ETHNICITY_OTHER_OPTION,
+  SEXUAL_ORIENTATIONS,
+  SEXUAL_ORIENTATION_OTHER_OPTION,
 } from "../lib/registrationOptions";
 import {
   MLH_CODE_OF_CONDUCT_URL,
@@ -64,7 +78,20 @@ interface FormValues {
   age: string; // select value; sent as a number
   school: string; // always an MLH-list entry or "", enforced by SchoolCombobox
   levelOfStudy: string;
+  major: string;
   country: string;
+  // Demographic selects; each *Other field is the free text shown when the
+  // matching "self-describe"/"other" option is chosen. Pronouns are the one
+  // question that may be skipped entirely.
+  gender: string;
+  genderSelfDescribe: string;
+  pronouns: string;
+  pronounsOther: string;
+  sexualOrientation: string;
+  sexualOrientationOther: string;
+  majorOther: string;
+  raceEthnicityOther: string;
+  linkedinUrl: string; // optional
   website: string; // honeypot
 }
 
@@ -76,7 +103,17 @@ const EMPTY: FormValues = {
   age: "",
   school: "",
   levelOfStudy: "",
+  major: "",
   country: "United States of America", // ISO 3166-1 short name
+  gender: "",
+  genderSelfDescribe: "",
+  pronouns: "",
+  pronounsOther: "",
+  sexualOrientation: "",
+  sexualOrientationOther: "",
+  majorOther: "",
+  raceEthnicityOther: "",
+  linkedinUrl: "",
   website: "",
 };
 
@@ -94,8 +131,27 @@ const NO_AGREEMENTS: Agreements = {
   emails: false,
 };
 
-type ErrorKey = keyof FormValues | "codeOfConduct" | "dataSharing" | "resume";
+type ErrorKey =
+  | keyof FormValues
+  | "raceEthnicity"
+  | "codeOfConduct"
+  | "dataSharing"
+  | "resume";
 type FieldErrors = Partial<Record<ErrorKey, string>>;
+
+// Mirrors the server: LinkedIn is optional, but when given it must be a
+// linkedin.com URL (scheme optional — the server normalizes to https://).
+const MAX_LINKEDIN_LENGTH = 200;
+
+function isLinkedinUrl(raw: string): boolean {
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const host = new URL(withScheme).hostname.toLowerCase();
+    return host === "linkedin.com" || host.endsWith(".linkedin.com");
+  } catch {
+    return false;
+  }
+}
 
 // Every visible field is required; the marker is decorative for screen
 // readers because each field already reports its own "required" error.
@@ -108,8 +164,49 @@ function RequiredMark() {
   );
 }
 
+// The free-text input revealed when a demographic question's
+// "self-describe"/"other" option is selected, with its own error line.
+function OtherInput({
+  id,
+  placeholder,
+  value,
+  onChange,
+  disabled,
+  error,
+}: {
+  id: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+  error?: string;
+}) {
+  return (
+    <>
+      <input
+        id={id}
+        className="register-input mt-2"
+        placeholder={placeholder}
+        aria-label={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        maxLength={MAX_FIELD_LENGTH}
+        disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+      />
+      {error && (
+        <p className="register-error" id={`${id}-error`}>
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
+
 function validate(
   values: FormValues,
+  raceEthnicity: string[],
   agreements: Agreements,
   resume: File | null,
 ): FieldErrors {
@@ -143,7 +240,42 @@ function validate(
 
   if (!values.levelOfStudy) errors.levelOfStudy = "Select your level of study";
 
+  if (!values.major) errors.major = "Select your major or field of study";
+  else if (values.major === MAJOR_OTHER_OPTION && !values.majorOther.trim())
+    errors.majorOther = "Please specify your major";
+
   if (!values.country) errors.country = "Select your country of residence";
+
+  if (!values.gender) errors.gender = "Select your gender";
+  else if (
+    values.gender === GENDER_SELF_DESCRIBE_OPTION &&
+    !values.genderSelfDescribe.trim()
+  )
+    errors.genderSelfDescribe = "Please describe your gender";
+
+  // Pronouns are optional; only the free text behind "Other" is checked.
+  if (values.pronouns === PRONOUNS_OTHER_OPTION && !values.pronounsOther.trim())
+    errors.pronounsOther = "Enter your pronouns";
+
+  if (raceEthnicity.length === 0)
+    errors.raceEthnicity = "Select at least one option";
+  else if (
+    raceEthnicity.includes(RACE_ETHNICITY_OTHER_OPTION) &&
+    !values.raceEthnicityOther.trim()
+  )
+    errors.raceEthnicityOther = "Please specify your race/ethnicity";
+
+  if (!values.sexualOrientation)
+    errors.sexualOrientation = "Select an option";
+  else if (
+    values.sexualOrientation === SEXUAL_ORIENTATION_OTHER_OPTION &&
+    !values.sexualOrientationOther.trim()
+  )
+    errors.sexualOrientationOther = "Please specify your identity";
+
+  const linkedin = values.linkedinUrl.trim();
+  if (linkedin && !isLinkedinUrl(linkedin))
+    errors.linkedinUrl = "Enter a valid LinkedIn URL (e.g. linkedin.com/in/you)";
 
   if (!resume) errors.resume = "Attach your resume";
   else if (!hasResumeExtension(resume.name))
@@ -161,6 +293,9 @@ function validate(
 export default function RegisterPage() {
   const { settings, loading } = useSiteSettings();
   const [values, setValues] = useState<FormValues>(EMPTY);
+  // Multi-select answers live outside FormValues (string[] vs string).
+  const [raceEthnicity, setRaceEthnicity] = useState<string[]>([]);
+  const [dietary, setDietary] = useState<string[]>([]);
   const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
   const [resume, setResume] = useState<File | null>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
@@ -175,6 +310,19 @@ export default function RegisterPage() {
     setValues((v) => ({ ...v, [field]: value }));
     // Clear a field's error as soon as the user edits it; re-validated on submit.
     setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
+  }
+
+  function toggle(list: string[], option: string): string[] {
+    return list.includes(option)
+      ? list.filter((o) => o !== option)
+      : [...list, option];
+  }
+
+  function toggleRaceEthnicity(option: string) {
+    setRaceEthnicity((list) => toggle(list, option));
+    setErrors((e) =>
+      e.raceEthnicity ? { ...e, raceEthnicity: undefined } : e,
+    );
   }
 
   function setAgreement(field: keyof Agreements, checked: boolean) {
@@ -193,7 +341,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setFormError(null);
 
-    const found = validate(values, agreements, resume);
+    const found = validate(values, raceEthnicity, agreements, resume);
     if (Object.keys(found).length > 0 || !resume) {
       setErrors(found);
       return;
@@ -212,6 +360,24 @@ export default function RegisterPage() {
       formData.append("school", values.school);
       formData.append("levelOfStudy", values.levelOfStudy);
       formData.append("country", values.country);
+      // Multi-selects go over as JSON arrays; the server parses them. The
+      // *Other free-text fields are sent always but only read when the
+      // matching "self-describe"/"other" option is chosen.
+      formData.append("gender", values.gender);
+      formData.append("genderSelfDescribe", values.genderSelfDescribe.trim());
+      formData.append("pronouns", values.pronouns);
+      formData.append("pronounsOther", values.pronounsOther.trim());
+      formData.append("raceEthnicity", JSON.stringify(raceEthnicity));
+      formData.append("raceEthnicityOther", values.raceEthnicityOther.trim());
+      formData.append("sexualOrientation", values.sexualOrientation);
+      formData.append(
+        "sexualOrientationOther",
+        values.sexualOrientationOther.trim(),
+      );
+      formData.append("major", values.major);
+      formData.append("majorOther", values.majorOther.trim());
+      formData.append("dietaryRestrictions", JSON.stringify(dietary));
+      formData.append("linkedinUrl", values.linkedinUrl.trim());
       formData.append("mlhCodeOfConduct", String(agreements.codeOfConduct));
       formData.append("mlhDataSharing", String(agreements.dataSharing));
       formData.append("mlhEmails", String(agreements.emails));
@@ -482,6 +648,38 @@ export default function RegisterPage() {
             </div>
 
             <div className="mt-5">
+              <label className="register-label" htmlFor="major">
+                Major / Field of Study
+                <RequiredMark />
+              </label>
+              <SelectDropdown
+                id="major"
+                options={MAJORS}
+                placeholder="Select your major…"
+                value={values.major}
+                onChange={(major) => setField("major", major)}
+                disabled={submitting}
+                invalid={!!errors.major}
+                describedBy={errors.major ? "major-error" : undefined}
+              />
+              {errors.major && (
+                <p className="register-error" id="major-error">
+                  {errors.major}
+                </p>
+              )}
+              {values.major === MAJOR_OTHER_OPTION && (
+                <OtherInput
+                  id="majorOther"
+                  placeholder="Your major…"
+                  value={values.majorOther}
+                  onChange={(v) => setField("majorOther", v)}
+                  disabled={submitting}
+                  error={errors.majorOther}
+                />
+              )}
+            </div>
+
+            <div className="mt-5">
               <label className="register-label" htmlFor="country">
                 Country of Residence
                 <RequiredMark />
@@ -501,6 +699,169 @@ export default function RegisterPage() {
                 </p>
               )}
             </div>
+
+            <div className="grid sm:grid-cols-2 gap-5 mt-5">
+              <div>
+                <label className="register-label" htmlFor="gender">
+                  Gender
+                  <RequiredMark />
+                </label>
+                <SelectDropdown
+                  id="gender"
+                  options={GENDERS}
+                  placeholder="Select your gender…"
+                  value={values.gender}
+                  onChange={(gender) => setField("gender", gender)}
+                  disabled={submitting}
+                  invalid={!!errors.gender}
+                  describedBy={errors.gender ? "gender-error" : undefined}
+                />
+                {errors.gender && (
+                  <p className="register-error" id="gender-error">
+                    {errors.gender}
+                  </p>
+                )}
+                {values.gender === GENDER_SELF_DESCRIBE_OPTION && (
+                  <OtherInput
+                    id="genderSelfDescribe"
+                    placeholder="Self-describe your gender…"
+                    value={values.genderSelfDescribe}
+                    onChange={(v) => setField("genderSelfDescribe", v)}
+                    disabled={submitting}
+                    error={errors.genderSelfDescribe}
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="register-label" htmlFor="pronouns">
+                  Pronouns{" "}
+                  <span className="text-text-muted">(Optional)</span>
+                </label>
+                <SelectDropdown
+                  id="pronouns"
+                  options={PRONOUNS}
+                  placeholder="Select your pronouns…"
+                  value={values.pronouns}
+                  onChange={(pronouns) => setField("pronouns", pronouns)}
+                  disabled={submitting}
+                  invalid={!!errors.pronounsOther}
+                />
+                {values.pronouns === PRONOUNS_OTHER_OPTION && (
+                  <OtherInput
+                    id="pronounsOther"
+                    placeholder="Your pronouns…"
+                    value={values.pronounsOther}
+                    onChange={(v) => setField("pronounsOther", v)}
+                    disabled={submitting}
+                    error={errors.pronounsOther}
+                  />
+                )}
+              </div>
+            </div>
+
+            <fieldset className="mt-5">
+              <legend className="register-label">
+                Race / Ethnicity
+                <RequiredMark />
+              </legend>
+              <p className="font-body text-xs text-text-muted mb-3">
+                Select all that apply.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
+                {RACES_ETHNICITIES.map((option) => (
+                  <label
+                    key={option}
+                    className="flex items-start gap-3 font-body text-sm text-text-secondary"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-ultraviolet"
+                      checked={raceEthnicity.includes(option)}
+                      onChange={() => toggleRaceEthnicity(option)}
+                      disabled={submitting}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.raceEthnicity && (
+                <p className="register-error" id="raceEthnicity-error">
+                  {errors.raceEthnicity}
+                </p>
+              )}
+              {raceEthnicity.includes(RACE_ETHNICITY_OTHER_OPTION) && (
+                <OtherInput
+                  id="raceEthnicityOther"
+                  placeholder="Your race/ethnicity…"
+                  value={values.raceEthnicityOther}
+                  onChange={(v) => setField("raceEthnicityOther", v)}
+                  disabled={submitting}
+                  error={errors.raceEthnicityOther}
+                />
+              )}
+            </fieldset>
+
+            <div className="mt-5">
+              <label className="register-label" htmlFor="sexualOrientation">
+                Do you consider yourself to be any of the following?
+                <RequiredMark />
+              </label>
+              <SelectDropdown
+                id="sexualOrientation"
+                options={SEXUAL_ORIENTATIONS}
+                placeholder="Select an option…"
+                value={values.sexualOrientation}
+                onChange={(v) => setField("sexualOrientation", v)}
+                disabled={submitting}
+                invalid={!!errors.sexualOrientation}
+                describedBy={
+                  errors.sexualOrientation ? "sexualOrientation-error" : undefined
+                }
+              />
+              {errors.sexualOrientation && (
+                <p className="register-error" id="sexualOrientation-error">
+                  {errors.sexualOrientation}
+                </p>
+              )}
+              {values.sexualOrientation === SEXUAL_ORIENTATION_OTHER_OPTION && (
+                <OtherInput
+                  id="sexualOrientationOther"
+                  placeholder="Your identity…"
+                  value={values.sexualOrientationOther}
+                  onChange={(v) => setField("sexualOrientationOther", v)}
+                  disabled={submitting}
+                  error={errors.sexualOrientationOther}
+                />
+              )}
+            </div>
+
+            <fieldset className="mt-5">
+              <legend className="register-label">
+                Dietary Restrictions{" "}
+                <span className="text-text-muted">(Optional)</span>
+              </legend>
+              <p className="font-body text-xs text-text-muted mb-3">
+                Select all that apply so we can plan catering.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
+                {DIETARY_RESTRICTIONS.map((option) => (
+                  <label
+                    key={option}
+                    className="flex items-start gap-3 font-body text-sm text-text-secondary"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-ultraviolet"
+                      checked={dietary.includes(option)}
+                      onChange={() => setDietary((d) => toggle(d, option))}
+                      disabled={submitting}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <div className="mt-5">
               <label className="register-label" htmlFor="resume">
@@ -543,6 +904,41 @@ export default function RegisterPage() {
               {errors.resume && (
                 <p className="register-error" id="resume-error">
                   {errors.resume}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <label className="register-label" htmlFor="linkedinUrl">
+                LinkedIn URL{" "}
+                <span className="text-text-muted">(Optional)</span>
+              </label>
+              <input
+                id="linkedinUrl"
+                name="linkedinUrl"
+                type="url"
+                className="register-input"
+                placeholder="linkedin.com/in/you"
+                value={values.linkedinUrl}
+                onChange={(e) => setField("linkedinUrl", e.target.value)}
+                maxLength={MAX_LINKEDIN_LENGTH}
+                autoComplete="url"
+                disabled={submitting}
+                aria-invalid={!!errors.linkedinUrl}
+                aria-describedby={
+                  errors.linkedinUrl ? "linkedinUrl-error" : "linkedinUrl-help"
+                }
+              />
+              <p
+                className="font-body text-xs text-text-muted mt-2"
+                id="linkedinUrl-help"
+              >
+                So our partners can connect with you about job opportunities
+                after the event.
+              </p>
+              {errors.linkedinUrl && (
+                <p className="register-error" id="linkedinUrl-error">
+                  {errors.linkedinUrl}
                 </p>
               )}
             </div>
