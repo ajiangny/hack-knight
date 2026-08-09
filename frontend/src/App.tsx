@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -17,17 +17,42 @@ import RegisterPage from "./pages/RegisterPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPage from "./pages/AdminPage";
 import { useAuth } from "./hooks/useAuth";
+import { apiGet } from "./lib/api";
 
-// Redirects to the login page when there is no admin session. Reads auth
-// through the hook so a session ending mid-visit (sign out, or a 401 from any
-// admin write) redirects at once instead of stranding an empty dashboard.
+// Redirects to the login page when there is no *authorized* admin session.
+// A Supabase session only proves a Google sign-in — any Google account has
+// one after OAuth, and the OAuth redirect lands here directly, skipping the
+// login page. So this guard asks the backend (GET /auth/me, which enforces
+// ADMIN_EMAILS) before rendering the dashboard; a session alone is not access.
 //
-// Renders nothing while Supabase restores a persisted session — deciding
-// before that resolves bounces a signed-in admin to login on every refresh.
+// On 403 the user goes to the login page, whose own /auth/me check shows the
+// "not authorized" message and sign-out button. On 401 apiGet signs out,
+// flipping isAuthed. Renders nothing while Supabase restores a persisted
+// session or while the check is in flight — deciding early would bounce a
+// legitimate admin to login on every refresh.
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthed, loading } = useAuth();
+  const { isAuthed, loading, session } = useAuth();
+  const userId = session?.user.id;
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (loading || !userId) return;
+    let cancelled = false;
+    setAuthorized(null);
+
+    apiGet("/auth/me")
+      .then(() => !cancelled && setAuthorized(true))
+      .catch(() => !cancelled && setAuthorized(false));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, userId]);
+
   if (loading) return null;
-  return isAuthed ? children : <Navigate to="/admin/login" replace />;
+  if (!isAuthed || authorized === false) return <Navigate to="/admin/login" replace />;
+  if (authorized === null) return null;
+  return children;
 }
 
 function useScrollToHash() {
