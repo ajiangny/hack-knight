@@ -107,8 +107,17 @@ CREATE TABLE registrations (
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  age INT NOT NULL CHECK (age BETWEEN 13 AND 100),
   major TEXT NOT NULL,
-  cuny_school TEXT NOT NULL,
+  school TEXT NOT NULL,
+  level_of_study TEXT NOT NULL,
+  country TEXT NOT NULL,
+  -- MLH member-event checkboxes: the first two must be true (the API rejects
+  -- otherwise); mlh_emails is the optional opt-in.
+  mlh_code_of_conduct BOOLEAN NOT NULL,
+  mlh_data_sharing BOOLEAN NOT NULL,
+  mlh_emails BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -124,7 +133,10 @@ REVOKE ALL ON TABLE registrations FROM anon, authenticated;
 GRANT ALL ON TABLE registrations TO service_role;
 
 -- See supabase/migrations/20260807221653_registrations.sql for the
--- registrations table, its policy, and its grants.
+-- registrations table, its policy, and its grants, and
+-- supabase/migrations/20260809120000_mlh_registration_fields.sql for the MLH
+-- fields (phone, age, level_of_study, country, mlh_* checkboxes) and the
+-- cuny_school → school rename.
 
 -- Team Members
 
