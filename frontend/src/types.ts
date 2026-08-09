@@ -91,8 +91,8 @@ export interface Registration {
   mlhCodeOfConduct: boolean;
   mlhDataSharing: boolean;
   mlhEmails: boolean;
-  /** In-bucket path of the resume; null on rows predating the requirement. */
-  resumePath: string | null;
+  /** Google Drive link to the resume, normalized to https://. */
+  resumeUrl: string | null;
   createdAt?: string;
 }
 
