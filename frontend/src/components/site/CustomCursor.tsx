@@ -25,20 +25,49 @@ export default function CustomCursor() {
     const onMove = (e: MouseEvent) => {
       x.set(e.clientX);
       y.set(e.clientY);
-      setIsPointer(!!(e.target as Element | null)?.closest(POINTER_SELECTOR));
-      setIsVisible(true);
+      const target = e.target as Element | null;
+      setIsPointer(!!target?.closest(POINTER_SELECTOR));
+
+      // Native UI draws the OS cursor regardless of `cursor: none`, so ours
+      // must yield there or the user sees two cursors. The viewport
+      // scrollbars sit beyond the root's client box (client sizes exclude
+      // them); iframes (e.g. the Turnstile captcha) render their own cursor.
+      const doc = document.documentElement;
+      const overScrollbar =
+        e.clientX >= doc.clientWidth || e.clientY >= doc.clientHeight;
+      setIsVisible(!overScrollbar && target?.tagName !== 'IFRAME');
     };
     const onLeave = () => setIsVisible(false);
     const onEnter = () => setIsVisible(true);
 
+    // An open <select> popup is native UI: it swallows every mouse event, so
+    // the custom cursor would freeze in place under the OS cursor. Hide it
+    // when the popup opens — the next mousemove can only fire after the
+    // popup has closed, and shows it again.
+    const onPointerDown = (e: PointerEvent) => {
+      if ((e.target as Element | null)?.closest('select')) setIsVisible(false);
+    };
+
+    // Crossing into an iframe stops mousemove in this document entirely, so
+    // hide on the way in. Entering an iframe reports it as relatedTarget;
+    // some browsers report null, which also covers leaving the window.
+    const onOut = (e: MouseEvent) => {
+      const entering = e.relatedTarget as Element | null;
+      if (!entering || entering.tagName === 'IFRAME') setIsVisible(false);
+    };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseleave', onLeave);
     document.addEventListener('mouseenter', onEnter);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('mouseout', onOut);
 
     return () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', onLeave);
       document.removeEventListener('mouseenter', onEnter);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('mouseout', onOut);
     };
   }, [x, y]);
 
