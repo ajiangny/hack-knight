@@ -9,13 +9,13 @@
 // plus MLH's standard demographic questions (gender, pronouns,
 // race/ethnicity, sexual orientation, major), dietary restrictions for
 // catering, and an optional LinkedIn URL for post-event partner connections.
-// A resume (PDF/DOC/DOCX) is also required, which is why the submit is
-// multipart FormData rather than JSON.
+// A Google Drive link to the applicant's resume is also required; the CSV
+// export handed to MLH then links straight to every file.
 //
 // Client-side validation here mirrors the server's rules for fast feedback
 // only — POST /api/registrations is the authority and re-checks everything.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteSettings } from "../hooks/useSiteSettings";
 import {
@@ -59,15 +59,19 @@ const AGES = Array.from({ length: AGE_MAX - AGE_MIN + 1 }, (_, i) =>
   String(AGE_MIN + i),
 );
 
-// Mirrors the server: extension allowlist and a 4 MB cap (Vercel rejects
-// bodies over 4.5 MB, so a bigger file would fail anyway, just less kindly).
-const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
-const RESUME_ACCEPT = RESUME_EXTENSIONS.join(",");
-const MAX_RESUME_BYTES = 4 * 1024 * 1024;
+// Mirrors the server: the resume must be a Google Drive (or Docs) link.
+// Whether sharing is actually set to "anyone with the link" cannot be
+// checked from the browser; the help text carries that instruction.
+const MAX_RESUME_URL_LENGTH = 300;
 
-function hasResumeExtension(name: string): boolean {
-  const lower = name.toLowerCase();
-  return RESUME_EXTENSIONS.some((ext) => lower.endsWith(ext));
+function isDriveUrl(raw: string): boolean {
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const host = new URL(withScheme).hostname.toLowerCase();
+    return host === "drive.google.com" || host === "docs.google.com";
+  } catch {
+    return false;
+  }
 }
 
 interface FormValues {
@@ -91,6 +95,7 @@ interface FormValues {
   sexualOrientationOther: string;
   majorOther: string;
   raceEthnicityOther: string;
+  resumeUrl: string; // Google Drive link, required
   linkedinUrl: string; // optional
   website: string; // honeypot
 }
@@ -113,6 +118,7 @@ const EMPTY: FormValues = {
   sexualOrientationOther: "",
   majorOther: "",
   raceEthnicityOther: "",
+  resumeUrl: "",
   linkedinUrl: "",
   website: "",
 };
@@ -135,8 +141,7 @@ type ErrorKey =
   | keyof FormValues
   | "raceEthnicity"
   | "codeOfConduct"
-  | "dataSharing"
-  | "resume";
+  | "dataSharing";
 type FieldErrors = Partial<Record<ErrorKey, string>>;
 
 // Mirrors the server: LinkedIn is optional, but when given it must be a
@@ -208,7 +213,6 @@ function validate(
   values: FormValues,
   raceEthnicity: string[],
   agreements: Agreements,
-  resume: File | null,
 ): FieldErrors {
   const errors: FieldErrors = {};
 
@@ -277,11 +281,11 @@ function validate(
   if (linkedin && !isLinkedinUrl(linkedin))
     errors.linkedinUrl = "Enter a valid LinkedIn URL (e.g. linkedin.com/in/you)";
 
-  if (!resume) errors.resume = "Attach your resume";
-  else if (!hasResumeExtension(resume.name))
-    errors.resume = "Resume must be a PDF, DOC, or DOCX file";
-  else if (resume.size > MAX_RESUME_BYTES)
-    errors.resume = "Resume must be 4 MB or smaller";
+  const resumeLink = values.resumeUrl.trim();
+  if (!resumeLink)
+    errors.resumeUrl = "Share a Google Drive link to your resume";
+  else if (!isDriveUrl(resumeLink))
+    errors.resumeUrl = "Enter a Google Drive link (drive.google.com)";
 
   if (!agreements.codeOfConduct)
     errors.codeOfConduct = "Required to participate";
@@ -297,8 +301,6 @@ export default function RegisterPage() {
   const [raceEthnicity, setRaceEthnicity] = useState<string[]>([]);
   const [dietary, setDietary] = useState<string[]>([]);
   const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
-  const [resume, setResume] = useState<File | null>(null);
-  const resumeInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "success">(
@@ -339,63 +341,53 @@ export default function RegisterPage() {
     );
   }
 
-  function handleResumeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setResume(e.target.files?.[0] ?? null);
-    setErrors((er) => (er.resume ? { ...er, resume: undefined } : er));
-  }
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
 
-    const found = validate(values, raceEthnicity, agreements, resume);
-    if (Object.keys(found).length > 0 || !resume) {
+    const found = validate(values, raceEthnicity, agreements);
+    if (Object.keys(found).length > 0) {
       setErrors(found);
       return;
     }
 
     setStatus("submitting");
     try {
-      // Multipart because of the file — every field becomes a string, and
-      // the server parses "true"/"false" for the checkboxes accordingly.
-      const formData = new FormData();
-      formData.append("firstName", values.firstName.trim());
-      formData.append("lastName", values.lastName.trim());
-      formData.append("email", values.email.trim());
-      formData.append("phone", values.phone.trim());
-      formData.append("age", values.age);
-      formData.append("school", values.school);
-      formData.append("levelOfStudy", values.levelOfStudy);
-      formData.append("country", values.country);
-      // Multi-selects go over as JSON arrays; the server parses them. The
-      // *Other free-text fields are sent always but only read when the
-      // matching "self-describe"/"other" option is chosen.
-      formData.append("gender", values.gender);
-      formData.append("genderSelfDescribe", values.genderSelfDescribe.trim());
-      formData.append("pronouns", values.pronouns);
-      formData.append("pronounsOther", values.pronounsOther.trim());
-      formData.append("raceEthnicity", JSON.stringify(raceEthnicity));
-      formData.append("raceEthnicityOther", values.raceEthnicityOther.trim());
-      formData.append("sexualOrientation", values.sexualOrientation);
-      formData.append(
-        "sexualOrientationOther",
-        values.sexualOrientationOther.trim(),
-      );
-      formData.append("major", values.major);
-      formData.append("majorOther", values.majorOther.trim());
-      formData.append("dietaryRestrictions", JSON.stringify(dietary));
-      formData.append("linkedinUrl", values.linkedinUrl.trim());
-      formData.append("mlhCodeOfConduct", String(agreements.codeOfConduct));
-      formData.append("mlhDataSharing", String(agreements.dataSharing));
-      formData.append("mlhEmails", String(agreements.emails));
-      formData.append("website", values.website);
-      formData.append("turnstileToken", turnstileToken ?? "");
-      formData.append("resume", resume);
+      // Plain JSON. The *Other free-text fields are sent always but only
+      // read when the matching "self-describe"/"other" option is chosen.
+      const payload = {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
+        phone: values.phone.trim(),
+        age: Number(values.age),
+        school: values.school,
+        levelOfStudy: values.levelOfStudy,
+        country: values.country,
+        gender: values.gender,
+        genderSelfDescribe: values.genderSelfDescribe.trim(),
+        pronouns: values.pronouns,
+        pronounsOther: values.pronounsOther.trim(),
+        raceEthnicity,
+        raceEthnicityOther: values.raceEthnicityOther.trim(),
+        sexualOrientation: values.sexualOrientation,
+        sexualOrientationOther: values.sexualOrientationOther.trim(),
+        major: values.major,
+        majorOther: values.majorOther.trim(),
+        dietaryRestrictions: dietary,
+        resumeUrl: values.resumeUrl.trim(),
+        linkedinUrl: values.linkedinUrl.trim(),
+        mlhCodeOfConduct: agreements.codeOfConduct,
+        mlhDataSharing: agreements.dataSharing,
+        mlhEmails: agreements.emails,
+        website: values.website,
+        turnstileToken: turnstileToken ?? "",
+      };
 
-      // No Content-Type header: the browser sets the multipart boundary.
       const res = await fetch(`${API_URL}/registrations`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       if (res.status === 409) {
@@ -871,46 +863,37 @@ export default function RegisterPage() {
             </fieldset>
 
             <div className="mt-5">
-              <label className="register-label" htmlFor="resume">
-                Resume
+              <label className="register-label" htmlFor="resumeUrl">
+                Resume Link
                 <RequiredMark />
               </label>
-              {/* The real input stays visually hidden (file inputs resist
-                  styling); the button below proxies clicks to it and shows
-                  the chosen filename. */}
               <input
-                ref={resumeInputRef}
-                id="resume"
-                name="resume"
-                type="file"
-                accept={RESUME_ACCEPT}
-                className="sr-only"
-                onChange={handleResumeChange}
+                id="resumeUrl"
+                name="resumeUrl"
+                type="url"
+                className="register-input"
+                placeholder="drive.google.com/file/d/…"
+                value={values.resumeUrl}
+                onChange={(e) => setField("resumeUrl", e.target.value)}
+                maxLength={MAX_RESUME_URL_LENGTH}
+                autoComplete="off"
                 disabled={submitting}
-                aria-invalid={!!errors.resume}
-                aria-describedby={errors.resume ? "resume-error" : "resume-help"}
+                aria-invalid={!!errors.resumeUrl}
+                aria-describedby={
+                  errors.resumeUrl ? "resumeUrl-error" : "resumeUrl-help"
+                }
               />
-              <button
-                type="button"
-                className="register-input text-left cursor-pointer"
-                onClick={() => resumeInputRef.current?.click()}
-                disabled={submitting}
-              >
-                {resume ? (
-                  <span className="break-all">{resume.name}</span>
-                ) : (
-                  <span className="text-text-muted">Attach your resume…</span>
-                )}
-              </button>
               <p
                 className="font-body text-xs text-text-muted mt-2"
-                id="resume-help"
+                id="resumeUrl-help"
               >
-                PDF, DOC, or DOCX, up to 4 MB.
+                Upload your resume to Google Drive, set sharing to
+                &ldquo;Anyone with the link&rdquo; can view, and paste the
+                link here.
               </p>
-              {errors.resume && (
-                <p className="register-error" id="resume-error">
-                  {errors.resume}
+              {errors.resumeUrl && (
+                <p className="register-error" id="resumeUrl-error">
+                  {errors.resumeUrl}
                 </p>
               )}
             </div>
