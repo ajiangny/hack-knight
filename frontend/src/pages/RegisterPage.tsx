@@ -475,21 +475,24 @@ export default function RegisterPage() {
             </div>
 
             {/* MLH agreements — wording is MLH's, required verbatim for member
-                events. The disclaimer can be removed once HackKnight reaches
-                MLH's official membership stage. */}
+                events. The pre-partnership disclaimer is admin-toggleable
+                (mlh_disclaimer_enabled) and hidden unless explicitly enabled,
+                since HackKnight is now an official MLH member event. */}
             <fieldset className="mt-8 border border-border rounded-xl p-5">
               <legend className="register-label px-2 mb-0">
                 MLH Agreements
               </legend>
 
-              <p className="font-body text-xs text-text-muted mb-4">
-                We are currently in the process of partnering with MLH. The
-                following 3 checkboxes are for this partnership. If we do not
-                end up partnering with MLH, your information will not be
-                shared.
-              </p>
+              {settings.mlh_disclaimer_enabled === "true" && (
+                <p className="font-body text-xs text-text-muted mb-4">
+                  We are currently in the process of partnering with MLH. The
+                  following 3 checkboxes are for this partnership. If we do
+                  not end up partnering with MLH, your information will not be
+                  shared.
+                </p>
+              )}
 
-              <label className="flex items-start gap-3 font-body text-sm text-text-secondary">
+              <label className="mt-4 flex items-start gap-3 font-body text-sm text-text-secondary">
                 <input
                   type="checkbox"
                   className="mt-0.5 h-4 w-4 shrink-0 accent-ultraviolet"

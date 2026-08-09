@@ -1,6 +1,7 @@
 // Misc admin tab — one-off site settings that don't warrant their own tab.
 // Countdown target date (staged + previewed live through the real public
-// CountdownTimer component) and the MLH trust badge toggle.
+// CountdownTimer component), the registration toggles, and the MLH trust
+// badge toggle.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../../lib/api";
@@ -12,6 +13,7 @@ import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview, type Change } 
 const COUNTDOWN_KEY = "countdown_target";
 const MLH_KEY = "mlh_badge_enabled";
 const REGISTRATION_KEY = "registration_open";
+const MLH_DISCLAIMER_KEY = "mlh_disclaimer_enabled";
 
 type AppliedChange = Change & { apply: () => Promise<unknown> };
 
@@ -106,6 +108,21 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
       });
     }
 
+    if (draftSettings[MLH_DISCLAIMER_KEY] !== serverSettings[MLH_DISCLAIMER_KEY]) {
+      const on = draftSettings[MLH_DISCLAIMER_KEY] === "true";
+      list.push({
+        kind: "edit",
+        summary: "MLH pre-partnership disclaimer",
+        detail: on
+          ? "Hidden → shown on the registration form"
+          : "Shown → hidden on the registration form",
+        apply: () =>
+          apiPut(`/settings/${MLH_DISCLAIMER_KEY}`, {
+            value: draftSettings[MLH_DISCLAIMER_KEY],
+          }),
+      });
+    }
+
     return list;
   }, [serverSettings, draftSettings]);
 
@@ -141,6 +158,9 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
   const mlhOn = draftSettings[MLH_KEY] === "true";
   // Absent key = closed, matching how the backend reads it.
   const registrationOpen = draftSettings[REGISTRATION_KEY] === "true";
+  // Absent key = hidden — HackKnight is an official MLH member event, so the
+  // pre-partnership wording only appears when explicitly turned on.
+  const disclaimerOn = draftSettings[MLH_DISCLAIMER_KEY] === "true";
 
   return (
     <div>
@@ -199,6 +219,31 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                 checked={registrationOpen}
                 onChange={(next) =>
                   setDraft(REGISTRATION_KEY, next ? "true" : "false")
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 mt-5 pt-5 border-t border-border/40">
+              <div className="min-w-0">
+                <label
+                  className="admin-label mb-0.5 cursor-pointer"
+                  htmlFor="mlh-disclaimer-toggle"
+                >
+                  Pre-partnership disclaimer
+                </label>
+                <p className="admin-help">
+                  Shows the &quot;we are in the process of partnering with
+                  MLH&quot; note above the MLH checkboxes on the registration
+                  form. Leave off now that HackKnight is an official MLH
+                  member event.
+                </p>
+              </div>
+              <Toggle
+                id="mlh-disclaimer-toggle"
+                label="Show MLH pre-partnership disclaimer"
+                checked={disclaimerOn}
+                onChange={(next) =>
+                  setDraft(MLH_DISCLAIMER_KEY, next ? "true" : "false")
                 }
               />
             </div>

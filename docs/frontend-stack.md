@@ -42,7 +42,7 @@ frontend/
     │       ├── ui.tsx            # Shared UI kit (Panel, SaveBar, DiffModal, DragGrid, ScaledPreview, ...)
     │       ├── icons.tsx         # Shared SVG icon set
     │       ├── useObjectUrls.ts  # Object-URL lifecycle for staged image previews
-    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge, registration open/closed)
+    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge, registration open/closed, MLH pre-partnership disclaimer)
     │       ├── schedule/         # ScheduleTab + EventModal + scheduleMeta
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
