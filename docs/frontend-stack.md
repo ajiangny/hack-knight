@@ -31,27 +31,32 @@ frontend/
     ├── main.tsx            # ReactDOM entry point
     ├── App.tsx             # Router, page transitions, auth guard
     ├── types.ts            # Shared domain types (ScheduleEvent, Sponsor, TeamMember, ...)
-    ├── vite-env.d.ts       # import.meta.env typing (VITE_API_URL)
+    ├── vite-env.d.ts       # import.meta.env typing (VITE_API_URL, VITE_SUPABASE_*, VITE_TURNSTILE_SITE_KEY)
     ├── index.css           # Tailwind v4 entry + base layer
-    ├── pages/              # Route-level components (Home, SchedulePage, AdminPage, ...)
+    ├── pages/              # Route-level components (Home, SchedulePage, RegisterPage, AdminPage, ...)
     ├── components/
-    │   ├── site/           # Public site components (Navbar, Hero, CountdownTimer, TeamSection, ...)
+    │   ├── site/           # Public site components (Navbar, Hero, CountdownTimer, TeamSection,
+    │   │                   #   SchoolCombobox + TurnstileWidget for the registration form, ...)
     │   └── admin/          # Admin dashboard
     │       ├── adminTypes.ts     # Draft shapes for staged edits (AdminEvent, AdminMember, ...)
     │       ├── ui.tsx            # Shared UI kit (Panel, SaveBar, DiffModal, DragGrid, ScaledPreview, ...)
     │       ├── icons.tsx         # Shared SVG icon set
     │       ├── useObjectUrls.ts  # Object-URL lifecycle for staged image previews
-    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge)
+    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge, registration open/closed)
     │       ├── schedule/         # ScheduleTab + EventModal + scheduleMeta
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
-    │       └── sponsors/         # SponsorsTab + SponsorModal + TierPanel + OtherCompaniesPanel + sponsorUtils
-    ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam,
-    │                       #   useSponsors, useSiteSettings, useCountdown)
+    │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + OtherCompaniesPanel + sponsorUtils
+    │       └── registrations/    # RegistrationsTab (search, CSV export, delete)
+    ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
+    │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth
     ├── data/               # Static fallback data used when the API is unreachable
     ├── lib/
-    │   ├── api.ts          # Auth-aware fetch helper (JWT from localStorage) + compressImage
+    │   ├── api.ts          # Auth-aware fetch helper (token from the Supabase session) + compressImage
+    │   ├── supabase.ts     # Browser Supabase client — admin Google sign-in only, never data
     │   ├── mlh.ts          # MLH trust badge constants (shared by Navbar + admin preview)
+    │   ├── registrationOptions.ts  # Age/level-of-study/country options (mirrors the backend's copy)
+    │   ├── schools.ts      # MLH-verified school list (mirrors the backend's copy)
     │   └── schedulePacking.ts  # Overlap-packing layout math for ScheduleGrid
     ├── styles/             # components.css, admin.css
     └── assets/             # Brand SVGs, photos, logos
@@ -59,8 +64,10 @@ frontend/
 
 ## How data flows
 
-The frontend **never talks to Supabase directly**. All data goes through the
-Express API (see [backend-stack.md](backend-stack.md)):
+The frontend **never reads or writes data in Supabase directly**. The one
+Supabase touchpoint is auth: `lib/supabase.ts` handles the admin's Google
+sign-in and session. All data goes through the Express API (see
+[backend-stack.md](backend-stack.md)):
 
 - **Public pages** use the hooks in `src/hooks/` (`useSchedule`, `useGallery`,
   `useTeam`, `useSponsors`, `useSiteSettings`, `useCountdown`). Each hook
@@ -68,9 +75,18 @@ Express API (see [backend-stack.md](backend-stack.md)):
   (or a sensible default for site settings) if the API is down or returns
   nothing. This means the site never renders empty — keep the static data
   reasonably fresh.
-- **Admin pages** use `src/lib/api.ts`, which attaches the JWT stored in
-  `localStorage` (key `admin_token`) to every request, throws on non-2xx, and
-  clears the token on 401 so `RequireAuth` in `App.tsx` bounces back to login.
+- **Admin pages** use `src/lib/api.ts`, which reads the access token from the
+  Supabase session (`useAuth` exposes the same session reactively) and attaches
+  it to every request. Supabase refreshes the token in the background, so there
+  is no fixed-expiry cliff. A 401 signs the session out so the auth guard in
+  `App.tsx` bounces back to login; a 403 means "signed in but not on the
+  backend's `ADMIN_EMAILS` allowlist" and shows a not-authorized screen instead.
+- **The registration form** (`pages/RegisterPage.tsx`, at `/register`) POSTs to
+  the public `/api/registrations` endpoint. It mirrors the backend's validation
+  for fast feedback (options come from `lib/registrationOptions.ts` and
+  `lib/schools.ts`), renders the Turnstile captcha when
+  `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
+  `registration_open` site setting is on. The backend re-checks all of it.
 - **Image uploads** go through `compressImage()` in `lib/api.ts` (target
   < 1 MB) so requests stay under Vercel's 4.5 MB body limit.
 
@@ -95,19 +111,27 @@ npm run lint         # ESLint over the whole frontend
 
 ### Environment variables
 
-The frontend reads exactly one variable: `VITE_API_URL` — the base URL of the
-Express API **including the `/api` prefix**. Create `frontend/.env.local`
-(git-ignored) for local development:
+Copy the template and fill it in (`frontend/.env.local` is git-ignored):
 
+```bash
+cd frontend
+cp .env.example .env.local
 ```
-VITE_API_URL=http://localhost:3000/api
-```
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Base URL of the Express API, **including the `/api` prefix** — e.g. `http://localhost:3000/api` |
+| `VITE_SUPABASE_URL` | Supabase project URL (local stack: `http://127.0.0.1:54321`) |
+| `VITE_SUPABASE_ANON_KEY` | Supabase publishable (anon) key — safe in the browser; used only for admin Google sign-in |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (public). The registration form only renders the captcha when set; use Cloudflare's always-passing test key `1x00000000000000000000AA` for local dev |
 
 Rules to know:
 
 - Vite only exposes variables prefixed with `VITE_` to the browser. Anything
-  in a frontend env file is **public** — never put secrets here.
-- Access them via `import.meta.env.VITE_API_URL` (not `process.env`).
+  in a frontend env file is **public** — never put secrets here. The Supabase
+  **secret** key and the Turnstile **secret** key belong in `backend/.env` only.
+- Access them via `import.meta.env.VITE_API_URL` (not `process.env`), and add
+  new ones to the typing in `src/vite-env.d.ts`.
 - **Restart the dev server** after changing env files; they are read at startup.
 - If `VITE_API_URL` is unset, `lib/api.ts` and the hooks fall back to
   same-origin paths, which only works when the API is served from the same
@@ -156,5 +180,7 @@ After any dependency change:
 
 The frontend deploys to Vercel as its own project (separate from the backend).
 `frontend/vercel.json` rewrites every path to `index.html` so React Router can
-handle client-side routes. Set `VITE_API_URL` in the Vercel project settings
-to point at the deployed backend (again, including `/api`).
+handle client-side routes. Set all four env vars from the table above in the
+Vercel project settings — `VITE_API_URL` pointing at the deployed backend
+(again, including `/api`), the cloud Supabase URL + anon key, and the real
+(non-test) Turnstile site key.

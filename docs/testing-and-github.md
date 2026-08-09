@@ -40,10 +40,10 @@ treat a failing `npm run build` as a failing test.
    # Public read
    curl http://localhost:3000/api/schedule
 
-   # Login → capture the token
-   curl -X POST http://localhost:3000/api/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"password":"your-local-password"}'
+   # Getting a token: admin auth is Google sign-in via Supabase, so there is
+   # no login endpoint to curl. Sign in at http://localhost:5173/admin, open
+   # the browser dev tools Network tab, and copy the Authorization header
+   # from any /api request the dashboard makes.
 
    # Authenticated write
    curl -X POST http://localhost:3000/api/schedule \
@@ -51,7 +51,8 @@ treat a failing `npm run build` as a failing test.
      -H "Content-Type: application/json" \
      -d '{"day":"fri","start_hour":18,"end_hour":19,"label":"Test event"}'
 
-   # And the failure cases: no token → expect 401; bad body → expect 400
+   # And the failure cases: no token → expect 401; a Google account that is
+   # not in ADMIN_EMAILS → expect 403; bad body → expect 400/422
    ```
 
 4. For schema changes, run `npx supabase db reset` and confirm migrations
