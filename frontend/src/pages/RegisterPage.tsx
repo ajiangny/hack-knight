@@ -28,6 +28,7 @@ import {
 import { formatUsPhone } from "../lib/phone";
 import ComingSoon from "../components/site/ComingSoon";
 import SchoolCombobox from "../components/site/SchoolCombobox";
+import SelectDropdown from "../components/site/SelectDropdown";
 import TurnstileWidget from "../components/site/TurnstileWidget";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
@@ -38,9 +39,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Mirrors the server: loose shape check plus a 7–15 digit count (E.164 bound).
 const PHONE_RE = /^\+?[\d\s().-]+$/;
 
-const AGES = Array.from(
-  { length: AGE_MAX - AGE_MIN + 1 },
-  (_, i) => AGE_MIN + i,
+const AGES = Array.from({ length: AGE_MAX - AGE_MIN + 1 }, (_, i) =>
+  String(AGE_MIN + i),
 );
 
 interface FormValues {
@@ -385,23 +385,16 @@ export default function RegisterPage() {
                   Age
                   <RequiredMark />
                 </label>
-                <select
+                <SelectDropdown
                   id="age"
-                  name="age"
-                  className="register-select"
+                  options={AGES}
+                  placeholder="Select your age…"
                   value={values.age}
-                  onChange={(e) => setField("age", e.target.value)}
+                  onChange={(age) => setField("age", age)}
                   disabled={submitting}
-                  aria-invalid={!!errors.age}
-                  aria-describedby={errors.age ? "age-error" : undefined}
-                >
-                  <option value="">Select your age…</option>
-                  {AGES.map((age) => (
-                    <option key={age} value={age}>
-                      {age}
-                    </option>
-                  ))}
-                </select>
+                  invalid={!!errors.age}
+                  describedBy={errors.age ? "age-error" : undefined}
+                />
                 {errors.age && (
                   <p className="register-error" id="age-error">
                     {errors.age}
@@ -435,25 +428,18 @@ export default function RegisterPage() {
                 Level of Study
                 <RequiredMark />
               </label>
-              <select
+              <SelectDropdown
                 id="levelOfStudy"
-                name="levelOfStudy"
-                className="register-select"
+                options={LEVELS_OF_STUDY}
+                placeholder="Select your level of study…"
                 value={values.levelOfStudy}
-                onChange={(e) => setField("levelOfStudy", e.target.value)}
+                onChange={(level) => setField("levelOfStudy", level)}
                 disabled={submitting}
-                aria-invalid={!!errors.levelOfStudy}
-                aria-describedby={
+                invalid={!!errors.levelOfStudy}
+                describedBy={
                   errors.levelOfStudy ? "levelOfStudy-error" : undefined
                 }
-              >
-                <option value="">Select your level of study…</option>
-                {LEVELS_OF_STUDY.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </select>
+              />
               {errors.levelOfStudy && (
                 <p className="register-error" id="levelOfStudy-error">
                   {errors.levelOfStudy}
@@ -466,23 +452,15 @@ export default function RegisterPage() {
                 Country of Residence
                 <RequiredMark />
               </label>
-              <select
+              <SelectDropdown
                 id="country"
-                name="country"
-                className="register-select"
+                options={COUNTRIES}
                 value={values.country}
-                onChange={(e) => setField("country", e.target.value)}
-                autoComplete="country-name"
+                onChange={(country) => setField("country", country)}
                 disabled={submitting}
-                aria-invalid={!!errors.country}
-                aria-describedby={errors.country ? "country-error" : undefined}
-              >
-                {COUNTRIES.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
+                invalid={!!errors.country}
+                describedBy={errors.country ? "country-error" : undefined}
+              />
               {errors.country && (
                 <p className="register-error" id="country-error">
                   {errors.country}
