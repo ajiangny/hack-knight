@@ -12,6 +12,12 @@ if (!supabaseAnonKey) {
     throw new Error("Missing SUPABASE_ANON_KEY env var");
 }
 
+// Storage uploads get random UUID filenames, so a URL's content can never
+// change — browsers may cache it forever. Passed as `cacheControl` (seconds,
+// one year) on every upload; without it objects are stored with `no-cache`
+// and every <img> remount re-validates against storage.
+export const IMMUTABLE_CACHE = "31536000";
+
 // Secret key: server-side only, bypasses RLS. Never expose to frontend.
 export const supabase = createClient(supabaseUrl, supabaseSecretKey, {
     auth: { persistSession: false },
