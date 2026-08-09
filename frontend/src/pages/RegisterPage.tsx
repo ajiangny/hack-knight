@@ -25,6 +25,7 @@ import {
   MLH_DEV_URL,
   MLH_PRIVACY_POLICY_URL,
 } from "../lib/mlh";
+import { formatUsPhone } from "../lib/phone";
 import ComingSoon from "../components/site/ComingSoon";
 import SchoolCombobox from "../components/site/SchoolCombobox";
 import TurnstileWidget from "../components/site/TurnstileWidget";
@@ -364,7 +365,7 @@ export default function RegisterPage() {
                   type="tel"
                   className="register-input"
                   value={values.phone}
-                  onChange={(e) => setField("phone", e.target.value)}
+                  onChange={(e) => setField("phone", formatUsPhone(e.target.value))}
                   maxLength={20}
                   placeholder="+1 (212) 555-0100"
                   autoComplete="tel"
