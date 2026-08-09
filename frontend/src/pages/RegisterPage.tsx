@@ -62,7 +62,7 @@ const EMPTY: FormValues = {
   age: "",
   school: "",
   levelOfStudy: "",
-  country: "United States",
+  country: "United States of America", // ISO 3166-1 short name
   website: "",
 };
 
