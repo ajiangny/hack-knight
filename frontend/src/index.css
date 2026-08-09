@@ -119,6 +119,18 @@
     *, *::before, *::after {
       cursor: none !important;
     }
+
+    /* A pointer inside a cross-origin iframe (the Turnstile captcha) sends
+       this document no events at all, so the custom cursor can neither
+       follow it nor reliably notice the crossing — Turnstile hides its
+       iframe behind a closed shadow root, and boundary events whose target
+       and relatedTarget both retarget to the host are never dispatched.
+       CSS hit-testing is immune to all of that: :hover keeps holding on the
+       iframe's ancestors, so hide our cursor while anything marked
+       data-cursor-native is hovered. */
+    body:has([data-cursor-native]:hover) .custom-cursor {
+      visibility: hidden;
+    }
   }
 
   /* ── Hide any residual cursor on touch/coarse devices ── */
