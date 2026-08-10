@@ -124,44 +124,43 @@ export interface Registration {
   mlh_code_of_conduct: boolean;
   mlh_data_sharing: boolean;
   mlh_emails: boolean;
-  // In-bucket path in the private resumes bucket. Null only on rows that
-  // predate the resume requirement.
-  resume_path: string | null;
+  // Google Drive link to the resume, normalized to https://. Required by the
+  // API on every new registration.
+  resume_url: string | null;
   created_at?: string;
 }
 
-// POST /api/registrations is multipart/form-data (the resume file rides
-// along), so every field arrives as a string — including age and the MLH
-// checkboxes ("true"/"false"). The route parses them.
+// POST /api/registrations body (JSON). The route validates every field.
 export interface CreateRegistrationBody {
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
-  age?: string;
+  age?: number;
   school?: string;
   levelOfStudy?: string;
   country?: string;
-  // Multi-selects arrive as JSON-encoded string arrays (multipart fields are
-  // strings). The *Other fields carry the free text for the corresponding
-  // "self-describe"/"other" option and are required only when it is chosen.
+  // The *Other fields carry the free text for the corresponding
+  // "self-describe"/"other" option and are read only when it is chosen.
   gender?: string;
   genderSelfDescribe?: string;
   pronouns?: string;
   pronounsOther?: string;
-  raceEthnicity?: string;
+  raceEthnicity?: string[];
   raceEthnicityOther?: string;
   sexualOrientation?: string;
   sexualOrientationOther?: string;
   major?: string;
   majorOther?: string;
-  dietaryRestrictions?: string;
+  dietaryRestrictions?: string[];
   linkedinUrl?: string;
-  // MLH member-event checkboxes: the first two must be "true" to register,
+  // Google Drive link to the resume; required.
+  resumeUrl?: string;
+  // MLH member-event checkboxes: the first two must be true to register,
   // mlhEmails is the optional opt-in.
-  mlhCodeOfConduct?: string;
-  mlhDataSharing?: string;
-  mlhEmails?: string;
+  mlhCodeOfConduct?: boolean;
+  mlhDataSharing?: boolean;
+  mlhEmails?: boolean;
   turnstileToken?: string;
   website?: string; // honeypot
 }

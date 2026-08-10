@@ -27,7 +27,7 @@ interface RegistrationRow {
   mlh_code_of_conduct: boolean;
   mlh_data_sharing: boolean;
   mlh_emails: boolean;
-  resume_path: string | null;
+  resume_url: string | null;
   created_at?: string;
 }
 
@@ -53,7 +53,7 @@ function mapRegistration(r: RegistrationRow): Registration {
     mlhCodeOfConduct: r.mlh_code_of_conduct,
     mlhDataSharing: r.mlh_data_sharing,
     mlhEmails: r.mlh_emails,
-    resumePath: r.resume_path,
+    resumeUrl: r.resume_url,
     createdAt: r.created_at,
   };
 }

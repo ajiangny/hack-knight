@@ -1,12 +1,8 @@
 // Participant registration. The POST route is the only public write endpoint
 // in this API, so it carries the abuse handling: honeypot, validation, rate
-// limit, captcha. Reads are admin-only — the table holds student PII, and
-// the attached resumes sit in a private bucket reachable only through the
-// admin signed-URL route below.
+// limit, captcha. Reads are admin-only — the table holds student PII.
 
-import { Router, NextFunction, Request, Response } from "express";
-import multer from "multer";
-import { randomUUID } from "node:crypto";
+import { Router, Request, Response } from "express";
 import { supabase } from "../db/supabase.js";
 import { authenticateAdmin } from "../middleware/auth.js";
 import {
@@ -49,23 +45,18 @@ const PHONE_RE = /^\+?[\d\s().-]+$/;
 const MAX_LINKEDIN_LENGTH = 200;
 
 /**
- * Multi-select fields ride the multipart body as JSON-encoded string arrays.
- * Returns null on anything that is not one (the frontend never sends that,
- * so null means a hand-crafted request).
+ * Multi-select answers arrive as string arrays in the JSON body. An omitted
+ * field folds to []; anything else that is not a string array returns null
+ * (the frontend never sends that, so null means a hand-crafted request).
  */
-function parseStringArray(raw: string | undefined): string[] | null {
-  if (raw === undefined || raw === "") return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (
-      Array.isArray(parsed) &&
-      parsed.every((item): item is string => typeof item === "string")
-    ) {
-      // De-dupe so a crafted body can't inflate the stored array.
-      return [...new Set(parsed)];
-    }
-  } catch {
-    // fall through
+function normalizeStringArray(raw: unknown): string[] | null {
+  if (raw === undefined) return [];
+  if (
+    Array.isArray(raw) &&
+    raw.every((item): item is string => typeof item === "string")
+  ) {
+    // De-dupe so a crafted body can't inflate the stored array.
+    return [...new Set(raw)];
   }
   return null;
 }
@@ -112,61 +103,32 @@ function normalizeLinkedinUrl(raw: string): string | null {
   return withScheme;
 }
 
-/* ── Resume upload ──────────────────────────────────────────────
-   Resumes land in a PRIVATE bucket — they are PII like the rest of this
-   table — and admins read them through short-lived signed URLs, never a
-   public URL. */
+// Resume links are bounded like LinkedIn's: enough for any Drive URL,
+// tight enough to stop abuse.
+const MAX_RESUME_URL_LENGTH = 300;
 
-const RESUME_BUCKET = "resumes";
-const MAX_RESUME_BYTES = 4 * 1024 * 1024; // Vercel caps the whole body at 4.5 MB
-
-// Extension → stored Content-Type. The client's declared MIME type is
-// ignored: deriving the type here guarantees signed URLs serve PDFs as
-// application/pdf, which is what lets the admin modal preview them inline.
-const RESUME_TYPES: Record<string, string> = {
-  pdf: "application/pdf",
-  doc: "application/msword",
-  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-};
-
-function resumeExtension(filename: string): string {
-  return filename.split(".").pop()?.toLowerCase() ?? "";
-}
-
-// File signatures: "%PDF" for PDFs, the ZIP header for .docx (it is a ZIP
-// archive), the OLE compound-file header for legacy .doc. A renamed
-// executable fails this even with an allowed extension. Only the header is
-// checked — this is a plausibility gate, not a virus scan.
-const MAGIC: Record<string, number[]> = {
-  pdf: [0x25, 0x50, 0x44, 0x46],
-  docx: [0x50, 0x4b, 0x03, 0x04],
-  doc: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1],
-};
-
-function matchesMagicBytes(ext: string, buffer: Buffer): boolean {
-  const magic = MAGIC[ext];
-  if (!magic) return false;
-  return magic.every((byte, i) => buffer[i] === byte);
-}
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_RESUME_BYTES },
-});
-
-/** upload.single wrapped so multer errors become 4xx responses, not a 500. */
-function uploadResume(req: Request, res: Response, next: NextFunction) {
-  upload.single("resume")(req, res, (err: unknown) => {
-    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
-      res.status(422).json({ message: "Resume must be 4 MB or smaller" });
-      return;
-    }
-    if (err) {
-      res.status(400).json({ message: "Invalid upload" });
-      return;
-    }
-    next();
-  });
+/**
+ * Accepts a Google Drive (or Docs) link with or without a scheme and returns
+ * it normalized to https://; null for anything else. The resume is required,
+ * so unlike normalizeLinkedinUrl an empty answer is also null. Whether the
+ * link is actually viewable cannot be checked from here; the form instructs
+ * applicants to enable "anyone with the link" sharing.
+ */
+function normalizeResumeUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > MAX_RESUME_URL_LENGTH) return null;
+  const withScheme = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  let url: URL;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.toLowerCase();
+  if (host !== "drive.google.com" && host !== "docs.google.com") return null;
+  return withScheme;
 }
 
 /* ── Rate limiting ──────────────────────────────────────────────
@@ -232,7 +194,6 @@ async function isRegistrationOpen(): Promise<boolean> {
 
 registrationsRouter.post(
   "/",
-  uploadResume,
   async (req: Request<{}, {}, CreateRegistrationBody>, res: Response) => {
     const body = req.body ?? ({} as CreateRegistrationBody);
 
@@ -259,14 +220,14 @@ registrationsRouter.post(
     const pronouns = (body.pronouns ?? "").trim();
     const sexualOrientation = (body.sexualOrientation ?? "").trim();
     const major = (body.major ?? "").trim();
-    const raceEthnicity = parseStringArray(body.raceEthnicity);
-    const dietaryRestrictions = parseStringArray(body.dietaryRestrictions);
+    const raceEthnicity = normalizeStringArray(body.raceEthnicity);
+    const dietaryRestrictions = normalizeStringArray(body.dietaryRestrictions);
     const linkedinUrl = normalizeLinkedinUrl(body.linkedinUrl ?? "");
-    // Multipart fields are strings, so the checkboxes arrive as "true"/
-    // "false". Strict === "true" so any other value cannot count as agreed.
-    const mlhCodeOfConduct = body.mlhCodeOfConduct === "true";
-    const mlhDataSharing = body.mlhDataSharing === "true";
-    const mlhEmails = body.mlhEmails === "true";
+    // Strict === true so a crafted body's "true" string or 1 cannot count
+    // as agreed.
+    const mlhCodeOfConduct = body.mlhCodeOfConduct === true;
+    const mlhDataSharing = body.mlhDataSharing === true;
+    const mlhEmails = body.mlhEmails === true;
 
     if (
       !firstName ||
@@ -416,20 +377,13 @@ registrationsRouter.post(
       return;
     }
 
-    // Multer has already enforced the size cap; this checks presence, an
-    // allowed extension, and that the file header matches that extension.
-    const resume = req.file;
-    if (!resume) {
-      res.status(422).json({ message: "Attach your resume" });
-      return;
-    }
-
-    const resumeExt = resumeExtension(resume.originalname);
-    const resumeContentType = RESUME_TYPES[resumeExt];
-    if (!resumeContentType || !matchesMagicBytes(resumeExt, resume.buffer)) {
+    // Required: a Google Drive link, so the CSV export handed to MLH links
+    // straight to every resume.
+    const resumeUrl = normalizeResumeUrl(body.resumeUrl ?? "");
+    if (resumeUrl === null) {
       res
         .status(422)
-        .json({ message: "Resume must be a PDF, DOC, or DOCX file" });
+        .json({ message: "Share a Google Drive link to your resume" });
       return;
     }
 
@@ -466,24 +420,7 @@ registrationsRouter.post(
       return;
     }
 
-    // 6. Store the resume. Last among the gates so abusive traffic never
-    //    costs a storage write. UUID filename: unguessable, and the original
-    //    name (attacker-controlled) never reaches storage.
-    const resumePath = `${randomUUID()}.${resumeExt}`;
-    const { error: uploadError } = await supabase.storage
-      .from(RESUME_BUCKET)
-      .upload(resumePath, resume.buffer, {
-        contentType: resumeContentType,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("Failed to upload resume:", uploadError);
-      res.status(500).json({ message: "Server error" });
-      return;
-    }
-
-    // 7. Insert.
+    // 6. Insert.
     const { error } = await supabase.from("registrations").insert({
       first_name: firstName,
       last_name: lastName,
@@ -503,14 +440,10 @@ registrationsRouter.post(
       mlh_code_of_conduct: mlhCodeOfConduct,
       mlh_data_sharing: mlhDataSharing,
       mlh_emails: mlhEmails,
-      resume_path: resumePath,
+      resume_url: resumeUrl,
     });
 
     if (error) {
-      // The row is the only reference to the object; without it the upload
-      // is unreachable, so roll it back (same pattern as the gallery).
-      await supabase.storage.from(RESUME_BUCKET).remove([resumePath]);
-
       // 23505 = unique_violation on registrations_email_unique.
       if (error.code === "23505") {
         res.status(409).json({ message: "This email is already registered" });
@@ -614,6 +547,7 @@ const CSV_COLUMNS: Array<[header: string, key: keyof Registration]> = [
   ["Sexual Orientation", "sexual_orientation"],
   ["Dietary Restrictions", "dietary_restrictions"],
   ["LinkedIn URL", "linkedin_url"],
+  ["Resume", "resume_url"],
   ["MLH Code of Conduct", "mlh_code_of_conduct"],
   ["MLH Data Sharing", "mlh_data_sharing"],
   ["MLH Email Opt-In", "mlh_emails"],
@@ -652,65 +586,11 @@ registrationsRouter.get(
   },
 );
 
-// GET /api/registrations/:id/resume-url  (admin) — mints a short-lived
-// signed URL for the applicant's resume. The bucket is private, so this is
-// the only road to the file; the URL expires after an hour.
-registrationsRouter.get(
-  "/:id/resume-url",
-  authenticateAdmin,
-  async (req: Request<{ id: string }>, res: Response) => {
-    const { data, error } = await supabase
-      .from("registrations")
-      .select("resume_path")
-      .eq("id", req.params.id)
-      .maybeSingle<Pick<Registration, "resume_path">>();
-
-    if (error) {
-      console.error("Failed to fetch registration:", error);
-      res.status(500).json({ message: "Server error" });
-      return;
-    }
-    if (!data?.resume_path) {
-      res.status(404).json({ message: "No resume on file" });
-      return;
-    }
-
-    const { data: signed, error: signError } = await supabase.storage
-      .from(RESUME_BUCKET)
-      .createSignedUrl(data.resume_path, 60 * 60);
-
-    if (signError || !signed) {
-      console.error("Failed to sign resume URL:", signError);
-      res.status(500).json({ message: "Server error" });
-      return;
-    }
-
-    res.json({ url: signed.signedUrl });
-  },
-);
-
 // DELETE /api/registrations/:id  (admin) — test rows and deletion requests.
 registrationsRouter.delete(
   "/:id",
   authenticateAdmin,
   async (req: Request<{ id: string }>, res: Response) => {
-    // Remove the resume object first — after the row is gone, nothing
-    // references it (same cleanup order as the gallery).
-    const { data: row, error: fetchError } = await supabase
-      .from("registrations")
-      .select("resume_path")
-      .eq("id", req.params.id)
-      .maybeSingle<Pick<Registration, "resume_path">>();
-
-    if (fetchError) {
-      console.error("Failed to fetch registration:", fetchError);
-      res.status(500).json({ message: "Server error" });
-      return;
-    }
-    if (row?.resume_path) {
-      await supabase.storage.from(RESUME_BUCKET).remove([row.resume_path]);
-    }
-
     const { error } = await supabase
       .from("registrations")
       .delete()
