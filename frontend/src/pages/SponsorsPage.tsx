@@ -1,6 +1,14 @@
 // Groups sponsors by tier using .filter() on the data from the API (static fallback)
 
 import { useSponsors } from '../hooks/useSponsors';
+import type { Sponsor } from '../types';
+
+/** Logo, wrapped in a link only when the sponsor has a real URL. */
+function SponsorLogo({ sponsor, size }: { sponsor: Sponsor; size: string }) {
+  const logo = <img src={sponsor.logo} alt={sponsor.name} data-size={size} />;
+  if (!sponsor.url || sponsor.url === '#') return logo;
+  return <a href={sponsor.url} target="_blank" rel="noreferrer">{logo}</a>;
+}
 
 export default function SponsorsPage() {
   const { sponsors } = useSponsors();
@@ -32,9 +40,7 @@ export default function SponsorsPage() {
           <div className="sponsors-grid-platinum">
             {platinum.map((sponsor, index) => (
               <div key={index} className="sponsor-card platinum">
-                <a href={sponsor.url} target="_blank" rel="noreferrer">
-                  <img src={sponsor.logo} alt={sponsor.name} data-size="large-plus" />
-                </a>
+                <SponsorLogo sponsor={sponsor} size="large-plus" />
                 <p className="sponsor-name">{sponsor.name}</p>
                 {sponsor.companyBlurb && (
                   <p className="company-blurb">{sponsor.companyBlurb}</p>
@@ -51,9 +57,7 @@ export default function SponsorsPage() {
           <div className="sponsors-grid-gold">
             {gold.map((sponsor, index) => (
               <div key={index} className="sponsor-card gold">
-                <a href={sponsor.url} target="_blank" rel="noreferrer">
-                  <img src={sponsor.logo} alt={sponsor.name} data-size="large" />
-                </a>
+                <SponsorLogo sponsor={sponsor} size="large" />
                 <p className="sponsor-name">{sponsor.name}</p>
                 {sponsor.companyBlurb && (
                   <p className="company-blurb">{sponsor.companyBlurb}</p>
@@ -70,9 +74,7 @@ export default function SponsorsPage() {
           <div className="sponsors-grid-silver">
             {silver.map((sponsor, index) => (
               <div key={index} className="sponsor-card silver">
-                <a href={sponsor.url} target="_blank" rel="noreferrer">
-                  <img src={sponsor.logo} alt={sponsor.name} data-size="medium" />
-                </a>
+                <SponsorLogo sponsor={sponsor} size="medium" />
                 <p className="sponsor-name">{sponsor.name}</p>
                 {sponsor.companyBlurb && (
                   <p className="company-blurb">{sponsor.companyBlurb}</p>
@@ -89,9 +91,7 @@ export default function SponsorsPage() {
           <div className="sponsors-grid-bronze">
             {bronze.map((sponsor, index) => (
               <div key={index} className="sponsor-card bronze">
-                <a href={sponsor.url} target="_blank" rel="noreferrer">
-                  <img src={sponsor.logo} alt={sponsor.name} data-size="small" />
-                </a>
+                <SponsorLogo sponsor={sponsor} size="small" />
                 <p className="sponsor-name">{sponsor.name}</p>
               </div>
             ))}
