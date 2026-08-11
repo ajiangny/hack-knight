@@ -1,5 +1,5 @@
-// Fetches sponsors from the Express API (backed by the companies table —
-// a company is a sponsor once it has a sponsor_tier).
+// Fetches sponsors from the Express API (backed by the sponsors table,
+// which is separate from the badge companies shown in the team section).
 // Falls back to the bundled static data if the API is unreachable.
 // Cached across navigations by useApiData, so revisiting the page renders
 // the fetched sponsors immediately instead of re-requesting them.
@@ -17,40 +17,35 @@ const TIER_RANK: Record<SponsorTier, number> = {
 };
 
 /** Raw row from the Express API (snake_case DB columns). */
-interface CompanyRow {
+interface SponsorRow {
   id: string;
   name: string;
   logo_url: string;
-  sponsor_tier: SponsorTier | null;
-  sponsor_url?: string | null;
-  sponsor_blurb?: string | null;
+  tier: SponsorTier;
+  url?: string | null;
+  blurb?: string | null;
+  sort_order?: number;
 }
 
-function mapCompany(c: CompanyRow & { sponsor_tier: SponsorTier }): Sponsor {
+function mapSponsor(s: SponsorRow): Sponsor {
   return {
-    id: c.id,
-    name: c.name,
-    logo: c.logo_url,
-    tier: c.sponsor_tier,
-    url: c.sponsor_url || "#",
-    companyBlurb: c.sponsor_blurb || undefined,
+    id: s.id,
+    name: s.name,
+    logo: s.logo_url,
+    tier: s.tier,
+    url: s.url || "#",
+    companyBlurb: s.blurb || undefined,
   };
 }
 
 export function useSponsors() {
-  const { data, loading, error } = useApiData<CompanyRow[]>("/companies");
+  const { data, loading, error } = useApiData<SponsorRow[]>("/sponsors");
   const sponsors = useMemo(() => {
+    // The API already orders by the admin's drag order (sort_order, name);
+    // sorting by tier here is stable, so that order is kept within each tier.
     const mapped = (Array.isArray(data) ? data : [])
-      .filter(
-        (c): c is CompanyRow & { sponsor_tier: SponsorTier } =>
-          !!c.sponsor_tier,
-      )
-      .map(mapCompany)
-      .sort(
-        (a, b) =>
-          TIER_RANK[a.tier] - TIER_RANK[b.tier] ||
-          a.name.localeCompare(b.name),
-      );
+      .map(mapSponsor)
+      .sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier]);
     return mapped.length > 0 ? mapped : staticSponsors;
   }, [data]);
   return { sponsors, loading, error };
