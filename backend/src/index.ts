@@ -6,6 +6,7 @@ import scheduleRouter from "./routes/schedule.js";
 import galleryRouter from "./routes/gallery.js";
 import teamRouter from "./routes/team.js";
 import companiesRouter from "./routes/companies.js";
+import sponsorsRouter from "./routes/sponsors.js";
 import settingsRouter from "./routes/settings.js";
 import registrationsRouter from "./routes/registrations.js";
 import cors from "cors";
@@ -64,6 +65,7 @@ app.use("/api/schedule", scheduleRouter);
 app.use("/api/gallery", galleryRouter);
 app.use("/api/team", teamRouter);
 app.use("/api/companies", companiesRouter);
+app.use("/api/sponsors", sponsorsRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/registrations", registrationsRouter);
 
