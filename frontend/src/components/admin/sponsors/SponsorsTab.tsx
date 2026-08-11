@@ -1,7 +1,6 @@
-// Sponsors admin tab — reuses the companies table (same rows power team
-// badges). A company becomes a public sponsor once it has a sponsor_tier;
-// tiers are shown as separate drag-to-sort panels, plus an "Other
-// Companies" panel for badge-only rows that aren't sponsors (yet).
+// Sponsors admin tab — manages the sponsors table (separate from the badge
+// companies on the Team tab). Every sponsor has a tier; tiers are shown as
+// separate drag-to-sort panels.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -14,7 +13,7 @@ import {
 import { SaveBar, DiffModal, type Change } from "../ui";
 import { useObjectUrls } from "../useObjectUrls";
 import type { SponsorTier } from "../../../types";
-import type { AdminCompany, AdminSponsor, SponsorForm } from "../adminTypes";
+import type { AdminSponsor, SponsorForm, SponsorRow } from "../adminTypes";
 import {
   TIERS,
   EMPTY_SPONSOR,
@@ -25,11 +24,10 @@ import {
 } from "./sponsorUtils";
 import SponsorModal from "./SponsorModal";
 import TierPanel from "./TierPanel";
-import OtherCompaniesPanel from "./OtherCompaniesPanel";
 
 export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
-  const [serverCompanies, setServerCompanies] = useState<AdminSponsor[]>([]);
-  const [draftCompanies, setDraftCompanies] = useState<AdminSponsor[]>([]);
+  const [serverSponsors, setServerSponsors] = useState<AdminSponsor[]>([]);
+  const [draftSponsors, setDraftSponsors] = useState<AdminSponsor[]>([]);
   const [editing, setEditing] = useState<SponsorForm | null>(null); // seed for SponsorModal
   const [reviewOpen, setReviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,10 +38,10 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
 
   const load = useCallback(async () => {
     try {
-      const companies = await apiGet<AdminCompany[]>("/companies");
-      const normalized = companies.map(normalizeSponsor);
-      setServerCompanies(normalized);
-      setDraftCompanies(normalized.map((c) => ({ ...c })));
+      const sponsors = await apiGet<SponsorRow[]>("/sponsors");
+      const normalized = sponsors.map(normalizeSponsor);
+      setServerSponsors(normalized);
+      setDraftSponsors(normalized.map((s) => ({ ...s })));
       revokeAll();
     } catch (err) {
       setError((err as Error).message);
@@ -57,11 +55,11 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
   /* ── Staged diff ── */
 
   function tierReorderChanged(tier: SponsorTier) {
-    const draftIds = tierMembers(draftCompanies, tier)
-      .filter((c) => !c._new)
-      .map((c) => c.id);
-    const serverIds = tierMembers(serverCompanies, tier)
-      .map((c) => c.id)
+    const draftIds = tierMembers(draftSponsors, tier)
+      .filter((s) => !s._new)
+      .map((s) => s.id);
+    const serverIds = tierMembers(serverSponsors, tier)
+      .map((s) => s.id)
       .filter((id) => draftIds.includes(id));
     return draftIds.join(",") !== serverIds.join(",");
   }
@@ -69,39 +67,35 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
   const changes = useMemo(() => {
     const list: Change[] = [];
 
-    for (const c of draftCompanies) {
-      if (c._new) {
+    for (const s of draftSponsors) {
+      if (s._new) {
         list.push({
           kind: "add",
-          summary: `Sponsor "${c.name}"`,
-          detail: c.sponsor_tier ? tierLabel(c.sponsor_tier) : "No tier assigned",
+          summary: `Sponsor "${s.name}"`,
+          detail: tierLabel(s.tier),
         });
         continue;
       }
-      const orig = serverCompanies.find((s) => s.id === c.id);
+      const orig = serverSponsors.find((o) => o.id === s.id);
       if (!orig) continue;
       const parts: string[] = [];
-      if (orig.name !== c.name) parts.push(`name "${orig.name}" → "${c.name}"`);
-      if (orig.sponsor_tier !== c.sponsor_tier)
-        parts.push(
-          `tier ${orig.sponsor_tier ? tierLabel(orig.sponsor_tier) : "none"} → ${
-            c.sponsor_tier ? tierLabel(c.sponsor_tier) : "none"
-          }`,
-        );
-      if (orig.sponsor_url !== c.sponsor_url) parts.push("website URL");
-      if (orig.sponsor_blurb !== c.sponsor_blurb) parts.push("blurb");
-      if (c._logoFile) parts.push("new logo");
+      if (orig.name !== s.name) parts.push(`name "${orig.name}" → "${s.name}"`);
+      if (orig.tier !== s.tier)
+        parts.push(`tier ${tierLabel(orig.tier)} → ${tierLabel(s.tier)}`);
+      if (orig.url !== s.url) parts.push("website URL");
+      if (orig.blurb !== s.blurb) parts.push("blurb");
+      if (s._logoFile) parts.push("new logo");
       if (parts.length) {
         list.push({ kind: "edit", summary: `"${orig.name}"`, detail: parts.join(" · ") });
       }
     }
 
-    for (const orig of serverCompanies) {
-      if (!draftCompanies.some((c) => c.id === orig.id)) {
+    for (const orig of serverSponsors) {
+      if (!draftSponsors.some((s) => s.id === orig.id)) {
         list.push({
           kind: "delete",
           summary: `"${orig.name}"`,
-          detail: "Also removes its badge from any team member wearing it",
+          detail: "Removed from the public sponsors page",
         });
       }
     }
@@ -113,9 +107,9 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
     }
 
     return list;
-    // tierReorderChanged closes over draftCompanies/serverCompanies directly.
+    // tierReorderChanged closes over draftSponsors/serverSponsors directly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftCompanies, serverCompanies]);
+  }, [draftSponsors, serverSponsors]);
 
   useEffect(() => {
     onDirtyChange?.(changes.length);
@@ -124,20 +118,18 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
   /* ── Draft mutations ── */
 
   function openAdd(tier: SponsorTier) {
-    setEditing({ ...EMPTY_SPONSOR, sponsor_tier: tier });
+    setEditing({ ...EMPTY_SPONSOR, tier });
   }
 
   function upsertSponsor(form: SponsorForm) {
     if (form.id) {
-      setDraftCompanies((companies) =>
-        companies.map((c) => (c.id === form.id ? { ...c, ...form, id: c.id } : c)),
+      setDraftSponsors((sponsors) =>
+        sponsors.map((s) => (s.id === form.id ? { ...s, ...form, id: s.id } : s)),
       );
     } else {
-      const sortOrder = form.sponsor_tier
-        ? tierMembers(draftCompanies, form.sponsor_tier).length
-        : 0;
-      setDraftCompanies((companies) => [
-        ...companies,
+      const sortOrder = tierMembers(draftSponsors, form.tier).length;
+      setDraftSponsors((sponsors) => [
+        ...sponsors,
         {
           ...form,
           id: `tmp-sponsor-${++tmpIdRef.current}`,
@@ -150,20 +142,20 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
   }
 
   function removeSponsor(id: string) {
-    setDraftCompanies((companies) => companies.filter((c) => c.id !== id));
+    setDraftSponsors((sponsors) => sponsors.filter((s) => s.id !== id));
   }
 
   function reorderTier(_tier: SponsorTier, nextItems: AdminSponsor[]) {
-    setDraftCompanies((companies) =>
-      companies.map((c) => {
-        const idx = nextItems.findIndex((n) => n.id === c.id);
-        return idx === -1 ? c : { ...c, sort_order: idx };
+    setDraftSponsors((sponsors) =>
+      sponsors.map((s) => {
+        const idx = nextItems.findIndex((n) => n.id === s.id);
+        return idx === -1 ? s : { ...s, sort_order: idx };
       }),
     );
   }
 
   function discard() {
-    setDraftCompanies(serverCompanies.map((c) => ({ ...c })));
+    setDraftSponsors(serverSponsors.map((s) => ({ ...s })));
     setError(null);
     revokeAll();
   }
@@ -176,56 +168,53 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
     try {
       // 1. Create new sponsors (tmp id → real id).
       const idMap = new Map<string, string>();
-      for (const c of draftCompanies) {
-        if (!c._new) continue;
+      for (const s of draftSponsors) {
+        if (!s._new) continue;
         const formData = new FormData();
-        formData.append("name", c.name);
-        formData.append("sponsor_tier", c.sponsor_tier || "");
-        formData.append("sponsor_url", c.sponsor_url || "");
-        formData.append("sponsor_blurb", c.sponsor_blurb || "");
-        const compressed = await compressImage(c._logoFile!);
-        formData.append("logo", compressed, c._logoFile!.name);
-        const created = await apiUpload<{ id: string }>("/companies", formData);
-        idMap.set(c.id, created.id);
+        formData.append("name", s.name);
+        formData.append("tier", s.tier);
+        formData.append("url", s.url || "");
+        formData.append("blurb", s.blurb || "");
+        const compressed = await compressImage(s._logoFile!);
+        formData.append("logo", compressed, s._logoFile!.name);
+        const created = await apiUpload<{ id: string }>("/sponsors", formData);
+        idMap.set(s.id, created.id);
       }
 
       // 2. Update edited sponsors.
-      for (const c of draftCompanies) {
-        if (c._new) continue;
-        const orig = serverCompanies.find((s) => s.id === c.id);
+      for (const s of draftSponsors) {
+        if (s._new) continue;
+        const orig = serverSponsors.find((o) => o.id === s.id);
         if (!orig) continue;
-        if (sponsorFieldsEqual(orig, c) && !c._logoFile) continue;
+        if (sponsorFieldsEqual(orig, s) && !s._logoFile) continue;
         const formData = new FormData();
-        if (orig.name !== c.name) formData.append("name", c.name);
-        if (orig.sponsor_tier !== c.sponsor_tier)
-          formData.append("sponsor_tier", c.sponsor_tier || "");
-        if (orig.sponsor_url !== c.sponsor_url)
-          formData.append("sponsor_url", c.sponsor_url || "");
-        if (orig.sponsor_blurb !== c.sponsor_blurb)
-          formData.append("sponsor_blurb", c.sponsor_blurb || "");
-        if (c._logoFile) {
-          const compressed = await compressImage(c._logoFile);
-          formData.append("logo", compressed, c._logoFile.name);
+        if (orig.name !== s.name) formData.append("name", s.name);
+        if (orig.tier !== s.tier) formData.append("tier", s.tier);
+        if (orig.url !== s.url) formData.append("url", s.url || "");
+        if (orig.blurb !== s.blurb) formData.append("blurb", s.blurb || "");
+        if (s._logoFile) {
+          const compressed = await compressImage(s._logoFile);
+          formData.append("logo", compressed, s._logoFile.name);
         }
-        await apiUpload(`/companies/${c.id}`, formData, "PUT");
+        await apiUpload(`/sponsors/${s.id}`, formData, "PUT");
       }
 
       // 3. Delete removed sponsors.
-      for (const orig of serverCompanies) {
-        if (!draftCompanies.some((c) => c.id === orig.id)) {
-          await apiDelete(`/companies/${orig.id}`);
+      for (const orig of serverSponsors) {
+        if (!draftSponsors.some((s) => s.id === orig.id)) {
+          await apiDelete(`/sponsors/${orig.id}`);
         }
       }
 
-      // 4. Persist tier display order for every tiered sponsor (new + existing).
+      // 4. Persist tier display order for every sponsor (new + existing).
       const order = TIERS.flatMap((t) =>
-        tierMembers(draftCompanies, t.value).map((c, idx) => ({
-          id: idMap.get(c.id) ?? c.id,
+        tierMembers(draftSponsors, t.value).map((s, idx) => ({
+          id: idMap.get(s.id) ?? s.id,
           sort_order: idx,
         })),
       );
       if (order.length > 0) {
-        await apiPut("/companies/reorder", { order });
+        await apiPut("/sponsors/reorder", { order });
       }
 
       setReviewOpen(false);
@@ -250,15 +239,13 @@ export default function SponsorsTab({ onDirtyChange }: { onDirtyChange?: (count:
         <TierPanel
           key={t.value}
           tier={t.value}
-          companies={draftCompanies}
+          sponsors={draftSponsors}
           onAdd={openAdd}
           onEdit={setEditing}
           onRemove={removeSponsor}
           onReorder={(next) => reorderTier(t.value, next)}
         />
       ))}
-
-      <OtherCompaniesPanel companies={draftCompanies} onEdit={setEditing} />
 
       <SaveBar
         count={changes.length}

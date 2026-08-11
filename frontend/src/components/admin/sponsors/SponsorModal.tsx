@@ -48,8 +48,8 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
     onSubmit({
       ...form,
       name: form.name.trim(),
-      sponsor_url: form.sponsor_url.trim(),
-      sponsor_blurb: form.sponsor_blurb.trim(),
+      url: form.url.trim(),
+      blurb: form.blurb.trim(),
     });
   }
 
@@ -77,12 +77,11 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
             <select
               id="sponsor-tier"
               className="admin-select"
-              value={form.sponsor_tier}
+              value={form.tier}
               onChange={(e) =>
-                setForm({ ...form, sponsor_tier: e.target.value as SponsorTier | "" })
+                setForm({ ...form, tier: e.target.value as SponsorTier })
               }
             >
-              <option value="">— Not a sponsor —</option>
               {TIERS.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
@@ -98,8 +97,8 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
             className="admin-input"
             type="url"
             placeholder="https://…"
-            value={form.sponsor_url}
-            onChange={(e) => setForm({ ...form, sponsor_url: e.target.value })}
+            value={form.url}
+            onChange={(e) => setForm({ ...form, url: e.target.value })}
           />
         </Field>
 
@@ -108,8 +107,8 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
             id="sponsor-blurb"
             className="admin-input min-h-24 resize-y"
             placeholder="Shown on the /sponsors page — optional"
-            value={form.sponsor_blurb}
-            onChange={(e) => setForm({ ...form, sponsor_blurb: e.target.value })}
+            value={form.blurb}
+            onChange={(e) => setForm({ ...form, blurb: e.target.value })}
           />
         </Field>
 

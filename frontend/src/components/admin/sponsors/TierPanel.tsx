@@ -14,15 +14,15 @@ import { tierLabel, tierMembers } from "./sponsorUtils";
 
 interface TierPanelProps {
   tier: SponsorTier;
-  companies: AdminSponsor[];
+  sponsors: AdminSponsor[];
   onAdd: (tier: SponsorTier) => void;
-  onEdit: (company: AdminSponsor) => void;
+  onEdit: (sponsor: AdminSponsor) => void;
   onRemove: (id: string) => void;
   onReorder: (items: AdminSponsor[]) => void;
 }
 
-export default function TierPanel({ tier, companies, onAdd, onEdit, onRemove, onReorder }: TierPanelProps) {
-  const items = tierMembers(companies, tier);
+export default function TierPanel({ tier, sponsors, onAdd, onEdit, onRemove, onReorder }: TierPanelProps) {
+  const items = tierMembers(sponsors, tier);
 
   return (
     <Panel
