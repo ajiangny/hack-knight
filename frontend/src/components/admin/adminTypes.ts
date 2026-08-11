@@ -47,26 +47,43 @@ export interface AdminYear {
   _new?: boolean;
 }
 
-/* ── Companies (team badges; a company with a tier is a sponsor) ── */
+/* ── Companies (team badges) ── */
 
 export interface AdminCompany {
   id: string;
   name: string;
   logo_url: string | null;
-  sponsor_tier?: SponsorTier | "" | null;
-  sponsor_url?: string | null;
-  sponsor_blurb?: string | null;
   sort_order?: number;
   _new?: boolean;
   _logoFile?: File | null;
   _logoPreview?: string | null;
 }
 
-/** Company normalized for the sponsors tab — nullable fields become "". */
-export interface AdminSponsor extends AdminCompany {
-  sponsor_tier: SponsorTier | "";
-  sponsor_url: string;
-  sponsor_blurb: string;
+/* ── Sponsors (own table, separate from badge companies) ── */
+
+/** Raw sponsor row from the Express API. */
+export interface SponsorRow {
+  id: string;
+  name: string;
+  logo_url: string;
+  tier: SponsorTier;
+  url?: string | null;
+  blurb?: string | null;
+  sort_order?: number;
+}
+
+/** Sponsor normalized for the sponsors tab — nullable fields become "". */
+export interface AdminSponsor {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  tier: SponsorTier;
+  url: string;
+  blurb: string;
+  sort_order?: number;
+  _new?: boolean;
+  _logoFile?: File | null;
+  _logoPreview?: string | null;
 }
 
 /** Modal form seed — no id until the sponsor is staged. */

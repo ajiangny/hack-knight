@@ -52,15 +52,25 @@ export interface GalleryYearWithPhotos extends GalleryYear {
 
 export type SponsorTier = "platinum" | "gold" | "silver" | "bronze";
 
+// Sponsors are their own table, separate from the badge companies below.
+export interface Sponsor {
+  id: string;
+  name: string;
+  logo_url: string;
+  tier: SponsorTier;
+  url: string | null;
+  blurb: string | null;
+  sort_order: number;
+  created_at?: string;
+}
+
+// Badge companies — logos worn by team members (max 2 each).
 export interface Company {
   id: string;
   name: string;
   logo_url: string;
   sort_order: number;
   created_at?: string;
-  sponsor_tier: SponsorTier | null;
-  sponsor_url: string | null;
-  sponsor_blurb: string | null;
 }
 
 export interface TeamMember {
@@ -94,7 +104,8 @@ export interface CreateTeamMemberBody {
 
 export type UpdateTeamMemberBody = Partial<CreateTeamMemberBody>;
 
-// PUT /api/team/reorder, PUT /api/gallery/photos/reorder, PUT /api/companies/reorder
+// PUT /api/team/reorder, PUT /api/gallery/photos/reorder,
+// PUT /api/companies/reorder, PUT /api/sponsors/reorder
 export interface ReorderBody {
   order: { id: string; sort_order: number }[];
 }

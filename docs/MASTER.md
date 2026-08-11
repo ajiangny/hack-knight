@@ -138,7 +138,7 @@ tab plus its modals, panels, and utils; `MiscTab.tsx` stays flat.
 - **Toggle:** pill switch (`role="switch"`), ultraviolet when on,
   `black/30` + border when off; 150ms color/translate transitions.
 - **CollapseTitle:** panel title as a toggle button with a rotating chevron
-  (`aria-expanded`); used by collapsible panels (Companies, Other Companies).
+  (`aria-expanded`); used by collapsible panels (e.g. Companies on the Team tab).
 - **CardOverlay / CardMoveButtons:** hover/focus-revealed icon-button
   clusters pinned to a drag card's corners; move buttons are the keyboard
   fallback for drag-to-reorder.
