@@ -190,6 +190,26 @@
   /* Company blurb */
   .company-blurb {
     @apply font-body text-sm text-text-secondary text-center leading-relaxed;
+
+    /* Blurbs render as Markdown (see SponsorBlurb.tsx), so they can hold
+       several blocks. Space the blocks out, and restore the list styling
+       that Tailwind's reset strips. Lists read badly centered, so they
+       align left inside the otherwise-centered blurb. */
+    > * + * {
+      @apply mt-3;
+    }
+    ul {
+      @apply list-disc text-left pl-5;
+    }
+    ol {
+      @apply list-decimal text-left pl-5;
+    }
+    li + li {
+      @apply mt-1;
+    }
+    a {
+      @apply underline hover:text-ultraviolet transition-colors;
+    }
   }
 
   /* ── Layout ──────────────────────────────────────── */

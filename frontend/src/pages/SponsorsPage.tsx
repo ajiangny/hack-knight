@@ -1,6 +1,7 @@
 // Groups sponsors by tier using .filter() on the data from the API (static fallback)
 
 import { useSponsors } from '../hooks/useSponsors';
+import SponsorBlurb from '../components/site/SponsorBlurb'; // renders the blurb as Markdown
 import type { Sponsor } from '../types';
 
 /** Logo, wrapped in a link only when the sponsor has a real URL. */
@@ -43,7 +44,7 @@ export default function SponsorsPage() {
                 <SponsorLogo sponsor={sponsor} size="large-plus" />
                 <p className="sponsor-name">{sponsor.name}</p>
                 {sponsor.companyBlurb && (
-                  <p className="company-blurb">{sponsor.companyBlurb}</p>
+                  <SponsorBlurb text={sponsor.companyBlurb} />
                 )}
               </div>
             ))}
@@ -60,7 +61,7 @@ export default function SponsorsPage() {
                 <SponsorLogo sponsor={sponsor} size="large" />
                 <p className="sponsor-name">{sponsor.name}</p>
                 {sponsor.companyBlurb && (
-                  <p className="company-blurb">{sponsor.companyBlurb}</p>
+                  <SponsorBlurb text={sponsor.companyBlurb} />
                 )}
               </div>
             ))}
@@ -77,7 +78,7 @@ export default function SponsorsPage() {
                 <SponsorLogo sponsor={sponsor} size="medium" />
                 <p className="sponsor-name">{sponsor.name}</p>
                 {sponsor.companyBlurb && (
-                  <p className="company-blurb">{sponsor.companyBlurb}</p>
+                  <SponsorBlurb text={sponsor.companyBlurb} />
                 )}
               </div>
             ))}

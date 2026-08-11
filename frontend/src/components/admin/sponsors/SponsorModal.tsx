@@ -106,7 +106,7 @@ export default function SponsorModal({ open, initial, trackUrl, onSubmit, onClos
           <textarea
             id="sponsor-blurb"
             className="admin-input min-h-24 resize-y"
-            placeholder="Shown on the /sponsors page — optional"
+            placeholder="Shown on the /sponsors page — optional. Markdown works: blank line for a new paragraph, - for bullets."
             value={form.blurb}
             onChange={(e) => setForm({ ...form, blurb: e.target.value })}
           />
