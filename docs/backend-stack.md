@@ -52,7 +52,8 @@ backend/
         ├── schedule.ts     # /api/schedule + /api/schedule/days
         ├── gallery.ts      # /api/gallery (years, photos, uploads, replace, reorder)
         ├── team.ts         # /api/team (members, photo/badge uploads, reorder)
-        ├── companies.ts    # /api/companies (team badges + sponsors, logo upload, reorder)
+        ├── companies.ts    # /api/companies (team badges, logo upload, reorder)
+        ├── sponsors.ts     # /api/sponsors (tiers, logo upload, reorder)
         ├── settings.ts     # /api/settings (site settings key/value store)
         └── registrations.ts  # /api/registrations (public submit + admin reads/export)
 ```
@@ -71,9 +72,14 @@ The database schema lives in `supabase/migrations/` (see
   `PUT /api/gallery/photos/reorder` admin only
 - `GET /api/team`: public; member writes, photo/badge uploads, and
   `PUT /api/team/reorder` (display priority) admin only
-- `GET /api/companies`: public; a row is a reusable team badge and becomes a
-  sponsor when it has a `sponsor_tier`. CRUD with logo upload and
-  `PUT /api/companies/reorder` (tier display order) admin only
+- `GET /api/companies`: public; a row is a reusable team badge worn by team
+  members. CRUD with logo upload and `PUT /api/companies/reorder` admin only
+- `GET /api/sponsors`: public; sponsors live in their own table, separate
+  from badge companies, and every row has a tier. CRUD with logo upload and
+  `PUT /api/sponsors/reorder` (tier display order) admin only. New logos go
+  to `sponsors/` in the bucket, and deletes only remove files from that
+  folder — sponsors carried over by the split migration still point at
+  `companies/` files that may also back a team badge
 - `GET /api/settings`: public read of all site settings (e.g.
   `countdown_target`, `mlh_badge_enabled`, `registration_open`);
   `PUT /api/settings/:key` admin only

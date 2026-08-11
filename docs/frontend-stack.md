@@ -15,6 +15,7 @@ strict mode enabled.
 | Styling | Tailwind CSS 4 (via `@tailwindcss/vite`) | Plus hand-written CSS in `src/styles/` |
 | Animation | Motion 12 (`motion/react`) | Successor to Framer Motion; used for page transitions |
 | Images | `browser-image-compression` | Compresses admin uploads client-side before sending |
+| Markdown | `react-markdown` | Renders admin-written sponsor blurbs; skips raw HTML by default |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) | With `typescript-eslint`, `react-hooks`, and `react-refresh` plugins |
 
 ## Directory layout
@@ -36,6 +37,7 @@ frontend/
     ├── pages/              # Route-level components (Home, SchedulePage, RegisterPage, AdminPage, ...)
     ├── components/
     │   ├── site/           # Public site components (Navbar, Hero, CountdownTimer, TeamSection,
+    │   │                   #   SponsorsCarousel + SponsorBlurb for sponsors,
     │   │                   #   SchoolCombobox + TurnstileWidget for the registration form, ...)
     │   └── admin/          # Admin dashboard
     │       ├── adminTypes.ts     # Draft shapes for staged edits (AdminEvent, AdminMember, ...)
@@ -46,7 +48,7 @@ frontend/
     │       ├── schedule/         # ScheduleTab + EventModal + scheduleMeta
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
-    │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + OtherCompaniesPanel + sponsorUtils
+    │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + sponsorUtils
     │       └── registrations/    # RegistrationsTab (search, CSV export, resume links, delete)
     ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
     │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth.
