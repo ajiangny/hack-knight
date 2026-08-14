@@ -416,7 +416,7 @@ registrationsRouter.post(
     // 5. Registration window. The frontend gate can be bypassed by posting
     //    directly, so this check is what actually closes registration.
     if (!(await isRegistrationOpen())) {
-      res.status(403).json({ message: "Registration is currently closed" });
+      res.status(403).json({ message: "Applications are currently closed" });
       return;
     }
 
@@ -446,7 +446,7 @@ registrationsRouter.post(
     if (error) {
       // 23505 = unique_violation on registrations_email_unique.
       if (error.code === "23505") {
-        res.status(409).json({ message: "This email is already registered" });
+        res.status(409).json({ message: "This email has already applied" });
         return;
       }
       console.error("Failed to insert registration:", error);
@@ -505,7 +505,7 @@ registrationsRouter.get(
 
     if (error) {
       console.error("Failed to fetch registrations:", error);
-      res.status(500).json({ message: "Failed to fetch registrations" });
+      res.status(500).json({ message: "Failed to fetch applications" });
       return;
     }
 
@@ -551,7 +551,7 @@ const CSV_COLUMNS: Array<[header: string, key: keyof Registration]> = [
   ["MLH Code of Conduct", "mlh_code_of_conduct"],
   ["MLH Data Sharing", "mlh_data_sharing"],
   ["MLH Email Opt-In", "mlh_emails"],
-  ["Registered At", "created_at"],
+  ["Applied At", "created_at"],
 ];
 
 // GET /api/registrations/export  (admin) — the check-in day download.
@@ -563,7 +563,7 @@ registrationsRouter.get(
 
     if (error) {
       console.error("Failed to export registrations:", error);
-      res.status(500).json({ message: "Failed to export registrations" });
+      res.status(500).json({ message: "Failed to export applications" });
       return;
     }
 
@@ -579,7 +579,7 @@ registrationsRouter.get(
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="hackknight-registrations-${today}.csv"`,
+      `attachment; filename="hackknight-applications-${today}.csv"`,
     );
     // BOM so Excel reads UTF-8 names correctly instead of mojibake.
     res.send(`﻿${csv}`);
@@ -598,7 +598,7 @@ registrationsRouter.delete(
 
     if (error) {
       console.error("Failed to delete registration:", error);
-      res.status(500).json({ message: "Failed to delete registration" });
+      res.status(500).json({ message: "Failed to delete application" });
       return;
     }
 
