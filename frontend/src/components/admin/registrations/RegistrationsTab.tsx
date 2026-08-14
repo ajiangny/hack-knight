@@ -153,13 +153,18 @@ export default function RegistrationsTab({
                     <th scope="col">Level of Study</th>
                     <th scope="col">Country</th>
                     <th scope="col">Major</th>
+                    <th scope="col">Gender</th>
+                    <th scope="col">Pronouns</th>
+                    <th scope="col">Race / Ethnicity</th>
+                    <th scope="col">Orientation</th>
                     <th scope="col">Dietary</th>
                     <th scope="col">LinkedIn</th>
-                    {/* The two required MLH boxes are always true (the API
-                        rejects otherwise), so only the optional opt-in earns
-                        a column. Demographic answers (gender, pronouns,
-                        race/ethnicity, orientation) and other full detail
-                        are in the CSV export. */}
+                    {/* The first two MLH boxes are always Yes (the API rejects
+                        registrations without them); they get columns anyway so
+                        every submitted field is visible here, matching the
+                        CSV export. */}
+                    <th scope="col">MLH Conduct</th>
+                    <th scope="col">MLH Sharing</th>
                     <th scope="col">MLH Emails</th>
                     <th scope="col">Resume</th>
                     <th scope="col">Registered</th>
@@ -184,6 +189,18 @@ export default function RegistrationsTab({
                       <td>{r.levelOfStudy}</td>
                       <td className="whitespace-nowrap">{r.country}</td>
                       <td>{r.major}</td>
+                      <td>{r.gender}</td>
+                      <td>
+                        {r.pronouns ?? <span className="text-text-muted">—</span>}
+                      </td>
+                      <td>
+                        {r.raceEthnicity.length > 0 ? (
+                          r.raceEthnicity.join(", ")
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
+                      <td>{r.sexualOrientation}</td>
                       <td>
                         {r.dietaryRestrictions.length > 0 ? (
                           r.dietaryRestrictions.join(", ")
@@ -205,6 +222,8 @@ export default function RegistrationsTab({
                           <span className="text-text-muted">—</span>
                         )}
                       </td>
+                      <td>{r.mlhCodeOfConduct ? "Yes" : "No"}</td>
+                      <td>{r.mlhDataSharing ? "Yes" : "No"}</td>
                       <td>{r.mlhEmails ? "Yes" : "No"}</td>
                       <td>
                         {/* A Google Drive link the applicant shared; opens
