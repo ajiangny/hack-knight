@@ -392,8 +392,8 @@ export default function RegisterPage() {
 
       if (res.status === 409) {
         setStatus("idle");
-        setErrors({ email: "This email is already registered" });
-        setFormError("This email is already registered.");
+        setErrors({ email: "This email has already applied" });
+        setFormError("This email has already applied.");
         return;
       }
 
@@ -434,7 +434,7 @@ export default function RegisterPage() {
       </div>
 
       <h1 className="section-title text-center">
-        Register for <span className="text-ultraviolet">HackKnight</span>
+        Apply for <span className="text-ultraviolet">HackKnight</span>
       </h1>
 
       {status === "success" ? (
@@ -445,12 +445,13 @@ export default function RegisterPage() {
           role="status"
         >
           <h2 className="font-display font-bold text-2xl text-text-primary mb-3">
-            You&rsquo;re registered
+            Thank you!
           </h2>
           <p className="font-body text-text-secondary mb-6">
-            We&rsquo;ve saved your spot under{" "}
-            <span className="text-text-primary">{values.email.trim()}</span>.
-            Watch that inbox for check-in details closer to the event.
+            Your application to HackKnight has been received. You will
+            receive more information regarding your application at{" "}
+            <span className="text-text-primary">{values.email.trim()}</span>
+            . Please check your inbox for more updates closer to the event.
           </p>
           <Link to="/" className="btn-outline inline-block">
             Back to Home
@@ -1079,7 +1080,7 @@ export default function RegisterPage() {
               className="btn-primary w-full mt-6 disabled:opacity-50
                          disabled:cursor-not-allowed disabled:animate-none"
             >
-              {submitting ? "Submitting…" : "Register"}
+              {submitting ? "Submitting…" : "Apply"}
             </button>
           </form>
         </>
