@@ -1,7 +1,7 @@
 // Misc admin tab — one-off site settings that don't warrant their own tab.
 // Countdown target date (staged + previewed live through the real public
-// CountdownTimer component), the registration toggles, and the MLH trust
-// badge toggle.
+// CountdownTimer component), the registration toggles, the MLH trust
+// badge toggle, and the "More Sponsors TBA!" teaser toggle.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../../lib/api";
@@ -14,6 +14,7 @@ const COUNTDOWN_KEY = "countdown_target";
 const MLH_KEY = "mlh_badge_enabled";
 const REGISTRATION_KEY = "registration_open";
 const MLH_DISCLAIMER_KEY = "mlh_disclaimer_enabled";
+const SPONSORS_TBA_KEY = "sponsors_tba_enabled";
 
 type AppliedChange = Change & { apply: () => Promise<unknown> };
 
@@ -108,6 +109,21 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
       });
     }
 
+    if (draftSettings[SPONSORS_TBA_KEY] !== serverSettings[SPONSORS_TBA_KEY]) {
+      const on = draftSettings[SPONSORS_TBA_KEY] === "true";
+      list.push({
+        kind: "edit",
+        summary: "Sponsors TBA teaser",
+        detail: on
+          ? "Hidden → shown under the homepage sponsor carousel"
+          : "Shown → hidden under the homepage sponsor carousel",
+        apply: () =>
+          apiPut(`/settings/${SPONSORS_TBA_KEY}`, {
+            value: draftSettings[SPONSORS_TBA_KEY],
+          }),
+      });
+    }
+
     if (draftSettings[MLH_DISCLAIMER_KEY] !== serverSettings[MLH_DISCLAIMER_KEY]) {
       const on = draftSettings[MLH_DISCLAIMER_KEY] === "true";
       list.push({
@@ -161,6 +177,9 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
   // Absent key = shown — the disclaimer must stay up until MLH membership is
   // official, so only an explicit "false" hides it.
   const disclaimerOn = draftSettings[MLH_DISCLAIMER_KEY] !== "false";
+  // Absent key = shown, same as the disclaimer: the teaser should be up while
+  // the sponsor lineup is still filling in.
+  const sponsorsTbaOn = draftSettings[SPONSORS_TBA_KEY] !== "false";
 
   return (
     <div>
@@ -268,6 +287,31 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                 label="Show MLH trust badge"
                 checked={mlhOn}
                 onChange={(next) => setDraft(MLH_KEY, next ? "true" : "false")}
+              />
+            </div>
+          </Panel>
+
+          <Panel title="Sponsors">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <label
+                  className="admin-label mb-0.5 cursor-pointer"
+                  htmlFor="sponsors-tba-toggle"
+                >
+                  &quot;More Sponsors TBA!&quot; teaser
+                </label>
+                <p className="admin-help">
+                  Shows a &quot;More Sponsors TBA!&quot; note under the homepage
+                  sponsor carousel. Turn off once the lineup is final.
+                </p>
+              </div>
+              <Toggle
+                id="sponsors-tba-toggle"
+                label="Show More Sponsors TBA teaser"
+                checked={sponsorsTbaOn}
+                onChange={(next) =>
+                  setDraft(SPONSORS_TBA_KEY, next ? "true" : "false")
+                }
               />
             </div>
           </Panel>
