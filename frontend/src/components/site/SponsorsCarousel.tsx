@@ -2,12 +2,14 @@
 // Displays sponsor logos on the homepage: a static centered row when there are
 // only a few, an infinite scrolling carousel once there are CAROUSEL_MIN or more.
 // Imports sponsor data from data/sponsors.ts
-// Has a link to the full /sponsors page.
+// Has a link to the full /sponsors page and an admin-toggleable
+// "More Sponsors TBA!" teaser (sponsors_tba_enabled site setting).
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';            // Link for navigating to /sponsors
 import { motion } from 'motion/react';              // Framer Motion for infinite carousel loop
 import { useSponsors } from '../../hooks/useSponsors';  // fetches sponsors from the API (static fallback)
+import { useSiteSettings } from '../../hooks/useSiteSettings';  // sponsors_tba_enabled toggle
 import type { Sponsor } from '../../types';
 
 // Pixels per second the strip travels, so the pace stays the same whether there
@@ -52,6 +54,11 @@ function SponsorCard({ sponsor, duplicate }: { sponsor: Sponsor; duplicate: bool
 
 export default function SponsorsCarousel() {
   const { sponsors } = useSponsors();
+  const { settings } = useSiteSettings();
+  // Shown unless the admin explicitly turns it off (sponsors_tba_enabled) —
+  // like the MLH disclaimer, a missing key means the row was never saved,
+  // and while the sponsor list is short the teaser should default to on.
+  const showTba = settings.sponsors_tba_enabled !== 'false';
   // Few enough sponsors that a scrolling strip isn't needed — render them as a
   // plain centered row instead. The measurement refs below stay unattached in
   // that mode, so the layout effect bails out and no animation runs.
@@ -162,6 +169,14 @@ export default function SponsorsCarousel() {
         </div>
         )}
       </div>
+
+      {/* Teaser under the carousel while the sponsor lineup is still filling
+          in — admin-toggleable via sponsors_tba_enabled. */}
+      {showTba && (
+        <p className="font-body text-text-secondary text-center text-sm sm:text-lg mt-6 sm:mt-8">
+          More Sponsors TBA!
+        </p>
+      )}
 
       {/* "View All" button — outside the surface card, below it */}
       <div className="text-center mt-6 sm:mt-8">
