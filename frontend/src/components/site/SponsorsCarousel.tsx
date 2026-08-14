@@ -131,49 +131,49 @@ export default function SponsorsCarousel() {
             ))}
           </div>
         ) : (
-        /* Horizontal scrolling row of sponsor logos */
-        <div
-          ref={viewportRef}
-          className="w-full py-3 sm:py-6 overflow-hidden relative flex"
-          style={{
-            maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-            WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)'
-          }}
-        >
-          <motion.div
-            ref={trackRef}
-            className="flex items-center gap-4 sm:gap-8 w-max pr-4 sm:pr-8"
-            animate={{ x: ["0%", "-50%"] }}
-            transition={{
-              ease: "linear",
-              duration,
-              repeat: Infinity
+          /* Horizontal scrolling row of sponsor logos */
+          <div
+            ref={viewportRef}
+            className="w-full py-3 sm:py-6 overflow-hidden relative flex"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)'
             }}
           >
-            {/* Two identical halves, each `copies` repeats of the sponsor list.
+            <motion.div
+              ref={trackRef}
+              className="flex items-center gap-4 sm:gap-8 w-max pr-4 sm:pr-8"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{
+                ease: "linear",
+                duration,
+                repeat: Infinity
+              }}
+            >
+              {/* Two identical halves, each `copies` repeats of the sponsor list.
                 Each group repeats the parent's gap so the spacing stays even,
                 and the trailing padding matches one gap so the seam is exact. */}
-            {Array.from({ length: copies * 2 }, (_, groupIndex) => (
-              <div
-                key={groupIndex}
-                ref={groupIndex === 0 ? groupRef : undefined}
-                className="flex items-center gap-4 sm:gap-8"
-                aria-hidden={groupIndex > 0}
-              >
-                {sponsors.map((sponsor, index) => (
-                  <SponsorCard key={sponsor.id ?? index} sponsor={sponsor} duplicate={groupIndex > 0} />
-                ))}
-              </div>
-            ))}
-          </motion.div>
-        </div>
+              {Array.from({ length: copies * 2 }, (_, groupIndex) => (
+                <div
+                  key={groupIndex}
+                  ref={groupIndex === 0 ? groupRef : undefined}
+                  className="flex items-center gap-4 sm:gap-8"
+                  aria-hidden={groupIndex > 0}
+                >
+                  {sponsors.map((sponsor, index) => (
+                    <SponsorCard key={sponsor.id ?? index} sponsor={sponsor} duplicate={groupIndex > 0} />
+                  ))}
+                </div>
+              ))}
+            </motion.div>
+          </div>
         )}
       </div>
 
       {/* Teaser under the carousel while the sponsor lineup is still filling
           in — admin-toggleable via sponsors_tba_enabled. */}
       {showTba && (
-        <p className="font-body text-text-secondary text-center text-sm sm:text-lg mt-6 sm:mt-8">
+        <p className="font-body text-text-secondary text-center text-sm sm:text-2xl mt-6 sm:mt-8">
           More Sponsors TBA!
         </p>
       )}
