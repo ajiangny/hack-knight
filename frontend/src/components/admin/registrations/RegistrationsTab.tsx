@@ -68,7 +68,7 @@ export default function RegistrationsTab({
       url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `hackknight-registrations-${new Date()
+      link.download = `hackknight-applications-${new Date()
         .toISOString()
         .slice(0, 10)}.csv`;
       link.click();
@@ -104,7 +104,7 @@ export default function RegistrationsTab({
       {actionError && <p className="admin-error">{actionError}</p>}
 
       <Panel
-        title="Registrations"
+        title="Applications"
         count={loading ? "…" : registrations.length}
         actions={
           <button
@@ -132,12 +132,12 @@ export default function RegistrationsTab({
         </div>
 
         {loading ? (
-          <EmptyState>Loading registrations…</EmptyState>
+          <EmptyState>Loading applications…</EmptyState>
         ) : filtered.length === 0 ? (
           <EmptyState>
             {registrations.length === 0
-              ? "No registrations yet."
-              : `No registrations match “${search.trim()}”.`}
+              ? "No applications yet."
+              : `No applications match “${search.trim()}”.`}
           </EmptyState>
         ) : (
           <>
@@ -167,7 +167,7 @@ export default function RegistrationsTab({
                     <th scope="col">MLH Sharing</th>
                     <th scope="col">MLH Emails</th>
                     <th scope="col">Resume</th>
-                    <th scope="col">Registered</th>
+                    <th scope="col">Applied</th>
                     <th scope="col">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -248,7 +248,7 @@ export default function RegistrationsTab({
                         <button
                           type="button"
                           className="admin-btn-icon admin-btn-icon-danger"
-                          aria-label={`Delete registration for ${r.firstName} ${r.lastName}`}
+                          aria-label={`Delete application for ${r.firstName} ${r.lastName}`}
                           onClick={() => setPendingDelete(r)}
                         >
                           <XIcon />
@@ -271,11 +271,11 @@ export default function RegistrationsTab({
 
       <Modal
         open={pendingDelete !== null}
-        title="Delete registration"
+        title="Delete application"
         onClose={deleting ? () => {} : () => setPendingDelete(null)}
       >
         <p className="font-body text-sm text-text-secondary mb-5">
-          Permanently delete the registration for{" "}
+          Permanently delete the application for{" "}
           <span className="text-text-primary">
             {pendingDelete?.firstName} {pendingDelete?.lastName}
           </span>{" "}
