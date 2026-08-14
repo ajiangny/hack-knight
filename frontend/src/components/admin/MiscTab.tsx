@@ -98,7 +98,7 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
       const open = draftSettings[REGISTRATION_KEY] === "true";
       list.push({
         kind: "edit",
-        summary: "Registration",
+        summary: "Applications",
         detail: open
           ? "Closed → /register accepts submissions"
           : "Open → /register shows the coming-soon page",
@@ -130,8 +130,8 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
         kind: "edit",
         summary: "MLH pre-partnership disclaimer",
         detail: on
-          ? "Hidden → shown on the registration form"
-          : "Shown → hidden on the registration form",
+          ? "Hidden → shown on the application form"
+          : "Shown → hidden on the application form",
         apply: () =>
           apiPut(`/settings/${MLH_DISCLAIMER_KEY}`, {
             value: draftSettings[MLH_DISCLAIMER_KEY],
@@ -218,14 +218,14 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
             </div>
           </Panel>
 
-          <Panel title="Registration">
+          <Panel title="Applications">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <label
                   className="admin-label mb-0.5 cursor-pointer"
                   htmlFor="registration-open-toggle"
                 >
-                  Accept registrations
+                  Accept applications
                 </label>
                 <p className="admin-help">
                   When off, /register shows the coming-soon page and the API
@@ -234,7 +234,7 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
               </div>
               <Toggle
                 id="registration-open-toggle"
-                label="Accept registrations"
+                label="Accept applications"
                 checked={registrationOpen}
                 onChange={(next) =>
                   setDraft(REGISTRATION_KEY, next ? "true" : "false")
@@ -252,7 +252,7 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                 </label>
                 <p className="admin-help">
                   Shows the &quot;we are in the process of partnering with
-                  MLH&quot; note above the MLH checkboxes on the registration
+                  MLH&quot; note above the MLH checkboxes on the application
                   form. Leave on until HackKnight is an official MLH
                   member event.
                 </p>

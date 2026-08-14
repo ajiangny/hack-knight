@@ -22,7 +22,7 @@ export default function ComingSoon() {
         </h1>
 
         <p className="font-body text-text-secondary text-base max-w-xl text-center mx-auto">
-          We're putting the finishing touches on registration. Check back soon!
+          We're putting the finishing touches on applications. Check back soon!
         </p>
       </div>
 

@@ -23,7 +23,7 @@ interface AdminTab {
 
 const TABS: AdminTab[] = [
   // First: during the event this is the tab people open most.
-  { key: "registrations", label: "Registrations", Component: RegistrationsTab },
+  { key: "registrations", label: "Applications", Component: RegistrationsTab },
   { key: "schedule", label: "Schedule", Component: ScheduleTab },
   { key: "gallery", label: "Gallery", Component: GalleryTab },
   { key: "team", label: "Team", Component: TeamTab },
