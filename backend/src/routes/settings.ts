@@ -7,6 +7,8 @@ const settingsRouter = Router();
 
 // GET /api/settings  (public) — flattened { key: value } map
 settingsRouter.get("/", async (_req: Request, res: Response) => {
+  // Short TTL: carries the registration open/closed toggle.
+  res.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
   const { data, error } = await supabase.from("site_settings").select("*");
 
   if (error) {

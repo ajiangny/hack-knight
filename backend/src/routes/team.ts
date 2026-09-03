@@ -60,6 +60,7 @@ async function uploadToStorage(
 
 // GET /api/team  (public) — members with their company badges embedded
 teamRouter.get("/", async (_req: Request, res: Response) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   const [membersRes, companiesRes] = await Promise.all([
     supabase
       .from("team_members")

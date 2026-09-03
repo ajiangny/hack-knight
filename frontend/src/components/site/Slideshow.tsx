@@ -102,6 +102,8 @@ function ParallaxPhoto({ photo, index, year, onPhotoClick, isActive }: ParallaxP
           onClick={() => onPhotoClick && onPhotoClick(photo, index)}
           src={photo.src}
           alt={photo.alt}
+          loading="lazy"
+          decoding="async"
           className="w-full h-36 sm:h-48 md:h-64 object-cover block"
         />
       </div>

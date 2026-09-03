@@ -10,6 +10,7 @@ const scheduleRouter = Router();
 
 // GET /api/schedule  (public)
 scheduleRouter.get("/", async (_req: Request, res: Response) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   const { data, error } = await supabase
     .from("schedule_events")
     .select("*")
@@ -24,6 +25,7 @@ scheduleRouter.get("/", async (_req: Request, res: Response) => {
 
 // GET /api/schedule/days  (public)
 scheduleRouter.get("/days", async (_req: Request, res: Response) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   const { data, error } = await supabase
     .from("schedule_days")
     .select("*")

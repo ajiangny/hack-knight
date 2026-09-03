@@ -59,6 +59,7 @@ async function uploadToStorage(
 // /sponsors page. Ordered by the admin's drag order; the frontend groups
 // by tier.
 sponsorsRouter.get("/", async (_req: Request, res: Response) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   const { data, error } = await supabase
     .from("sponsors")
     .select("*")
