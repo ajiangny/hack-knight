@@ -104,8 +104,36 @@ export interface CreateTeamMemberBody {
 
 export type UpdateTeamMemberBody = Partial<CreateTeamMemberBody>;
 
+// Judges — like team members but no character badge or social links.
+export interface Judge {
+  id: string;
+  name: string;
+  title: string;
+  photo_url: string;
+  company1_id: string | null;
+  company2_id: string | null;
+  sort_order: number;
+  created_at?: string;
+}
+
+// GET /api/judges embeds the resolved company rows (order: company1, company2).
+export interface JudgeWithCompanies extends Judge {
+  companies: Company[];
+}
+
+export interface CreateJudgeBody {
+  name: string;
+  title: string;
+  company1_id?: string;
+  company2_id?: string;
+  sort_order?: number;
+}
+
+export type UpdateJudgeBody = Partial<CreateJudgeBody>;
+
 // PUT /api/team/reorder, PUT /api/gallery/photos/reorder,
-// PUT /api/companies/reorder, PUT /api/sponsors/reorder
+// PUT /api/companies/reorder, PUT /api/sponsors/reorder,
+// PUT /api/judges/reorder
 export interface ReorderBody {
   order: { id: string; sort_order: number }[];
 }

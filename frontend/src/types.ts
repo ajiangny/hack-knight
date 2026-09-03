@@ -59,6 +59,16 @@ export interface TeamMember {
   sortOrder?: number;
 }
 
+/** A judge card — like a team member but no character badge or socials. */
+export interface Judge {
+  id: string;
+  name: string;
+  title: string;
+  photo: string;
+  companies?: TeamCompany[];
+  sortOrder?: number;
+}
+
 export interface Faq {
   question: string;
   answer: string;
