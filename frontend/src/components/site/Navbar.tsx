@@ -4,7 +4,7 @@ import logoUrl from '../../assets/brand/logoprimary.svg';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { MLH_BADGE_HREF, MLH_BADGE_SRC, MLH_BADGE_ALT } from '../../lib/mlh';
 
-const NAV_SECTIONS = ['sponsors', 'photos', 'schedule', 'team', 'faq'];
+const NAV_SECTIONS = ['sponsors', 'photos', 'schedule', 'team', 'judges', 'faq'];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,6 +99,7 @@ export default function Navbar() {
         <li><a href="/#photos" className={`navbar-link${activeSection === 'photos' ? ' navbar-link-active' : ''}`}>Past Events</a></li>
         <li><a href="/#schedule" className={`navbar-link${activeSection === 'schedule' ? ' navbar-link-active' : ''}`}>Schedule</a></li>
         <li><a href="/#team" className={`navbar-link${activeSection === 'team' ? ' navbar-link-active' : ''}`}>Team</a></li>
+        <li><a href="/#judges" className={`navbar-link${activeSection === 'judges' ? ' navbar-link-active' : ''}`}>Judges</a></li>
         <li><a href="/#faq" className={`navbar-link${activeSection === 'faq' ? ' navbar-link-active' : ''}`}>FAQ</a></li>
       </ul>
 
@@ -125,6 +126,7 @@ export default function Navbar() {
           <li><a href="/#photos" className={`navbar-link text-lg${activeSection === 'photos' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Past Events</a></li>
           <li><a href="/#schedule" className={`navbar-link text-lg${activeSection === 'schedule' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Schedule</a></li>
           <li><a href="/#team" className={`navbar-link text-lg${activeSection === 'team' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Team</a></li>
+          <li><a href="/#judges" className={`navbar-link text-lg${activeSection === 'judges' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>Judges</a></li>
           <li><a href="/#faq" className={`navbar-link text-lg${activeSection === 'faq' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>FAQ</a></li>
         </ul>
         <div className="flex justify-center pb-6">

@@ -7,6 +7,7 @@ import SchedulePreview from '../components/site/SchedulePreview'; // mini schedu
 import PhotoGallery from '../components/site/PhotoGallery';       // photo gallery of past events
 import FAQ from '../components/site/FAQ';                         // FAQ accordion
 import TeamSection from '../components/site/TeamSection';         // team member grid
+import JudgesSection from '../components/site/JudgesSection';     // judges grid (or TBA teaser)
 import SponsorsCarousel from '../components/site/SponsorsCarousel'; // sponsor logo carousel + link to full sponsors page
 
 
@@ -51,6 +52,10 @@ export default function Home() {
 
       <FadeInSection id="team" className="scroll-mt-10">                           {/* id="team" is the scroll target for the navbar's href="/#team" */}
         <TeamSection />                             {/* section 5: team member grid */}
+      </FadeInSection>
+
+      <FadeInSection id="judges" className="scroll-mt-10">                         {/* id="judges" is the scroll target for the navbar's href="/#judges" */}
+        <JudgesSection />                           {/* section 6: judges grid, TBA until revealed */}
       </FadeInSection>
 
       <FadeInSection id="faq" className="scroll-mt-10">                            {/* id="faq" is the scroll target for the navbar's href="/#faq" */}
