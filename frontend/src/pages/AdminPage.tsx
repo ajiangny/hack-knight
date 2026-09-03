@@ -12,6 +12,7 @@ import RegistrationsTab from "../components/admin/registrations/RegistrationsTab
 import ScheduleTab from "../components/admin/schedule/ScheduleTab";
 import GalleryTab from "../components/admin/gallery/GalleryTab";
 import TeamTab from "../components/admin/team/TeamTab";
+import JudgesTab from "../components/admin/judges/JudgesTab";
 import SponsorsTab from "../components/admin/sponsors/SponsorsTab";
 import MiscTab from "../components/admin/MiscTab";
 
@@ -27,6 +28,7 @@ const TABS: AdminTab[] = [
   { key: "schedule", label: "Schedule", Component: ScheduleTab },
   { key: "gallery", label: "Gallery", Component: GalleryTab },
   { key: "team", label: "Team", Component: TeamTab },
+  { key: "judges", label: "Judges", Component: JudgesTab },
   { key: "sponsors", label: "Sponsors", Component: SponsorsTab },
   { key: "misc", label: "Misc", Component: MiscTab },
 ];

@@ -122,3 +122,28 @@ export type RawMember = Omit<
   company1_id?: string | null;
   company2_id?: string | null;
 };
+
+/* ── Judges ── */
+
+/** Like AdminMember minus the character badge and social links. */
+export interface AdminJudge {
+  id: string;
+  name: string;
+  title: string;
+  company1_id: string;
+  company2_id: string;
+  photo_url: string | null;
+  sort_order?: number;
+  _new?: boolean;
+  _photoFile?: File | null;
+  _photoPreview?: string | null;
+}
+
+/** Modal form seed — no id until the judge is staged. */
+export type JudgeForm = Omit<AdminJudge, "id"> & { id?: string };
+
+/** Raw judge row from the Express API (nullable optional fields). */
+export type RawJudge = Omit<AdminJudge, "company1_id" | "company2_id"> & {
+  company1_id?: string | null;
+  company2_id?: string | null;
+};
