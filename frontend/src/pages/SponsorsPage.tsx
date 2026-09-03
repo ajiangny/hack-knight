@@ -6,7 +6,7 @@ import type { Sponsor } from '../types';
 
 /** Logo, wrapped in a link only when the sponsor has a real URL. */
 function SponsorLogo({ sponsor, size }: { sponsor: Sponsor; size: string }) {
-  const logo = <img src={sponsor.logo} alt={sponsor.name} data-size={size} />;
+  const logo = <img src={sponsor.logo} alt={sponsor.name} loading="lazy" decoding="async" data-size={size} />;
   if (!sponsor.url || sponsor.url === '#') return logo;
   return <a href={sponsor.url} target="_blank" rel="noreferrer">{logo}</a>;
 }

@@ -71,12 +71,16 @@ function MemberCard({ member }: { member: TeamMember }) {
           <img
             src={member.photo}
             alt={member.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
           {member.badge && (
             <img
               src={member.badge}
               alt="character badge"
+              loading="lazy"
+              decoding="async"
               className="absolute bottom-2 right-2 w-16 h-16 object-contain"
             />
           )}
@@ -95,6 +99,8 @@ function MemberCard({ member }: { member: TeamMember }) {
             <img
               src={member.badge}
               alt={`${member.name} character`}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain p-6"
             />
           </div>
@@ -119,6 +125,8 @@ function MemberCard({ member }: { member: TeamMember }) {
               src={company.logo}
               alt={`${company.name} logo`}
               title={company.name}
+              loading="lazy"
+              decoding="async"
               className="w-6 h-6 object-contain transition-all duration-200 hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.85)] hover:scale-110"
             />
           ))}

@@ -34,7 +34,7 @@ function SponsorCard({ sponsor, duplicate }: { sponsor: Sponsor; duplicate: bool
   const className = "card-sponsor shrink-0 flex items-center justify-center p-3 sm:p-8 " +
     "w-[calc(9rem*var(--logo-scale,1))] h-[calc(6rem*var(--logo-scale,1))] " +
     "sm:w-[calc(14rem*var(--logo-scale,1))] sm:h-[calc(9rem*var(--logo-scale,1))]";
-  const logo = <img src={sponsor.logo} alt={sponsor.name} className="max-w-[85%] max-h-[calc(3.5rem*var(--logo-scale,1))] sm:max-h-[calc(5rem*var(--logo-scale,1))] object-contain" />;
+  const logo = <img src={sponsor.logo} alt={sponsor.name} loading="lazy" decoding="async" className="max-w-[85%] max-h-[calc(3.5rem*var(--logo-scale,1))] sm:max-h-[calc(5rem*var(--logo-scale,1))] object-contain" />;
 
   if (!sponsor.url || sponsor.url === '#') return <div className={className}>{logo}</div>;
   return (

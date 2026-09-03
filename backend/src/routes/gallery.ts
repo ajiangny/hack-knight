@@ -31,6 +31,7 @@ function storagePathFromPublicUrl(url: string): string | null {
 
 // GET /api/gallery  (public) all - years, each with their photos
 galleryRouter.get("/", async (_req: Request, res: Response) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   const { data: years, error: yearsError } = await supabase
     .from("gallery_years")
     .select("*")

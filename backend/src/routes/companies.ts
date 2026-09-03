@@ -48,6 +48,7 @@ async function uploadToStorage(
 
 // GET /api/companies  (public) — logos are rendered on the team section
 companiesRouter.get("/", async (_req: Request, res: Response) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
   const { data, error } = await supabase
     .from("companies")
     .select("*")
