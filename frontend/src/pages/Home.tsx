@@ -24,7 +24,7 @@ function FadeInSection({ children, id, className }: FadeInSectionProps) {
       className={className}
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
+      viewport={{ once: true, amount: "some", margin: "0px 0px -80px 0px" }}
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
