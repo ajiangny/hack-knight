@@ -2,4 +2,4 @@
 -- Transaction mode: transactional
 -- Boundary reason: default
 
-DROP EXTENSION pg_net;
+DROP EXTENSION IF EXISTS pg_net;

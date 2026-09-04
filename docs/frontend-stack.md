@@ -49,7 +49,7 @@ frontend/
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
     │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + sponsorUtils
-    │       └── registrations/    # RegistrationsTab (search, CSV export, resume links, delete)
+    │       └── registrations/    # RegistrationsTab (search, pagination, CSV export, resume links, delete)
     ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
     │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth.
     │                       #   Public hooks are built on useApiData (shared response cache)

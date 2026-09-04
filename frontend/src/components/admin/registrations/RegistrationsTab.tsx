@@ -3,12 +3,16 @@
 // it reports 0 dirty changes once on mount to satisfy the tab contract and
 // keep the unsaved-changes dot from ever appearing.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiDelete, apiDownload } from "../../../lib/api";
 import { useRegistrations } from "../../../hooks/useRegistrations";
 import type { Registration } from "../../../types";
 import { XIcon } from "../icons";
-import { EmptyState, Modal, Panel } from "../ui";
+import { EmptyState, Modal, Pagination, Panel } from "../ui";
+
+// Rows per page. Small enough that the wrapper's horizontal scrollbar, which
+// sits under the last row, stays within reach of the table's top.
+const PAGE_SIZE = 25;
 
 function formatDate(value: string | undefined) {
   const d = new Date(value ?? NaN);
@@ -26,10 +30,12 @@ export default function RegistrationsTab({
 }) {
   const { registrations, loading, error, refetch } = useRegistrations();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] = useState<Registration | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Read-only tab: never dirty.
   useEffect(() => {
@@ -56,6 +62,21 @@ export default function RegistrationsTab({
         .includes(term),
     );
   }, [registrations, search]);
+
+  // Paged in the browser for the same reason. The page is clamped rather than
+  // reset in an effect: a delete or a narrower search can leave `page` past
+  // the last page, and clamping handles that without an extra render.
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  function goToPage(next: number) {
+    setPage(next);
+    // A page of rows is taller than the viewport, so the pager sits at the
+    // bottom; bring the new page's first rows back into view.
+    panelRef.current?.scrollIntoView({ block: "start" });
+  }
 
   // The export route is behind auth, so a plain href would 401. Fetch it with
   // the auth header and hand the browser a blob instead.
@@ -99,7 +120,7 @@ export default function RegistrationsTab({
   }
 
   return (
-    <div>
+    <div ref={panelRef}>
       {error && <p className="admin-error">{error}</p>}
       {actionError && <p className="admin-error">{actionError}</p>}
 
@@ -126,7 +147,10 @@ export default function RegistrationsTab({
             className="admin-input"
             type="search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Name, email, phone, school, or major"
           />
         </div>
@@ -174,7 +198,7 @@ export default function RegistrationsTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((r) => (
+                  {pageRows.map((r) => (
                     <tr key={r.id}>
                       <td className="whitespace-nowrap">
                         {r.firstName} {r.lastName}
@@ -260,11 +284,18 @@ export default function RegistrationsTab({
               </table>
             </div>
 
-            {search.trim() && (
-              <p className="admin-help mt-3">
-                Showing {filtered.length} of {registrations.length}
+            <div className="admin-table-foot">
+              <p className="admin-help">
+                Showing {pageStart + 1}–{pageStart + pageRows.length} of{" "}
+                {filtered.length}
+                {search.trim() && ` matching “${search.trim()}”`}
               </p>
-            )}
+              <Pagination
+                page={currentPage}
+                pageCount={pageCount}
+                onPageChange={goToPage}
+              />
+            </div>
           </>
         )}
       </Panel>

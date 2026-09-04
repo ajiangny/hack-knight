@@ -251,6 +251,47 @@ export function ScaledPreview({
   );
 }
 
+/* ── Pagination ────────────────────────────────────── */
+
+interface PaginationProps {
+  page: number;
+  pageCount: number;
+  onPageChange: (page: number) => void;
+}
+
+/**
+ * Prev/next pager for long read-only lists. Renders nothing when everything
+ * fits on one page, so callers can mount it unconditionally.
+ */
+export function Pagination({ page, pageCount, onPageChange }: PaginationProps) {
+  if (pageCount <= 1) return null;
+  return (
+    <nav className="admin-pagination" aria-label="Pagination">
+      <button
+        type="button"
+        className="admin-btn-icon"
+        aria-label="Previous page"
+        disabled={page <= 1}
+        onClick={() => onPageChange(page - 1)}
+      >
+        <ChevronLeftIcon />
+      </button>
+      <span className="admin-pagination-label" aria-live="polite">
+        Page {page} of {pageCount}
+      </span>
+      <button
+        type="button"
+        className="admin-btn-icon"
+        aria-label="Next page"
+        disabled={page >= pageCount}
+        onClick={() => onPageChange(page + 1)}
+      >
+        <ChevronRightIcon />
+      </button>
+    </nav>
+  );
+}
+
 /* ── Save bar ──────────────────────────────────────── */
 
 interface SaveBarProps {

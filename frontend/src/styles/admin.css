@@ -225,9 +225,13 @@
 
   /* ── Data table (read-only tabs) ── */
 
-  /* Wrapper owns the horizontal scroll so the page body never does. */
+  /* Wrapper owns the horizontal scroll so the page body never does. It is
+     also the containing block for anything absolutely positioned inside the
+     table (an sr-only header label is position: absolute); without that, a
+     cell far to the right anchors to the viewport, escapes this clip, and
+     widens the whole page. */
   .admin-table-scroll {
-    @apply overflow-x-auto -mx-1 px-1;
+    @apply relative overflow-x-auto -mx-1 px-1;
   }
 
   .admin-table {
@@ -246,6 +250,19 @@
 
   .admin-table tbody tr {
     @apply transition-colors duration-150 ease-brand hover:bg-white/3;
+  }
+
+  /* Row under a table: "Showing x–y of z" on the left, pager on the right. */
+  .admin-table-foot {
+    @apply flex flex-wrap items-center justify-between gap-3 mt-3;
+  }
+
+  .admin-pagination {
+    @apply flex items-center gap-2;
+  }
+
+  .admin-pagination-label {
+    @apply font-mono text-xs uppercase tracking-widest text-text-secondary whitespace-nowrap;
   }
 
   /* ── Misc ── */
