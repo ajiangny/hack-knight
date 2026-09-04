@@ -252,6 +252,19 @@
     @apply transition-colors duration-150 ease-brand hover:bg-white/3;
   }
 
+  /* Row under a table: "Showing x–y of z" on the left, pager on the right. */
+  .admin-table-foot {
+    @apply flex flex-wrap items-center justify-between gap-3 mt-3;
+  }
+
+  .admin-pagination {
+    @apply flex items-center gap-2;
+  }
+
+  .admin-pagination-label {
+    @apply font-mono text-xs uppercase tracking-widest text-text-secondary whitespace-nowrap;
+  }
+
   /* ── Misc ── */
 
   .admin-error {
