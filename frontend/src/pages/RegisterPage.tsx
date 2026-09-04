@@ -448,21 +448,23 @@ export default function RegisterPage() {
             Thank you!
           </h2>
           <p className="font-body text-text-secondary mb-6">
-            Your application to HackKnight has been received. You will
+            Your application to <b className="text-ultraviolet">HackKnight</b> has been received. You will
             receive more information regarding your application at{" "}
             <span className="text-text-primary">{values.email.trim()}</span>
             . Please check your inbox for more updates closer to the event.
+            We will notify you regarding your acceptance status via email.
           </p>
           <p className="font-body text-text-secondary mb-6">
-            <a
+            If you have any questions, join our <a
               href="https://discord.gg/S4bdceFPM"
               target="_blank"
               rel="noreferrer"
               className="text-ultraviolet hover:underline"
             >
-              Join our Discord
-            </a>{" "}
-            for announcements!
+              Discord
+            </a>
+            {" "}
+            for updates and announcements!
           </p>
           <Link to="/" className="btn-outline inline-block">
             Back to Home
