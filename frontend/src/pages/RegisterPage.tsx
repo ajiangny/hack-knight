@@ -453,6 +453,17 @@ export default function RegisterPage() {
             <span className="text-text-primary">{values.email.trim()}</span>
             . Please check your inbox for more updates closer to the event.
           </p>
+          <p className="font-body text-text-secondary mb-6">
+            <a
+              href="https://discord.gg/S4bdceFPM"
+              target="_blank"
+              rel="noreferrer"
+              className="text-ultraviolet hover:underline"
+            >
+              Join our Discord
+            </a>{" "}
+            for announcements!
+          </p>
           <Link to="/" className="btn-outline inline-block">
             Back to Home
           </Link>
