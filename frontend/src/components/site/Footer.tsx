@@ -31,7 +31,7 @@ export default function Footer() {
         <div className="flex flex-col">
           <h4 className="font-display text-text-primary mb-4">Follow Us</h4>                          {/* column heading */}
           <a href="https://www.instagram.com/codeforall_qc/" className="navbar-link mb-2 text-sm">Code For All Instagram</a>      {/* placeholder href — replace with real URL later */}
-          <a href="https://www.instagram.com/hack.qc/" className="navbar-link mb-2 text-sm">Hack Knight Instagram</a>       {/* placeholder href */}
+          <a href="https://www.instagram.com/hackknightqc/" className="navbar-link mb-2 text-sm">Hack Knight Instagram</a>
           <a href="https://discord.gg/z2AN2nuGx3" className="navbar-link mb-2 text-sm">Hack Knight Server</a>          {/* placeholder href */}
           <a href="https://discord.gg/fhDhVRPU7w" className="navbar-link mb-2 text-sm">Code for All Server</a>         {/* placeholder href */}
         </div>
