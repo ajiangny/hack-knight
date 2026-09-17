@@ -13,9 +13,12 @@ import towerSvg from '../../assets/brand/tower.svg';
 export default function Hero() {
   const { scrollY } = useScroll();
   const { settings } = useSiteSettings();
-  // Empty name = default; empty link = plain text (an admin cleared it).
+  // Empty name = default; empty link = plain text (an admin cleared it). The
+  // API only stores http(s) links, but the href reaches every visitor, so
+  // anything else is rendered as plain text here too.
   const locationName = settings[LOCATION_NAME_KEY] || DEFAULT_LOCATION_NAME;
-  const locationUrl = settings[LOCATION_URL_KEY] ?? DEFAULT_LOCATION_URL;
+  const savedUrl = settings[LOCATION_URL_KEY] ?? DEFAULT_LOCATION_URL;
+  const locationUrl = /^https?:\/\//i.test(savedUrl) ? savedUrl : "";
   const smoothScrollY = useSpring(scrollY, { stiffness: 90, damping: 20, mass: 0.5 });
   const hillsGroupY = useTransform(smoothScrollY, (v) => v * 0.30);
   const contentY = useTransform(smoothScrollY, (v) => v * 0.90);

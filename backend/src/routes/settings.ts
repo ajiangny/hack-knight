@@ -43,6 +43,17 @@ settingsRouter.put(
       return;
     }
 
+    // location_url is rendered as an href for every visitor, so only http(s)
+    // links may be stored (a javascript: URL would run in their browser).
+    if (
+      req.params.key === "location_url" &&
+      req.body.value !== "" &&
+      !/^https?:\/\//i.test(req.body.value)
+    ) {
+      res.status(422).json({ message: "Link must start with http:// or https://" });
+      return;
+    }
+
     const { data, error } = await supabase
       .from("site_settings")
       .upsert(
