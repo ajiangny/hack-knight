@@ -68,7 +68,9 @@ export default function PhotoGallery() {
             spot, and only the active one is visible — unmounting a year would
             drop its <img> elements and re-request every photo on each switch
             (including the 10s auto-advance). The inactive wrappers are
-            absolute so the active year alone sets the container height. */}
+            absolute so the active year alone sets the container height.
+            Inactive years end at display: none (gridVariants in Slideshow),
+            so their lazy images are not fetched until the year is shown. */}
         <div className="relative w-full overflow-hidden py-2">
           {galleryData.map((slide, i) => (
             <div

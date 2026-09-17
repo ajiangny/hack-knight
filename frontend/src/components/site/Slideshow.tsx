@@ -18,8 +18,13 @@ export interface ActivePhoto {
 // finished — otherwise the two grids would crossfade on top of each other.
 const gridVariants: Variants = {
   enter:  { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
-  center: { transition: { staggerChildren: 0.08, delayChildren: 0.35 } },
-  exit:   { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
+  center: { display: "block", transition: { staggerChildren: 0.08, delayChildren: 0.35 } },
+  // display is non-animatable, so Motion applies "none" at the END of the exit
+  // (and "block" at the START of center); when: "afterChildren" holds it until
+  // every photo has faded out. Inactive years therefore sit at display: none,
+  // which stops their lazy <img>s from loading until the year is first shown.
+  // Before this, every visitor downloaded every year's photos on page load.
+  exit:   { display: "none", transition: { when: "afterChildren", staggerChildren: 0.03, staggerDirection: -1 } },
   // staggerDirection: -1 means the exit stagger runs in reverse order (last photo exits first)
 };
 

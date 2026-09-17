@@ -1,11 +1,18 @@
 // Misc admin tab — one-off site settings that don't warrant their own tab.
 // Countdown target date (staged + previewed live through the real public
 // CountdownTimer component), the registration toggles, the MLH trust
-// badge toggle, and the "More Sponsors TBA!" teaser toggle.
+// badge toggle, the "More Sponsors TBA!" teaser toggle, and the event location
+// (name + optional Google Maps link) shown under the hero date.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut } from "../../lib/api";
 import { MLH_BADGE_SRC, MLH_BADGE_ALT } from "../../lib/mlh";
+import {
+  DEFAULT_LOCATION_NAME,
+  DEFAULT_LOCATION_URL,
+  LOCATION_NAME_KEY,
+  LOCATION_URL_KEY,
+} from "../../lib/location";
 import type { SiteSettings } from "../../types";
 import CountdownTimer from "../site/CountdownTimer";
 import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview, type Change } from "./ui";
@@ -135,6 +142,45 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
         apply: () =>
           apiPut(`/settings/${MLH_DISCLAIMER_KEY}`, {
             value: draftSettings[MLH_DISCLAIMER_KEY],
+          }),
+      });
+    }
+
+    // Both keys may be absent (never saved), and an empty name falls back to
+    // the default, so compare the effective values: retyping the default or
+    // clearing a never-saved field is not a change.
+    if (
+      (draftSettings[LOCATION_NAME_KEY] || DEFAULT_LOCATION_NAME) !==
+      (serverSettings[LOCATION_NAME_KEY] || DEFAULT_LOCATION_NAME)
+    ) {
+      list.push({
+        kind: "edit",
+        summary: "Event location name",
+        detail: `${serverSettings[LOCATION_NAME_KEY] || DEFAULT_LOCATION_NAME} → ${
+          draftSettings[LOCATION_NAME_KEY] || DEFAULT_LOCATION_NAME
+        }`,
+        apply: () =>
+          apiPut(`/settings/${LOCATION_NAME_KEY}`, {
+            value: draftSettings[LOCATION_NAME_KEY] ?? "",
+          }),
+      });
+    }
+
+    if (
+      (draftSettings[LOCATION_URL_KEY] ?? DEFAULT_LOCATION_URL) !==
+      (serverSettings[LOCATION_URL_KEY] ?? DEFAULT_LOCATION_URL)
+    ) {
+      const showUrl = (v: string | undefined) =>
+        (v ?? DEFAULT_LOCATION_URL) || "(none — plain text)";
+      list.push({
+        kind: "edit",
+        summary: "Event location link",
+        detail: `${showUrl(serverSettings[LOCATION_URL_KEY])} → ${showUrl(
+          draftSettings[LOCATION_URL_KEY],
+        )}`,
+        apply: () =>
+          apiPut(`/settings/${LOCATION_URL_KEY}`, {
+            value: draftSettings[LOCATION_URL_KEY] ?? "",
           }),
       });
     }
@@ -313,6 +359,36 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                   setDraft(SPONSORS_TBA_KEY, next ? "true" : "false")
                 }
               />
+            </div>
+          </Panel>
+
+          <Panel title="Location">
+            <p className="admin-help mb-4">
+              Shown under the event date in the hero as &quot;Located @ …&quot;.
+              With a link, the name opens it in a new tab; leave the link
+              empty to show the name as plain text.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Field label="Location name" htmlFor="location-name">
+                <input
+                  id="location-name"
+                  type="text"
+                  className="admin-input"
+                  value={draftSettings[LOCATION_NAME_KEY] ?? DEFAULT_LOCATION_NAME}
+                  placeholder={DEFAULT_LOCATION_NAME}
+                  onChange={(e) => setDraft(LOCATION_NAME_KEY, e.target.value)}
+                />
+              </Field>
+              <Field label="Google Maps link (optional)" htmlFor="location-url">
+                <input
+                  id="location-url"
+                  type="url"
+                  className="admin-input"
+                  value={draftSettings[LOCATION_URL_KEY] ?? DEFAULT_LOCATION_URL}
+                  placeholder="https://www.google.com/maps/…"
+                  onChange={(e) => setDraft(LOCATION_URL_KEY, e.target.value)}
+                />
+              </Field>
             </div>
           </Panel>
         </div>

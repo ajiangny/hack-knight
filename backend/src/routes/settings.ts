@@ -36,8 +36,21 @@ settingsRouter.put(
     req: Request<{ key: string }, {}, UpdateSiteSettingBody>,
     res: Response,
   ) => {
-    if (!req.body.value) {
+    // An empty string is a valid value (it clears the optional location
+    // link); only a missing or non-string value is rejected.
+    if (typeof req.body.value !== "string") {
       res.status(422).json({ message: "Value is required" });
+      return;
+    }
+
+    // location_url is rendered as an href for every visitor, so only http(s)
+    // links may be stored (a javascript: URL would run in their browser).
+    if (
+      req.params.key === "location_url" &&
+      req.body.value !== "" &&
+      !/^https?:\/\//i.test(req.body.value)
+    ) {
+      res.status(422).json({ message: "Link must start with http:// or https://" });
       return;
     }
 
