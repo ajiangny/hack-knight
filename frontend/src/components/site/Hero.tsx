@@ -128,7 +128,7 @@ export default function Hero() {
                 href={locationUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-text-primary underline-offset-4 transition-colors duration-200 hover:text-ultraviolet hover:underline"
+                className="text-text-primary transition-colors duration-200 hover:text-ultraviolet"
               >
                 {locationName}
               </a>
