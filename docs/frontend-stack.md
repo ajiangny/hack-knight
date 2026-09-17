@@ -26,7 +26,7 @@ frontend/
 ├── vite.config.ts          # Vite + React + Tailwind plugins
 ├── eslint.config.js        # ESLint flat config
 ├── tsconfig.json           # Project references → tsconfig.app.json + tsconfig.node.json
-├── vercel.json             # SPA rewrite: all routes → index.html
+├── vercel.json             # SPA rewrite: all routes → index.html; /photos/* proxied to Supabase storage
 ├── public/                 # Static files served as-is
 └── src/
     ├── main.tsx            # ReactDOM entry point
@@ -195,7 +195,13 @@ After any dependency change:
 
 The frontend deploys to Vercel as its own project (separate from the backend).
 `frontend/vercel.json` rewrites every path to `index.html` so React Router can
-handle client-side routes. Set all four env vars from the table above in the
+handle client-side routes. It also rewrites `/photos/*` to the production
+Supabase storage bucket with rewrite caching enabled: `useApiData` swaps the
+storage host for `/photos/` in every API response, so visitors fetch images
+from Vercel's CDN and Supabase serves each object roughly once per region
+instead of once per visitor (its free-plan egress was running out). The
+destination is the production project URL, hardcoded because `vercel.json`
+cannot read env vars; `vite.config.ts` proxies the same path in dev. Set all four env vars from the table above in the
 Vercel project settings: `VITE_API_URL` pointing at the deployed backend
 (again, including `/api`), the cloud Supabase URL + anon key, and the real
 (non-test) Turnstile site key.

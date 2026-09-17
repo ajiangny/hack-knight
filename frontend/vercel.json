@@ -1,3 +1,15 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/photos/:path*",
+      "destination": "https://mzvkqnrenemkvesvektj.supabase.co/storage/v1/object/public/photos/:path*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/photos/:path*",
+      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "1" }]
+    }
+  ]
 }

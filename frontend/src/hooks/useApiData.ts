@@ -12,6 +12,15 @@ import { useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
+// Public storage URLs are rewritten to the same-origin /photos/ path, which
+// vercel.json proxies (and caches on Vercel's CDN) and vite.config.ts proxies
+// in dev. Visitors then pull image bytes from Vercel instead of Supabase,
+// whose free-plan egress the public site was exhausting. Done on the raw JSON
+// text so one line covers every URL field (src, photo_url, logo_url, ...) on
+// every endpoint. The admin dashboard fetches through api.ts and keeps the
+// direct URLs.
+const STORAGE_PREFIX = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/photos/`;
+
 // How long a cached response is served without a background refresh. Admin
 // changes (e.g. the registration toggle) can lag by up to this much for a
 // visitor who keeps navigating without reloading.
@@ -34,7 +43,9 @@ function load(path: string): Promise<unknown> {
   const request = (async () => {
     const res = await fetch(`${API_URL}${path}`);
     if (!res.ok) throw new Error(`Failed to fetch ${path}`);
-    const data: unknown = await res.json();
+    const data: unknown = JSON.parse(
+      (await res.text()).replaceAll(STORAGE_PREFIX, "/photos/"),
+    );
     cache.set(path, { data, fetchedAt: Date.now() });
     return data;
   })().finally(() => inflight.delete(path));
