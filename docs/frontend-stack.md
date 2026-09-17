@@ -44,7 +44,7 @@ frontend/
     │       ├── ui.tsx            # Shared UI kit (Panel, SaveBar, DiffModal, DragGrid, ScaledPreview, ...)
     │       ├── icons.tsx         # Shared SVG icon set
     │       ├── useObjectUrls.ts  # Object-URL lifecycle for staged image previews
-    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge, registration open/closed, MLH pre-partnership disclaimer, sponsors TBA teaser)
+    │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge, registration open/closed, MLH pre-partnership disclaimer, sponsors TBA teaser, event location)
     │       ├── schedule/         # ScheduleTab + EventModal + scheduleMeta
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
@@ -57,6 +57,7 @@ frontend/
     ├── lib/
     │   ├── api.ts          # Auth-aware fetch helper (token from the Supabase session) + compressImage
     │   ├── supabase.ts     # Browser Supabase client. Admin Google sign-in only, never data
+    │   ├── location.ts     # Event location defaults + site_settings keys (shared by Hero + Misc tab)
     │   ├── mlh.ts          # MLH trust badge constants (shared by Navbar + admin preview)
     │   ├── registrationOptions.ts  # Age/level-of-study/country/demographic/major options (mirrors the backend's copy)
     │   ├── schools.ts      # MLH-verified school list (mirrors the backend's copy)
