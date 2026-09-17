@@ -36,7 +36,9 @@ settingsRouter.put(
     req: Request<{ key: string }, {}, UpdateSiteSettingBody>,
     res: Response,
   ) => {
-    if (!req.body.value) {
+    // An empty string is a valid value (it clears the optional location
+    // link); only a missing or non-string value is rejected.
+    if (typeof req.body.value !== "string") {
       res.status(422).json({ message: "Value is required" });
       return;
     }
