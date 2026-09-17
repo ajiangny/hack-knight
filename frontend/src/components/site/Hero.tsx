@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useSpring, type Variants } from 'motion/react';
 import CountdownTimer from './CountdownTimer';
 import MascotEyes from './MascotEyes';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { DEFAULT_LOCATION_NAME, DEFAULT_LOCATION_URL, LOCATION_NAME_KEY, LOCATION_URL_KEY } from '../../lib/location';
 import hillsBgSvg from '../../assets/brand/hillsbg.svg';
 import hillsSvg from '../../assets/brand/hills.svg';
 import knightsSvg from '../../assets/brand/knights1.svg';
@@ -10,6 +12,10 @@ import towerSvg from '../../assets/brand/tower.svg';
 
 export default function Hero() {
   const { scrollY } = useScroll();
+  const { settings } = useSiteSettings();
+  // Empty name = default; empty link = plain text (an admin cleared it).
+  const locationName = settings[LOCATION_NAME_KEY] || DEFAULT_LOCATION_NAME;
+  const locationUrl = settings[LOCATION_URL_KEY] ?? DEFAULT_LOCATION_URL;
   const smoothScrollY = useSpring(scrollY, { stiffness: 90, damping: 20, mass: 0.5 });
   const hillsGroupY = useTransform(smoothScrollY, (v) => v * 0.30);
   const contentY = useTransform(smoothScrollY, (v) => v * 0.90);
@@ -108,8 +114,24 @@ export default function Hero() {
             <span className="text-ultraviolet">HackKnight</span> 2026
           </motion.h1>
 
-          <motion.p variants={itemVariants} className="font-body text-text-primary text-base sm:text-lg md:text-xl xl:text-[clamp(1.25rem,2.5vw,3.5rem)] mb-4 sm:mb-6">
+          <motion.p variants={itemVariants} className="font-body text-text-primary text-base sm:text-lg md:text-xl xl:text-[clamp(1.25rem,2.5vw,3.5rem)] mb-1">
             October 9th – 11th, 2026
+          </motion.p>
+
+          <motion.p variants={itemVariants} className="font-body text-text-secondary text-sm sm:text-base md:text-lg xl:text-[clamp(1rem,1.5vw,2rem)] mb-4 sm:mb-6">
+            Located @{' '}
+            {locationUrl ? (
+              <a
+                href={locationUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-text-primary underline-offset-4 transition-colors duration-200 hover:text-ultraviolet hover:underline"
+              >
+                {locationName}
+              </a>
+            ) : (
+              <span className="text-text-primary">{locationName}</span>
+            )}
           </motion.p>
 
           <motion.p variants={itemVariants} className="font-body text-text-secondary text-sm sm:text-base md:text-[clamp(1rem,1.5vw,1.25rem)] max-w-xl lg:max-w-2xl mb-6 lg:mb-4 leading-relaxed">
