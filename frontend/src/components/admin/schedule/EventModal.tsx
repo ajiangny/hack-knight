@@ -4,18 +4,20 @@ import { useState } from "react";
 import { formatFullTime } from "../../../data/schedule";
 import type { ScheduleDay } from "../../../types";
 import { Field, Modal } from "../ui";
-import type { EventForm } from "../adminTypes";
-import { EVENT_COLORS, TIME_OPTIONS } from "./scheduleMeta";
+import type { AdminEventType, EventForm } from "../adminTypes";
+import { colorSwatch } from "../../../lib/scheduleColors";
+import { TIME_OPTIONS } from "./scheduleMeta";
 
 interface EventModalProps {
   open: boolean;
   initial: EventForm | null;
   days: ScheduleDay[];
+  types: AdminEventType[];
   onSubmit: (form: EventForm) => void;
   onClose: () => void;
 }
 
-export default function EventModal({ open, initial, days, onSubmit, onClose }: EventModalProps) {
+export default function EventModal({ open, initial, days, types, onSubmit, onClose }: EventModalProps) {
   const [form, setForm] = useState(initial);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -36,6 +38,10 @@ export default function EventModal({ open, initial, days, onSubmit, onClose }: E
     if (!form) return;
     if (!form.label.trim()) {
       setFormError("Label is required");
+      return;
+    }
+    if (!types.some((t) => t.id === form.typeId)) {
+      setFormError("Pick an event type");
       return;
     }
     if (form.endHour <= form.startHour) {
@@ -114,29 +120,35 @@ export default function EventModal({ open, initial, days, onSubmit, onClose }: E
           </Field>
         </div>
 
-        <Field label="Color">
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Event color">
-            {EVENT_COLORS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setForm({ ...form, color: c.value })}
-                aria-pressed={form.color === c.value}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-xs uppercase tracking-wide transition-colors duration-150 ease-brand ${
-                  form.color === c.value
-                    ? "border-ultraviolet/60 bg-black/30 text-text-primary"
-                    : "border-border/40 text-text-secondary hover:border-border/60"
-                }`}
-              >
-                <span
-                  className="w-3 h-3 rounded-pill"
-                  style={{ background: c.swatch }}
-                  aria-hidden="true"
-                />
-                {c.label}
-              </button>
-            ))}
-          </div>
+        <Field label="Type">
+          {types.length === 0 ? (
+            <p className="admin-help">
+              No event types yet. Add one in the Event Types panel first.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Event type">
+              {types.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setForm({ ...form, typeId: t.id })}
+                  aria-pressed={form.typeId === t.id}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-xs uppercase tracking-wide transition-colors duration-150 ease-brand ${
+                    form.typeId === t.id
+                      ? "border-ultraviolet/60 bg-black/30 text-text-primary"
+                      : "border-border/40 text-text-secondary hover:border-border/60"
+                  }`}
+                >
+                  <span
+                    className="w-3 h-3 rounded-pill"
+                    style={{ background: colorSwatch(t.color) }}
+                    aria-hidden="true"
+                  />
+                  {t.label.trim() || "Untitled"}
+                </button>
+              ))}
+            </div>
+          )}
         </Field>
 
         {formError && <p className="admin-error">{formError}</p>}
