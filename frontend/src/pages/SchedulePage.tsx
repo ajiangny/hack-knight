@@ -173,11 +173,12 @@ export default function SchedulePage() {
                 const startRow = getRow(event.startHour);
                 const endRow = getRow(event.endHour);
                 const span = Math.max(endRow - startRow, 1);
+                const isShort = event.endHour - event.startHour <= 0.5;
 
                 return (
                   <div
                     key={`${day.key}-${pIdx}`}
-                    className={`schedule-event color-${event.color ?? 'violet'}`}
+                    className={`schedule-event color-${event.color ?? 'violet'}${isShort ? ' schedule-event-short' : ''}`}
                     style={{
                       gridRow: `${startRow} / span ${span}`,
                       gridColumn: dIdx + 2,
@@ -186,12 +187,14 @@ export default function SchedulePage() {
                       marginTop: '2px',
                       marginBottom: '2px',
                     }}
-                    title={event.label}
+                    title={`${event.label} · ${getRangeLabel(event.startHour, event.endHour)}`}
                   >
                     <span className="schedule-event-title">{event.label}</span>
-                    <span className="schedule-event-time font-bold opacity-80 mt-0.5">
-                      {getRangeLabel(event.startHour, event.endHour)}
-                    </span>
+                    {!isShort && (
+                      <span className="schedule-event-time font-bold opacity-80 mt-0.5">
+                        {getRangeLabel(event.startHour, event.endHour)}
+                      </span>
+                    )}
                   </div>
                 );
               });

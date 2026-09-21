@@ -69,12 +69,13 @@ export default function ScheduleGrid({
         const endRow = getRow(event.endHour) - 1;
         const span = Math.max(endRow - startRow, 1);
         const extra = eventClassName ? eventClassName(event) : "";
+        const isShort = event.endHour - event.startHour <= 0.5;
         return (
           <div
             key={event.id ?? pIdx}
             className={`schedule-event color-${event.color ?? "violet"}${
-              extra ? ` ${extra}` : ""
-            }`}
+              isShort ? " schedule-event-short" : ""
+            }${extra ? ` ${extra}` : ""}`}
             style={{
               gridRow: `${startRow} / span ${span}`,
               gridColumn: 2,
@@ -83,7 +84,7 @@ export default function ScheduleGrid({
               marginTop: "2px",
               marginBottom: "2px",
             }}
-            title={event.label}
+            title={`${event.label} · ${getRangeLabel(event.startHour, event.endHour)}`}
             onClick={onEventClick ? () => onEventClick(event) : undefined}
             role={onEventClick ? "button" : undefined}
             tabIndex={onEventClick ? 0 : undefined}
@@ -99,9 +100,11 @@ export default function ScheduleGrid({
             }
           >
             <span className="schedule-event-title">{event.label}</span>
-            <span className="schedule-event-time font-bold opacity-80 mt-0.5">
-              {getRangeLabel(event.startHour, event.endHour)}
-            </span>
+            {!isShort && (
+              <span className="schedule-event-time font-bold opacity-80 mt-0.5">
+                {getRangeLabel(event.startHour, event.endHour)}
+              </span>
+            )}
           </div>
         );
       })}

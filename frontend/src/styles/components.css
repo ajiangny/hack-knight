@@ -501,6 +501,14 @@
     @apply font-body font-bold text-white leading-tight text-sm wrap-break-word line-clamp-2;
   }
 
+  /* 30-minute events are one row tall: name only, on a single line.
+     The clamped title can shrink to nothing in the flex column, so the
+     tighter padding is what keeps it visible. */
+  .schedule-event.schedule-event-short {
+    @apply py-0.5 justify-center;
+    .schedule-event-title { @apply line-clamp-1; }
+  }
+
   /* ── Hero Section ─────────────────────────────────── */
 
   .hero-section {
