@@ -10,7 +10,27 @@ import type { EventColor, ScheduleEvent, SponsorTier } from "../../types";
 /** Event row in the schedule editor draft (real uuid or "tmp-N" id). */
 export interface AdminEvent extends ScheduleEvent {
   id: string;
+  /** Event type id; "" when a legacy row matches no type. `color` is only
+   *  the fallback for that case — the type's color wins everywhere else. */
+  typeId: string;
   _new?: boolean;
+}
+
+/** Event type in the schedule editor draft (real uuid or "tmp-type-N" id). */
+export interface AdminEventType {
+  id: string;
+  label: string;
+  color: EventColor;
+  sortOrder: number;
+  _new?: boolean;
+}
+
+/** Raw event type row from the Express API. */
+export interface ScheduleEventTypeRow {
+  id: string;
+  label: string;
+  color: EventColor;
+  sort_order: number | null;
 }
 
 /** Modal form seed — no id until the event is staged. */
@@ -24,6 +44,7 @@ export interface ScheduleEventRow {
   end_hour: number | string;
   label: string;
   color: EventColor | null;
+  type_id: string | null;
   sort_order?: number;
 }
 

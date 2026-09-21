@@ -15,6 +15,9 @@
   --color-cyber-teal: #2dd4bf;     /* hacking / workshops accent */
   --color-signal-yellow: #fbbf24;  /* food / logistics accent */
   --color-electric-blue: #3b82f6;  /* check-in / admin accent */
+  --color-neon-pink: #ec4899;      /* schedule: workshops */
+  --color-acid-lime: #a3e635;      /* schedule: fun events */
+  --color-tangerine: #f97316;      /* schedule: spare event-type color */
   --color-violet-light: #c084fc;   /* hover state for primary */
   --color-violet-dark: #7c3aed;    /* pressed / active state */
   --color-text-primary: #f4f4f5;   /* headings and important text */

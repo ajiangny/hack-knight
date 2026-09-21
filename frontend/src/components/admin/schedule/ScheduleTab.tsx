@@ -1,7 +1,9 @@
 // Schedule admin tab — staged editor + live preview.
 // Nothing touches the server until the diff modal is confirmed: edits to
 // day headers and events accumulate in draft state, the preview renders
-// the draft through the same ScheduleGrid the public site uses.
+// the draft through the same ScheduleGrid the public site uses. Event
+// types (label + palette color) are staged alongside; an event's color
+// always comes from its type.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiPost, apiPut, apiDelete } from "../../../lib/api";
@@ -10,16 +12,30 @@ import type { ScheduleDay } from "../../../types";
 import { Panel, Field, EmptyState, SaveBar, DiffModal, type Change } from "../ui";
 import { PencilIcon, XIcon } from "../icons";
 import EventModal from "./EventModal";
-import type { AdminEvent, EventForm, ScheduleEventRow } from "../adminTypes";
-import { EVENT_COLORS, mapEvent, eventsEqual, timeRange } from "./scheduleMeta";
+import EventTypesPanel from "./EventTypesPanel";
+import type {
+  AdminEvent,
+  AdminEventType,
+  EventForm,
+  ScheduleEventRow,
+  ScheduleEventTypeRow,
+} from "../adminTypes";
+import { SCHEDULE_COLORS, colorSwatch } from "../../../lib/scheduleColors";
+import { mapEvent, mapType, eventsEqual, typesEqual, timeRange } from "./scheduleMeta";
 
-type AppliedChange = Change & { apply: () => Promise<unknown> };
+// `ids` maps staged "tmp-type-N" ids to the real ids the API hands back, so
+// events saved after a new type can point at it.
+type AppliedChange = Change & {
+  apply: (ids: Map<string, string>) => Promise<unknown>;
+};
 
 export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count: number) => void }) {
   const [serverEvents, setServerEvents] = useState<AdminEvent[]>([]);
   const [serverDays, setServerDays] = useState<ScheduleDay[]>([]);
   const [draftEvents, setDraftEvents] = useState<AdminEvent[]>([]);
   const [draftDays, setDraftDays] = useState<ScheduleDay[]>([]);
+  const [serverTypes, setServerTypes] = useState<AdminEventType[]>([]);
+  const [draftTypes, setDraftTypes] = useState<AdminEventType[]>([]);
   const [activeDay, setActiveDay] = useState("fri");
   const [editing, setEditing] = useState<EventForm | null>(null); // form seed for EventModal
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -27,18 +43,23 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
   const [saveError, setSaveError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tmpIdRef = useRef(0);
+  const tmpTypeIdRef = useRef(0);
 
   const load = useCallback(async () => {
     try {
-      const [ev, dy] = await Promise.all([
+      const [ev, dy, ty] = await Promise.all([
         apiGet<ScheduleEventRow[]>("/schedule"),
         apiGet<ScheduleDay[]>("/schedule/days"),
+        apiGet<ScheduleEventTypeRow[]>("/schedule/types"),
       ]);
-      const mapped = ev.map(mapEvent);
+      const types = ty.map(mapType);
+      const mapped = ev.map((e) => mapEvent(e, types));
       setServerEvents(mapped);
       setServerDays(dy);
+      setServerTypes(types);
       setDraftEvents(mapped);
       setDraftDays(dy.map((d) => ({ ...d })));
+      setDraftTypes(types);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -65,19 +86,54 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
       }
     }
 
+    // Type adds and edits go first so events saved below can reference them.
+    for (const type of draftTypes) {
+      const label = type.label.trim();
+      if (type._new) {
+        list.push({
+          kind: "add",
+          summary: `Event type "${label}"`,
+          detail: type.color,
+          apply: async (ids) => {
+            const created = await apiPost<ScheduleEventTypeRow>("/schedule/types", {
+              label,
+              color: type.color,
+              sort_order: type.sortOrder,
+            });
+            ids.set(type.id, created.id);
+          },
+        });
+        continue;
+      }
+      const orig = serverTypes.find((t) => t.id === type.id);
+      if (orig && !typesEqual(orig, type)) {
+        const parts: string[] = [];
+        if (orig.label !== label) parts.push(`name "${orig.label}" → "${label}"`);
+        if (orig.color !== type.color)
+          parts.push(`color ${orig.color} → ${type.color}`);
+        list.push({
+          kind: "edit",
+          summary: `Event type "${orig.label}"`,
+          detail: parts.join(" · "),
+          apply: () =>
+            apiPut(`/schedule/types/${type.id}`, { label, color: type.color }),
+        });
+      }
+    }
+
     for (const ev of draftEvents) {
       if (!ev._new) continue;
       list.push({
         kind: "add",
         summary: `"${ev.label}"`,
-        detail: `${dayLabel(ev.day)} · ${timeRange(ev)}`,
-        apply: () =>
+        detail: `${dayLabel(ev.day)} · ${timeRange(ev)} · ${typeLabel(ev.typeId)}`,
+        apply: (ids) =>
           apiPost("/schedule", {
             day: ev.day,
             start_hour: ev.startHour,
             end_hour: ev.endHour,
             label: ev.label,
-            color: ev.color,
+            type_id: ids.get(ev.typeId) ?? ev.typeId,
           }),
       });
     }
@@ -102,22 +158,32 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
           orig.endHour !== draft.endHour
         )
           parts.push(`${timeRange(orig)} → ${timeRange(draft)}`);
-        if (orig.color !== draft.color)
-          parts.push(`color ${orig.color} → ${draft.color}`);
+        if (orig.typeId !== draft.typeId)
+          parts.push(`type ${typeLabel(orig.typeId)} → ${typeLabel(draft.typeId)}`);
         list.push({
           kind: "edit",
           summary: `"${orig.label}"`,
           detail: parts.join(" · "),
-          apply: () =>
+          apply: (ids) =>
             apiPut(`/schedule/${draft.id}`, {
               day: draft.day,
               start_hour: draft.startHour,
               end_hour: draft.endHour,
               label: draft.label,
-              color: draft.color,
+              type_id: ids.get(draft.typeId) ?? draft.typeId,
             }),
         });
       }
+    }
+
+    // Type deletes go last, once no saved event points at them any more.
+    for (const orig of serverTypes) {
+      if (draftTypes.some((t) => t.id === orig.id)) continue;
+      list.push({
+        kind: "delete",
+        summary: `Event type "${orig.label}"`,
+        apply: () => apiDelete(`/schedule/types/${orig.id}`),
+      });
     }
 
     return list;
@@ -125,7 +191,13 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
     function dayLabel(key: string) {
       return draftDays.find((d) => d.key === key)?.label ?? key;
     }
-  }, [serverEvents, serverDays, draftEvents, draftDays]);
+
+    function typeLabel(id: string) {
+      const type =
+        draftTypes.find((t) => t.id === id) ?? serverTypes.find((t) => t.id === id);
+      return type?.label.trim() || "no type";
+    }
+  }, [serverEvents, serverDays, serverTypes, draftEvents, draftDays, draftTypes]);
 
   useEffect(() => {
     onDirtyChange?.(changes.length);
@@ -151,9 +223,39 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
     setDraftEvents((evs) => evs.filter((e) => e.id !== id));
   }
 
+  function addType() {
+    setDraftTypes((types) => {
+      // Default to the first palette color no other type is using yet.
+      const free = SCHEDULE_COLORS.find(
+        (c) => !types.some((t) => t.color === c.value),
+      );
+      return [
+        ...types,
+        {
+          id: `tmp-type-${++tmpTypeIdRef.current}`,
+          label: "",
+          color: (free ?? SCHEDULE_COLORS[0]).value,
+          sortOrder: Math.max(-1, ...types.map((t) => t.sortOrder)) + 1,
+          _new: true,
+        },
+      ];
+    });
+  }
+
+  function updateType(id: string, patch: Partial<AdminEventType>) {
+    setDraftTypes((types) =>
+      types.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    );
+  }
+
+  function removeType(id: string) {
+    setDraftTypes((types) => types.filter((t) => t.id !== id));
+  }
+
   function discard() {
     setDraftEvents(serverEvents);
     setDraftDays(serverDays.map((d) => ({ ...d })));
+    setDraftTypes(serverTypes);
   }
 
   async function applySave() {
@@ -161,8 +263,9 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
     setSaveError(null);
     let applied = 0;
     try {
+      const ids = new Map<string, string>();
       for (const change of changes) {
-        await change.apply();
+        await change.apply(ids);
         applied += 1;
       }
       setReviewOpen(false);
@@ -194,9 +297,23 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
     return map;
   }, [draftEvents, serverEvents]);
 
+  // An event's color always follows its (draft) type, so recoloring a type
+  // shows up in the list and the preview before saving.
   const dayEvents = draftEvents
     .filter((e) => e.day === activeDay)
-    .sort((a, b) => a.startHour - b.startHour);
+    .sort((a, b) => a.startHour - b.startHour)
+    .map((e) => ({
+      ...e,
+      color: draftTypes.find((t) => t.id === e.typeId)?.color ?? e.color,
+    }));
+
+  const typeUsage = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ev of draftEvents) {
+      map.set(ev.typeId, (map.get(ev.typeId) ?? 0) + 1);
+    }
+    return map;
+  }, [draftEvents]);
 
   const hourWindow = useMemo(() => {
     if (draftEvents.length === 0) return { minHour: 9, maxHour: 18 };
@@ -276,6 +393,15 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
             </div>
           </Panel>
 
+          <EventTypesPanel
+            types={draftTypes}
+            serverTypes={serverTypes}
+            usage={typeUsage}
+            onChange={updateType}
+            onAdd={addType}
+            onRemove={removeType}
+          />
+
           <Panel
             title="Events"
             count={dayEvents.length}
@@ -290,6 +416,7 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
                     endHour: 11,
                     label: "",
                     color: "violet",
+                    typeId: draftTypes[0]?.id ?? "",
                   })
                 }
               >
@@ -303,7 +430,6 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
               <ul className="flex flex-col gap-2">
                 {dayEvents.map((ev) => {
                   const staged = stagedStatus.get(ev.id);
-                  const color = EVENT_COLORS.find((c) => c.value === ev.color);
                   return (
                     <li
                       key={ev.id}
@@ -311,9 +437,7 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-pill shrink-0"
-                        style={{
-                          background: color?.swatch ?? "var(--color-ultraviolet)",
-                        }}
+                        style={{ background: colorSwatch(ev.color) }}
                         aria-hidden="true"
                       />
                       <div className="flex-1 min-w-0">
@@ -365,7 +489,12 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
               events={dayEvents}
               minHour={hourWindow.minHour}
               maxHour={hourWindow.maxHour}
-              onEventClick={(ev) => setEditing({ ...ev })}
+              onEventClick={(ev) => {
+                // The grid hands back the public event shape; edit the
+                // draft row so the type id comes along.
+                const draft = dayEvents.find((d) => d.id === ev.id);
+                if (draft) setEditing({ ...draft });
+              }}
               eventClassName={(ev) => {
                 const staged = stagedStatus.get(ev.id);
                 if (staged === "new") return "ring-1 ring-cyber-teal/70";
@@ -393,6 +522,10 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
         count={changes.length}
         saving={saving}
         onSave={() => {
+          if (draftTypes.some((t) => !t.label.trim())) {
+            setSaveError("Every event type needs a name before saving.");
+            return;
+          }
           setSaveError(null);
           setReviewOpen(true);
         }}
@@ -412,6 +545,7 @@ export default function ScheduleTab({ onDirtyChange }: { onDirtyChange?: (count:
         open={editing !== null}
         initial={editing}
         days={draftDays}
+        types={draftTypes}
         onSubmit={upsertEvent}
         onClose={() => setEditing(null)}
       />

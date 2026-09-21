@@ -44,7 +44,14 @@ export async function apiFetch<T = unknown>(
   const headers = new Headers(options.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  // no-store: the public GET routes send `stale-while-revalidate` for the
+  // CDN, which also lets the browser answer the admin's post-save refetch
+  // from its HTTP cache. The dashboard must always see what it just wrote.
+  const res = await fetch(`${API_URL}${path}`, {
+    cache: "no-store",
+    ...options,
+    headers,
+  });
 
   if (res.status === 401) {
     // signOut fires onAuthStateChange, so the guard redirects before any

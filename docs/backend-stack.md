@@ -49,7 +49,7 @@ backend/
     │   └── turnstile.ts            # Cloudflare Turnstile server-side verification
     └── routes/
         ├── auth.ts         # GET /api/auth/me: identity for the dashboard header
-        ├── schedule.ts     # /api/schedule + /api/schedule/days
+        ├── schedule.ts     # /api/schedule + /days + /types
         ├── gallery.ts      # /api/gallery (years, photos, uploads, replace, reorder)
         ├── team.ts         # /api/team (members, photo/badge uploads, reorder)
         ├── companies.ts    # /api/companies (team badges, logo upload, reorder)
@@ -66,8 +66,14 @@ The database schema lives in `supabase/migrations/` (see
 - `GET /api/health`: health check
 - `GET /api/auth/me`: admin only; returns the signed-in admin's email, name,
   and avatar for the dashboard header
-- `GET /api/schedule`, `GET /api/schedule/days`: public reads
-- `POST/PUT/DELETE /api/schedule/...`: admin only
+- `GET /api/schedule`, `GET /api/schedule/days`, `GET /api/schedule/types`:
+  public reads. Each event's `color` is its event type's color (joined from
+  `schedule_event_types`); the legacy `schedule_events.color` column is only
+  the fallback for rows without a `type_id`
+- `POST/PUT/DELETE /api/schedule/...`: admin only. Events are written with a
+  `type_id`; `/api/schedule/types` manages the types (422 for a color outside
+  the palette in `src/lib/scheduleColors.ts`, 409 when deleting a type that
+  events still use)
 - `GET /api/gallery`: public; year/photo writes, uploads, replaces, and
   `PUT /api/gallery/photos/reorder` admin only
 - `GET /api/team`: public; member writes, photo/badge uploads, and

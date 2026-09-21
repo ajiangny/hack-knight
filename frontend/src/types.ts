@@ -1,7 +1,9 @@
 // Shared domain types used across data, hooks, and components.
 // API rows (snake_case) are mapped into these camelCase shapes by the hooks.
 
-export type EventColor = "cyan" | "violet" | "green" | "orange";
+import type { EventColor } from "./lib/scheduleColors";
+
+export type { EventColor };
 
 export interface ScheduleEvent {
   /** UUID from the DB; absent on the bundled static fallback data. */
