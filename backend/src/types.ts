@@ -4,7 +4,9 @@ export interface ScheduleEvent {
   start_hour: number;
   end_hour: number;
   label: string;
+  /** The type's color; falls back to the legacy column for untyped rows. */
   color: string;
+  type_id: string | null;
   sort_order: number;
   created_at?: string;
 }
@@ -14,11 +16,25 @@ export interface CreateScheduleEventBody {
   start_hour: number;
   end_hour: number;
   label: string;
-  color?: string;
+  type_id: string;
   sort_order?: number;
 }
 
 export type UpdateScheduleEventBody = Partial<CreateScheduleEventBody>;
+
+export interface ScheduleEventType {
+  id: string;
+  label: string;
+  color: string;
+  sort_order: number;
+  created_at?: string;
+}
+
+export interface ScheduleEventTypeBody {
+  label?: string;
+  color?: string;
+  sort_order?: number;
+}
 
 export interface ScheduleDay {
   key: string;
