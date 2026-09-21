@@ -50,17 +50,12 @@ export default function EventTypesPanel({
         </button>
       }
     >
-      <p className="admin-help -mt-2">
-        Changing a type's color recolors every event of that type. A type can
-        only be deleted once no events use it.
-      </p>
-
       {open && (types.length === 0 ? (
-        <div className="mt-3">
+        <div>
           <EmptyState>No event types yet. Add one to start scheduling events.</EmptyState>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 mt-3">
+        <ul className="flex flex-col gap-2">
           {types.map((type) => {
             const orig = serverTypes.find((t) => t.id === type.id);
             const edited = orig && !typesEqual(orig, type);
