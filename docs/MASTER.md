@@ -38,6 +38,9 @@ scroll-triggered animation, any transition over 300ms.
 | `cyber-teal` | `#2dd4bf` | Schedule "green" events (workshops/hacking) |
 | `signal-yellow` | `#fbbf24` | Schedule "orange" events (food/logistics) |
 | `electric-blue` | `#3b82f6` | Schedule "cyan" events (check-in) |
+| `neon-pink` | `#ec4899` | Schedule "pink" events (workshops) |
+| `acid-lime` | `#a3e635` | Schedule "lime" events (fun events) |
+| `tangerine` | `#f97316` | Schedule "tangerine" events (spare event-type color) |
 | `text-primary` | `#f4f4f5` | Headings, values |
 | `text-secondary` | `#a1a1aa` | Labels, descriptions |
 | `text-muted` | `#52525b` | Placeholders, disabled, empty states |
@@ -51,8 +54,13 @@ scroll-triggered animation, any transition over 300ms.
 | Modified / pending | `signal-yellow` text, `signal-yellow/10` bg |
 | Unsaved indicator | `ultraviolet` dot / `shadow-glow` |
 
-Schedule event color names stay `violet | cyan | green | orange` (DB values) and
-map to the four accent tokens exactly as `components.css` already does.
+Schedule event color names are the DB values `violet | cyan | green | orange |
+pink | lime | tangerine`; each maps to one accent token through a
+`.schedule-event.color-<name>` rule in `components.css`. Admins assign these
+to event types (Schedule tab, "Event Types" panel) from this fixed palette, never
+a free color picker. Adding a color means touching the token, the CSS rule,
+`scheduleColors.ts` in both `frontend/src/lib/` and `backend/src/lib/`, and the
+`schedule_event_types.color` CHECK constraint.
 
 ## 3. Typography
 
