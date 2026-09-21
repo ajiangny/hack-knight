@@ -1,9 +1,10 @@
 // Event types editor for the schedule tab — a label plus one palette
 // color per type. Edits are staged in the parent's draft like everything
-// else in the tab.
+// else in the tab. Collapsed by default, like the team tab's Companies panel.
 
+import { useState } from "react";
 import { SCHEDULE_COLORS } from "../../../lib/scheduleColors";
-import { Panel, EmptyState } from "../ui";
+import { Panel, EmptyState, CollapseTitle } from "../ui";
 import { XIcon } from "../icons";
 import type { AdminEventType } from "../adminTypes";
 import { typesEqual } from "./scheduleMeta";
@@ -26,20 +27,40 @@ export default function EventTypesPanel({
   onAdd,
   onRemove,
 }: EventTypesPanelProps) {
+  const [open, setOpen] = useState(false);
+
   return (
     <Panel
-      title="Event Types"
+      title={
+        <CollapseTitle open={open} onToggle={() => setOpen((o) => !o)}>
+          Event Types
+        </CollapseTitle>
+      }
       count={types.length}
       actions={
-        <button type="button" className="admin-btn-ghost" onClick={onAdd}>
+        <button
+          type="button"
+          className="admin-btn-ghost"
+          onClick={() => {
+            setOpen(true);
+            onAdd();
+          }}
+        >
           + New Type
         </button>
       }
     >
-      {types.length === 0 ? (
-        <EmptyState>No event types yet. Add one to start scheduling events.</EmptyState>
+      <p className="admin-help -mt-2">
+        Changing a type's color recolors every event of that type. A type can
+        only be deleted once no events use it.
+      </p>
+
+      {open && (types.length === 0 ? (
+        <div className="mt-3">
+          <EmptyState>No event types yet. Add one to start scheduling events.</EmptyState>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2 mt-3">
           {types.map((type) => {
             const orig = serverTypes.find((t) => t.id === type.id);
             const edited = orig && !typesEqual(orig, type);
@@ -100,11 +121,7 @@ export default function EventTypesPanel({
             );
           })}
         </ul>
-      )}
-      <p className="admin-help mt-3">
-        Changing a type's color recolors every event of that type. A type can
-        only be deleted once no events use it.
-      </p>
+      ))}
     </Panel>
   );
 }
