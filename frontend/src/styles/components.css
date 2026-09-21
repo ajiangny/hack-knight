@@ -493,6 +493,24 @@
     &:hover { @apply shadow-[0_0_15px_rgba(251,191,36,0.4)]; }
   }
 
+  /* Neon Pink - Workshops*/
+  .schedule-event.color-pink {
+    @apply bg-neon-pink/50 border-neon-pink/30 border-l-neon-pink;
+    &:hover { @apply shadow-[0_0_15px_rgba(236,72,153,0.4)]; }
+  }
+
+  /* Acid Lime - Fun events*/
+  .schedule-event.color-lime {
+    @apply bg-acid-lime/50 border-acid-lime/30 border-l-acid-lime;
+    &:hover { @apply shadow-[0_0_15px_rgba(163,230,53,0.4)]; }
+  }
+
+  /* Tangerine - spare event-type color*/
+  .schedule-event.color-tangerine {
+    @apply bg-tangerine/50 border-tangerine/30 border-l-tangerine;
+    &:hover { @apply shadow-[0_0_15px_rgba(249,115,22,0.4)]; }
+  }
+
   .schedule-event-time {
     @apply font-mono text-xs font-bold text-white/70 uppercase whitespace-nowrap;
   }
