@@ -1,6 +1,7 @@
 // Misc admin tab — one-off site settings that don't warrant their own tab.
 // Countdown target date (staged + previewed live through the real public
-// CountdownTimer component), the registration toggles, the MLH trust
+// CountdownTimer component), the registration toggles (including whether the
+// closed /register page reads "Opening Soon" or "Closed"), the MLH trust
 // badge toggle, the "More Sponsors TBA!" teaser toggle, and the event location
 // (name + optional Google Maps link) shown under the hero date.
 
@@ -20,6 +21,7 @@ import { Panel, Field, SaveBar, DiffModal, Toggle, ScaledPreview, type Change } 
 const COUNTDOWN_KEY = "countdown_target";
 const MLH_KEY = "mlh_badge_enabled";
 const REGISTRATION_KEY = "registration_open";
+const CLOSED_MODE_KEY = "registration_closed_mode";
 const MLH_DISCLAIMER_KEY = "mlh_disclaimer_enabled";
 const SPONSORS_TBA_KEY = "sponsors_tba_enabled";
 
@@ -108,10 +110,30 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
         summary: "Applications",
         detail: open
           ? "Closed → /register accepts submissions"
-          : "Open → /register shows the coming-soon page",
+          : "Open → /register shows the closed page",
         apply: () =>
           apiPut(`/settings/${REGISTRATION_KEY}`, {
             value: draftSettings[REGISTRATION_KEY],
+          }),
+      });
+    }
+
+    // Absent key = "coming_soon", so compare effective values.
+    const closedLabel = (v: string | undefined) =>
+      v === "closed" ? "Applications closed" : "Opening soon";
+    if (
+      closedLabel(draftSettings[CLOSED_MODE_KEY]) !==
+      closedLabel(serverSettings[CLOSED_MODE_KEY])
+    ) {
+      list.push({
+        kind: "edit",
+        summary: "Closed applications page",
+        detail: `${closedLabel(serverSettings[CLOSED_MODE_KEY])} → ${closedLabel(
+          draftSettings[CLOSED_MODE_KEY],
+        )}`,
+        apply: () =>
+          apiPut(`/settings/${CLOSED_MODE_KEY}`, {
+            value: draftSettings[CLOSED_MODE_KEY],
           }),
       });
     }
@@ -220,6 +242,8 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
   const mlhOn = draftSettings[MLH_KEY] === "true";
   // Absent key = closed, matching how the backend reads it.
   const registrationOpen = draftSettings[REGISTRATION_KEY] === "true";
+  // Absent key = "coming_soon", the page shown before applications ever open.
+  const showClosed = draftSettings[CLOSED_MODE_KEY] === "closed";
   // Absent key = shown — the disclaimer must stay up until MLH membership is
   // official, so only an explicit "false" hides it.
   const disclaimerOn = draftSettings[MLH_DISCLAIMER_KEY] !== "false";
@@ -274,7 +298,7 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                   Accept applications
                 </label>
                 <p className="admin-help">
-                  When off, /register shows the coming-soon page and the API
+                  When off, /register shows the closed page and the API
                   rejects submissions. Turn on when applications open.
                 </p>
               </div>
@@ -287,6 +311,33 @@ export default function MiscTab({ onDirtyChange }: { onDirtyChange?: (count: num
                 }
               />
             </div>
+
+            {/* Only matters while applications are off, so hide it otherwise. */}
+            {!registrationOpen && (
+              <div className="flex items-center justify-between gap-4 mt-5 pt-5 border-t border-border/40">
+                <div className="min-w-0">
+                  <label
+                    className="admin-label mb-0.5 cursor-pointer"
+                    htmlFor="registration-closed-toggle"
+                  >
+                    Show &quot;Applications Closed&quot;
+                  </label>
+                  <p className="admin-help">
+                    What /register shows while applications are off. Off shows
+                    &quot;Applications Opening Soon&quot;; on shows
+                    &quot;Applications Closed&quot;.
+                  </p>
+                </div>
+                <Toggle
+                  id="registration-closed-toggle"
+                  label="Show Applications Closed"
+                  checked={showClosed}
+                  onChange={(next) =>
+                    setDraft(CLOSED_MODE_KEY, next ? "closed" : "coming_soon")
+                  }
+                />
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-4 mt-5 pt-5 border-t border-border/40">
               <div className="min-w-0">

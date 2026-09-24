@@ -87,7 +87,8 @@ The database schema lives in `supabase/migrations/` (see
   folder — sponsors carried over by the split migration still point at
   `companies/` files that may also back a team badge
 - `GET /api/settings`: public read of all site settings (e.g.
-  `countdown_target`, `mlh_badge_enabled`, `registration_open`);
+  `countdown_target`, `mlh_badge_enabled`, `registration_open`,
+  `registration_closed_mode`);
   `PUT /api/settings/:key` admin only
 - `POST /api/registrations`: **the only public write endpoint.** JSON body.
   Validates the MLH-required fields (name, email, phone, age, school from
