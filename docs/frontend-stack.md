@@ -101,6 +101,8 @@ sign-in and session. All data goes through the Express API (see
   `lib/schools.ts`), renders the Turnstile captcha when
   `VITE_TURNSTILE_SITE_KEY` is set, and only opens when the
   `registration_open` site setting is on. The backend re-checks all of it.
+  While closed it shows "Applications Opening Soon", or "Applications Closed"
+  when `registration_closed_mode` is `closed` (Admin → Misc → Applications).
   Admins open resumes straight from the Registrations tab; each row's Resume
   link opens the Drive file in a new tab.
 - **Image uploads** go through `compressImage()` in `lib/api.ts` (target
