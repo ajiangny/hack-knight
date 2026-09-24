@@ -2,7 +2,13 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MascotEyes from './MascotEyes';
 
-export default function ComingSoon() {
+// "coming_soon" before applications open, "closed" once they're over — picked
+// by the registration_closed_mode site setting.
+export type ClosedVariant = 'coming_soon' | 'closed';
+
+export default function ComingSoon({ variant = 'coming_soon' }: { variant?: ClosedVariant }) {
+  const closed = variant === 'closed';
+
   useEffect(() => {
     window.scrollTo(0, 0);  // force scroll to top on mount
   }, []);
@@ -18,11 +24,13 @@ export default function ComingSoon() {
 
       <div className="flex flex-col items-center justify-center text-center mt-20">
         <h1 className="font-display font-bold text-4xl md:text-6xl text-text-primary mb-4">
-          Applications <span className="text-ultraviolet">Opening Soon</span>
+          Applications <span className="text-ultraviolet">{closed ? 'Closed' : 'Opening Soon'}</span>
         </h1>
 
         <p className="font-body text-text-secondary text-base max-w-xl text-center mx-auto">
-          We're putting the finishing touches on applications. Check back soon!
+          {closed
+            ? 'Applications are closed. Thanks for your interest in HackKnight!'
+            : "We're putting the finishing touches on applications. Check back soon!"}
         </p>
       </div>
 

@@ -1,6 +1,7 @@
 // Public registration form. Gated on the registration_open site setting: when
-// it is off this renders the existing coming-soon page, which is why that
-// component stayed put rather than being replaced.
+// it is off this renders the existing coming-soon page (or its "Applications
+// Closed" variant, per registration_closed_mode), which is why that component
+// stayed put rather than being replaced.
 //
 // Fields follow MLH's member-event requirements (first/last name, email,
 // phone, age, school, level of study, country of residence, plus the three
@@ -415,7 +416,15 @@ export default function RegisterPage() {
   if (loading) return null;
 
   // The server rejects submissions when this is off too; this is just the UI.
-  if (settings.registration_open !== "true") return <ComingSoon />;
+  if (settings.registration_open !== "true") {
+    return (
+      <ComingSoon
+        variant={
+          settings.registration_closed_mode === "closed" ? "closed" : "coming_soon"
+        }
+      />
+    );
+  }
 
   const submitting = status === "submitting";
 
