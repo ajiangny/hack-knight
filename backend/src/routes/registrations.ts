@@ -586,6 +586,28 @@ registrationsRouter.get(
   },
 );
 
+// DELETE /api/registrations  (admin) — wipe every application to start the
+// next year's cycle. The dashboard makes the admin type a confirmation first.
+registrationsRouter.delete(
+  "/",
+  authenticateAdmin,
+  async (_req: Request, res: Response) => {
+    // PostgREST refuses a DELETE with no filter, so match every row explicitly.
+    const { error } = await supabase
+      .from("registrations")
+      .delete()
+      .not("id", "is", null);
+
+    if (error) {
+      console.error("Failed to delete all registrations:", error);
+      res.status(500).json({ message: "Failed to delete applications" });
+      return;
+    }
+
+    res.status(204).send();
+  },
+);
+
 // DELETE /api/registrations/:id  (admin) — test rows and deletion requests.
 registrationsRouter.delete(
   "/:id",

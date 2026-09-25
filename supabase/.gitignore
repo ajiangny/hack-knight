@@ -10,3 +10,7 @@ seed.sql
 .env.keys
 .env.local
 .env.*.local
+.env
+
+# Local copy of prod data (contains real user data)
+prod_data.sql

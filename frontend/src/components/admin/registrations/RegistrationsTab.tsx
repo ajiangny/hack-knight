@@ -1,7 +1,8 @@
 // Registrations admin tab — read-only, which makes it structurally unlike the
 // other four. There is no staged draft state, so no SaveBar and no DiffModal;
 // it reports 0 dirty changes once on mount to satisfy the tab contract and
-// keep the unsaved-changes dot from ever appearing.
+// keep the unsaved-changes dot from ever appearing. Deletes (one row, or all
+// of them to reset for next year) apply immediately behind a confirm modal.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiDelete, apiDownload } from "../../../lib/api";
@@ -13,6 +14,9 @@ import { EmptyState, Modal, Pagination, Panel } from "../ui";
 // Rows per page. Small enough that the wrapper's horizontal scrollbar, which
 // sits under the last row, stays within reach of the table's top.
 const PAGE_SIZE = 25;
+
+// Typed to enable "Delete all" — a click alone is too easy for a wipe.
+const DELETE_ALL_PHRASE = "DELETE";
 
 function formatDate(value: string | undefined) {
   const d = new Date(value ?? NaN);
@@ -35,6 +39,9 @@ export default function RegistrationsTab({
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllText, setDeleteAllText] = useState("");
+  const [deleteAllError, setDeleteAllError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Read-only tab: never dirty.
@@ -119,6 +126,30 @@ export default function RegistrationsTab({
     }
   }
 
+  function openDeleteAll() {
+    setDeleteAllText("");
+    setDeleteAllError(null);
+    setDeleteAllOpen(true);
+  }
+
+  async function confirmDeleteAll() {
+    setDeleting(true);
+    setDeleteAllError(null);
+    try {
+      await apiDelete("/registrations");
+      setDeleteAllOpen(false);
+      setSearch("");
+      setPage(1);
+      await refetch();
+    } catch (err) {
+      setDeleteAllError(`Delete failed: ${(err as Error).message}`);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const deleteAllArmed = deleteAllText.trim() === DELETE_ALL_PHRASE;
+
   return (
     <div ref={panelRef}>
       {error && <p className="admin-error">{error}</p>}
@@ -128,14 +159,24 @@ export default function RegistrationsTab({
         title="Applications"
         count={loading ? "…" : registrations.length}
         actions={
-          <button
-            type="button"
-            className="admin-btn-ghost"
-            onClick={handleExport}
-            disabled={exporting || registrations.length === 0}
-          >
-            {exporting ? "Exporting…" : "Export CSV"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="admin-btn-ghost"
+              onClick={handleExport}
+              disabled={exporting || registrations.length === 0}
+            >
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+            <button
+              type="button"
+              className="admin-btn-danger"
+              onClick={openDeleteAll}
+              disabled={loading || registrations.length === 0}
+            >
+              Delete all
+            </button>
+          </div>
         }
       >
         <div className="mb-4">
@@ -329,6 +370,63 @@ export default function RegistrationsTab({
             disabled={deleting}
           >
             {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleteAllOpen}
+        title="Delete all applications"
+        onClose={deleting ? () => {} : () => setDeleteAllOpen(false)}
+      >
+        <p className="font-body text-sm text-text-secondary mb-3">
+          This permanently deletes{" "}
+          <span className="text-text-primary font-semibold">
+            all {registrations.length} application
+            {registrations.length === 1 ? "" : "s"}
+          </span>
+          . This cannot be undone.
+        </p>
+        <p className="font-body text-sm text-text-secondary mb-4">
+          Export a CSV first if you need to keep a copy.{" "}
+          <button
+            type="button"
+            className="text-ultraviolet hover:underline"
+            onClick={handleExport}
+            disabled={exporting || deleting}
+          >
+            {exporting ? "Exporting…" : "Export CSV now"}
+          </button>
+        </p>
+        <label className="admin-label" htmlFor="delete-all-confirm">
+          Type {DELETE_ALL_PHRASE} to confirm
+        </label>
+        <input
+          id="delete-all-confirm"
+          className="admin-input mb-5"
+          type="text"
+          autoComplete="off"
+          value={deleteAllText}
+          onChange={(e) => setDeleteAllText(e.target.value)}
+          disabled={deleting}
+        />
+        {deleteAllError && <p className="admin-error">{deleteAllError}</p>}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            className="admin-btn-ghost"
+            onClick={() => setDeleteAllOpen(false)}
+            disabled={deleting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="admin-btn-danger"
+            onClick={confirmDeleteAll}
+            disabled={deleting || !deleteAllArmed}
+          >
+            {deleting ? "Deleting…" : "Delete all applications"}
           </button>
         </div>
       </Modal>

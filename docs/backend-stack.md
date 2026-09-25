@@ -104,7 +104,8 @@ The database schema lives in `supabase/migrations/` (see
   Turnstile captcha, and the `registration_open` setting (closed unless
   explicitly opened). Duplicate email → 409.
 - `GET /api/registrations` (+ `?search=`), `GET /api/registrations/export`
-  (CSV download, resume links included), `DELETE /api/registrations/:id`:
+  (CSV download, resume links included), `DELETE /api/registrations/:id`,
+  `DELETE /api/registrations` (wipes every application for the next cycle):
   admin only; the table holds student PII, so there are no public reads
 
 "Admin only" routes use the `authenticateAdmin` middleware. Sign-in itself
