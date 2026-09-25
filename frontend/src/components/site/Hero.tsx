@@ -88,7 +88,6 @@ export default function Hero() {
       >
         <img src={hillsBgSvg} alt="" aria-hidden="true"
           className="absolute left-0 bottom-[8dvh] lg:bottom-0 w-full h-auto pointer-events-none select-none"
-          style={{ opacity: 0.35 }}
         />
         <img src={knightsSvg} alt="" aria-hidden="true"
           className="absolute left-0 bottom-[8dvh] lg:bottom-0 w-full h-auto pointer-events-none select-none knights-float"
