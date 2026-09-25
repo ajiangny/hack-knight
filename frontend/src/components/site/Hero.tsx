@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useSpring, type Variants } from 'motion/react';
 import CountdownTimer from './CountdownTimer';
+import Fireworks from './Fireworks';
 import MascotEyes from './MascotEyes';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { applyButtonLabel } from '../../lib/registration';
@@ -82,6 +83,9 @@ export default function Hero() {
       className="hero-section relative overflow-hidden flex flex-col pt-24 lg:pt-32 pb-8 lg:pb-32 2xl:pb-[22vh] bg-void"
       style={{ isolation: 'isolate' }}
     >
+      {/* z:0 — Fireworks while the hackathon is in progress, behind the back hill */}
+      <Fireworks />
+
       {/* z:0 — Back hill + Knights, slow parallax (hidden on mobile) */}
       <motion.div
         className="hero-hills absolute left-0 h-full w-full pointer-events-none"
