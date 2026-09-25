@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform, useSpring, type Variants } from 'motio
 import CountdownTimer from './CountdownTimer';
 import MascotEyes from './MascotEyes';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { applyButtonLabel } from '../../lib/registration';
 import { DEFAULT_LOCATION_NAME, DEFAULT_LOCATION_URL, LOCATION_NAME_KEY, LOCATION_URL_KEY } from '../../lib/location';
 import hillsBgSvg from '../../assets/brand/hillsbg.svg';
 import hillsSvg from '../../assets/brand/hills.svg';
@@ -144,7 +145,7 @@ export default function Hero() {
           </motion.p>
 
           <motion.div variants={itemVariants} className="hero-buttons flex gap-3 mb-6 w-full flex-wrap">
-            <Link to="/register" className="btn-primary text-sm px-5 py-2.5 sm:text-base sm:px-6 sm:py-3">Apply Now</Link>
+            <Link to="/register" className="btn-primary text-sm px-5 py-2.5 sm:text-base sm:px-6 sm:py-3">{applyButtonLabel(settings)}</Link>
             <Link to="/schedule" className="btn-outline text-sm px-5 py-2.5 sm:text-base sm:px-6 sm:py-3">View Schedule</Link>
           </motion.div>
 

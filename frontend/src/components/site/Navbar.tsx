@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logoUrl from '../../assets/brand/logoprimary.svg';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { applyButtonLabel } from '../../lib/registration';
 import { MLH_BADGE_HREF, MLH_BADGE_SRC, MLH_BADGE_ALT } from '../../lib/mlh';
 
 const NAV_SECTIONS = ['sponsors', 'photos', 'schedule', 'team', 'judges', 'faq'];
@@ -12,6 +13,7 @@ export default function Navbar() {
   // Toggled from the admin Misc tab once MLH approves the badge.
   const { settings } = useSiteSettings();
   const showMlhBadge = settings.mlh_badge_enabled === 'true';
+  const applyLabel = applyButtonLabel(settings);
 
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
@@ -105,7 +107,7 @@ export default function Navbar() {
 
       {/* ── RIGHT GROUP (flex-1) — Apply Now + Hamburger ───── */}
       <div className="flex flex-1 items-center justify-end gap-4">
-        <Link to="/register" className="navbar-desktop-register btn-primary">Apply Now</Link>
+        <Link to="/register" className="navbar-desktop-register btn-primary">{applyLabel}</Link>
 
         {/* Mobile hamburger */}
         <button
@@ -130,7 +132,7 @@ export default function Navbar() {
           <li><a href="/#faq" className={`navbar-link text-lg${activeSection === 'faq' ? ' navbar-link-active' : ''}`} onClick={() => setMenuOpen(false)}>FAQ</a></li>
         </ul>
         <div className="flex justify-center pb-6">
-          <Link to="/register" className="btn-primary" onClick={() => setMenuOpen(false)}>Apply Now</Link>
+          <Link to="/register" className="btn-primary" onClick={() => setMenuOpen(false)}>{applyLabel}</Link>
         </div>
       </div>
     </nav>
