@@ -83,7 +83,7 @@ All uploads go to one public bucket, `photos`, in per-route folders (`gallery/<y
 
 ## Conventions and gotchas
 
-- Backend imports use `.js` extensions (`"./routes/auth.js"`) even though the files are `.ts`. Code is written with `import`/`export` but compiles to CommonJS (`backend/package.json` has no `"type": "module"`), so use `__dirname`, not `import.meta`, and no top-level `await`.
+- The backend is native ESM (`"type": "module"` in `backend/package.json`). Relative imports need `.js` extensions (`"./routes/auth.js"`) even though the files are `.ts`. Use `import.meta.dirname`, not `__dirname`. Keep `import "dotenv/config"` as the first import in every entry point.
 - Register `/reorder` routes before `/:id` routes, or Express treats "reorder" as an id.
 - Validation failures return 422, duplicates 409, and Supabase errors are logged and returned as a generic 500 message.
 - Public GET routes set `Cache-Control: public, s-maxage=300, stale-while-revalidate=600` for Vercel's CDN (`/api/settings` uses 60/120 because it carries the registration toggle).

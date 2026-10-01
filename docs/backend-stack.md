@@ -22,7 +22,7 @@ Visitor / Admin ──► Frontend (Vite + React, Vercel)
 | Layer | Technology | Notes |
 |---|---|---|
 | Runtime | Node.js 24 (LTS) + TypeScript 6 | Strict mode, config extends `@tsconfig/node-lts` |
-| Framework | Express 5 | Written with `import`/`export`, compiled to CommonJS |
+| Framework | Express 5 | Native ES modules (`"type": "module"`); relative imports need `.js` extensions |
 | Database + storage | Supabase (`@supabase/supabase-js`) | One client for Postgres queries **and** Storage |
 | Auth | Supabase Auth (Google sign-in) | Browser signs in with Google; backend verifies the access token and checks the `ADMIN_EMAILS` allowlist |
 | Captcha | Cloudflare Turnstile | Server-side verification of the public registration form (`lib/turnstile.ts`) |

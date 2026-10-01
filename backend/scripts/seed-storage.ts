@@ -22,7 +22,7 @@ if (hostname !== "127.0.0.1" && hostname !== "localhost") {
   process.exit(1);
 }
 
-const assets = resolve(__dirname, "../../frontend/src/assets");
+const assets = resolve(import.meta.dirname, "../../frontend/src/assets");
 
 // [path in the bucket, source file relative to frontend/src/assets/]
 const FILES: [string, string][] = [

@@ -26,7 +26,7 @@
 // For production, run with the production SUPABASE_URL / SUPABASE_SECRET_KEY.
 
 import "dotenv/config";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 import { IMMUTABLE_CACHE, supabase } from "../src/db/supabase.js";
 
 const BUCKET = "photos";
@@ -68,7 +68,7 @@ async function optimize(
   if (!type.startsWith("image/") || type === "image/svg+xml") return keep;
 
   const maxEdge = maxEdgeFor(path);
-  let meta: sharp.Metadata;
+  let meta: Metadata;
   try {
     meta = await sharp(original).metadata();
   } catch {
