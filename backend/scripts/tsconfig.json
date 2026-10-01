@@ -1,0 +1,10 @@
+// Editor/typecheck config for scripts/, which the main tsconfig leaves out
+// (its rootDir is src/). Never emits; scripts run directly with `npx tsx`.
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true
+  },
+  "include": ["./**/*", "../src/**/*"]
+}
