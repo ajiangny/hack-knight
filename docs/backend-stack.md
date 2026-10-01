@@ -21,13 +21,13 @@ Visitor / Admin ──► Frontend (Vite + React, Vercel)
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Runtime | Node.js (LTS) + TypeScript 6 | Strict mode, config extends `@tsconfig/node-lts` |
-| Framework | Express 5 | ESM (`import`/`export`) throughout |
+| Runtime | Node.js 24 (LTS) + TypeScript 6 | Strict mode, config extends `@tsconfig/node-lts` |
+| Framework | Express 5 | Written with `import`/`export`, compiled to CommonJS |
 | Database + storage | Supabase (`@supabase/supabase-js`) | One client for Postgres queries **and** Storage |
 | Auth | Supabase Auth (Google sign-in) | Browser signs in with Google; backend verifies the access token and checks the `ADMIN_EMAILS` allowlist |
 | Captcha | Cloudflare Turnstile | Server-side verification of the public registration form (`lib/turnstile.ts`) |
 | Uploads | `multer` (in-memory) | Multipart photos → Supabase Storage, stored with a one-year `cacheControl` |
-| Middleware | `cors`, `morgan` | CORS locked to `FRONTEND_URL` |
+| Middleware | `cors`, `morgan` | CORS allows `FRONTEND_URL`, `*.vercel.app` (preview deploys), and `http://localhost:*` |
 | Dev runner | `tsx watch` | Auto-restarts on file changes |
 
 ## Directory layout
@@ -38,6 +38,9 @@ backend/
 ├── vercel.json             # Builds src/index.ts with @vercel/node
 ├── .env.example            # Template for required env vars
 ├── .env                    # Your local values (git-ignored, never commit)
+├── scripts/                # One-off scripts, run with `npx tsx`
+│   ├── seed-storage.ts               # Uploads sample images to the LOCAL photos bucket
+│   └── optimize-storage-images.ts    # Resizes and re-caches existing images in the photos bucket
 └── src/
     ├── index.ts            # App entry: env checks, middleware, route mounting
     ├── types.ts            # Shared row/request types
@@ -46,12 +49,14 @@ backend/
     ├── lib/
     │   ├── registrationOptions.ts  # Age range, level-of-study/country/demographic/major lists (mirrored in frontend)
     │   ├── schools.ts              # MLH-verified school list (mirrored in frontend)
+    │   ├── scheduleColors.ts       # Schedule event-type color palette (mirrored in frontend)
     │   └── turnstile.ts            # Cloudflare Turnstile server-side verification
     └── routes/
         ├── auth.ts         # GET /api/auth/me: identity for the dashboard header
         ├── schedule.ts     # /api/schedule + /days + /types
         ├── gallery.ts      # /api/gallery (years, photos, uploads, replace, reorder)
         ├── team.ts         # /api/team (members, photo/badge uploads, reorder)
+        ├── judges.ts       # /api/judges (judges, photo upload, reorder)
         ├── companies.ts    # /api/companies (team badges, logo upload, reorder)
         ├── sponsors.ts     # /api/sponsors (tiers, logo upload, reorder)
         ├── settings.ts     # /api/settings (site settings key/value store)
@@ -60,6 +65,10 @@ backend/
 
 The database schema lives in `supabase/migrations/` (see
 [Migrations and schema changes](#migrations-and-schema-changes)).
+
+For how the backend fits with the frontend, storage, and auth, see
+[architecture.md](architecture.md). For first-time setup, see
+[getting-started.md](getting-started.md).
 
 ## API surface
 
@@ -78,18 +87,26 @@ The database schema lives in `supabase/migrations/` (see
   `PUT /api/gallery/photos/reorder` admin only
 - `GET /api/team`: public; member writes, photo/badge uploads, and
   `PUT /api/team/reorder` (display priority) admin only
-- `GET /api/companies`: public; a row is a reusable team badge worn by team
-  members. CRUD with logo upload and `PUT /api/companies/reorder` admin only
+- `GET /api/judges`: public; a leaner copy of the team routes (photo only,
+  no character badge or social links). Judge writes, photo upload, and
+  `PUT /api/judges/reorder` admin only. Whether the public site shows judges
+  is the `judges_revealed` site setting, which the frontend checks; the
+  endpoint itself always returns them
+- `GET /api/companies`: public; a row is a reusable logo badge worn by team
+  members and judges. CRUD with logo upload and `PUT /api/companies/reorder`
+  admin only
 - `GET /api/sponsors`: public; sponsors live in their own table, separate
   from badge companies, and every row has a tier. CRUD with logo upload and
   `PUT /api/sponsors/reorder` (tier display order) admin only. New logos go
   to `sponsors/` in the bucket, and deletes only remove files from that
   folder — sponsors carried over by the split migration still point at
   `companies/` files that may also back a team badge
-- `GET /api/settings`: public read of all site settings (e.g.
-  `countdown_target`, `mlh_badge_enabled`, `registration_open`,
-  `registration_closed_mode`);
-  `PUT /api/settings/:key` admin only
+- `GET /api/settings`: public read of all site settings as a flat
+  `{ key: value }` map (the keys are listed in
+  [architecture.md](architecture.md#site-settings));
+  `PUT /api/settings/:key` admin only. The write is an upsert, because
+  migrations do not seed this table and a setting has no row until an admin
+  first saves it. `location_url` only accepts `http(s)` links
 - `POST /api/registrations`: **the only public write endpoint.** JSON body.
   Validates the MLH-required fields (name, email, phone, age, school from
   the MLH list, level of study, ISO 3166-1 country, MLH agreements), the
@@ -107,6 +124,25 @@ The database schema lives in `supabase/migrations/` (see
   (CSV download, resume links included), `DELETE /api/registrations/:id`,
   `DELETE /api/registrations` (wipes every application for the next cycle):
   admin only; the table holds student PII, so there are no public reads
+
+### Conventions shared by every route
+
+- **Status codes:** 422 for a failed validation, 409 for a duplicate or a
+  delete blocked by a reference, 404 for a missing row, 204 for a successful
+  delete or reorder. Supabase errors are logged server-side and returned as
+  a generic 500 message.
+- **Caching:** public GET routes send
+  `Cache-Control: public, s-maxage=300, stale-while-revalidate=600` so
+  Vercel's CDN can serve them. `/api/settings` uses `s-maxage=60` because it
+  carries the registration toggle.
+- **Route order:** `PUT /<resource>/reorder` is registered before
+  `PUT /<resource>/:id`, otherwise Express would treat "reorder" as an id.
+- **Uploads:** each route writes to its own folder in the `photos` bucket
+  with a random UUID filename and stores the public URL in the row. When
+  creating a row, a failed insert deletes the file that was just uploaded.
+  Deleting a row or replacing its image removes the old file.
+
+### Admin authentication
 
 "Admin only" routes use the `authenticateAdmin` middleware. Sign-in itself
 happens in the browser against Supabase Auth (Google provider); the middleware
@@ -165,18 +201,29 @@ Docker so you can develop and test without touching the shared cloud project.
 
 ### One-time setup
 
+[getting-started.md](getting-started.md) walks through this step by step,
+including installing Docker and Node.js. In short:
+
 1. Install **Docker Desktop** and make sure it's running.
-2. Install the Supabase CLI. On Windows the easiest routes are:
-
-   ```powershell
-   scoop install supabase        # via Scoop
-   ```
-
-   or run it through npx without installing globally:
+2. Run the Supabase CLI through `npx`, which needs no install:
 
    ```bash
    npx supabase --version
    ```
+
+   Installing it is optional and saves the `npx` prefix:
+
+   ```bash
+   brew install supabase/tap/supabase     # macOS and Linux (Homebrew)
+   ```
+
+   ```powershell
+   scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+   scoop install supabase                 # Windows (Scoop)
+   ```
+
+   `npx supabase` always resolves the latest CLI, while an installed copy
+   stays at its version until you upgrade it.
 
 ### Daily workflow
 
@@ -189,11 +236,14 @@ npx supabase status       # prints URLs and keys any time you need them
 `supabase start` prints (and `status` re-prints) everything you need:
 
 - **API URL** → `http://127.0.0.1:54321`, use as `SUPABASE_URL`
-- **service_role key** → use as `SUPABASE_SECRET_KEY`
+- **Secret key** (`service_role key` in older CLI versions) → use as
+  `SUPABASE_SECRET_KEY`
+- **Publishable key** (`anon key` in older CLI versions) → use as
+  `SUPABASE_ANON_KEY`, and as `VITE_SUPABASE_ANON_KEY` in the frontend
 - **Studio** → `http://127.0.0.1:54323`, web UI to browse tables and storage
 - **DB** → `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
 
-Point `backend/.env` at those two values and start the backend as usual. To
+Point `backend/.env` at those values and start the backend as usual. To
 switch back to the cloud project, just change the two env vars back. No code
 changes needed.
 
@@ -201,6 +251,26 @@ changes needed.
 npx supabase stop         # shut the stack down (data persists)
 npx supabase stop --no-backup   # shut down AND wipe local data
 ```
+
+### Sample data
+
+`supabase/seeds/dummy.sql` holds fake content for every table, safe to
+commit and share. `db reset` loads whatever is at `supabase/seed.sql` (see
+`[db.seed]` in `config.toml`), which is git-ignored, so copy the sample data
+there:
+
+```bash
+cp supabase/seeds/dummy.sql supabase/seed.sql
+npx supabase db reset                       # wipes local data, then loads the seed
+cd backend && npx tsx scripts/seed-storage.ts
+```
+
+The last command uploads the images the sample rows point at. SQL can only
+insert rows, not files, and `db reset` clears storage, so run it after every
+reset. It refuses to run unless `SUPABASE_URL` is local.
+
+To work against a snapshot of production data instead, see
+[Pulling production data](testing-and-github.md#pulling-production-data-into-your-local-database).
 
 ### Migrations and schema changes
 
