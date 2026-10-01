@@ -216,9 +216,27 @@ containers that matter are `db`, `kong`, `rest`, `auth`, and `storage`.
 5. For image uploads: use a large image and confirm client-side compression
    keeps the request under Vercel's 4.5 MB body limit.
 
+### Sample data or production data
+
+Migrations give you the schema but no content. `db reset` loads whatever is
+at `supabase/seed.sql`, and there are two things you can put there:
+
+- **Sample data (the default, and all most work needs).** Fake content for
+  every table, committed at `supabase/seeds/dummy.sql`:
+
+  ```bash
+  cp supabase/seeds/dummy.sql supabase/seed.sql
+  npx supabase db reset
+  cd backend && npx tsx scripts/seed-storage.ts   # uploads the matching images
+  ```
+
+- **A production snapshot.** Only for maintainers with access to the linked
+  Supabase project, and only when a bug needs real data to reproduce. It
+  contains real registrants' personal information. Steps below.
+
 ### Pulling production data into your local database
 
-Migrations give you the schema. When you want real production data too, the
+When you want real production data, the
 CLI can snapshot it into the local seed file (the repo is linked to the
 production Supabase project):
 
@@ -253,8 +271,10 @@ Rules that keep this working:
 - **Photos still render.** Image `src` columns hold full production URLs
   and the `photos` bucket is public-read, so images load from the cloud
   even against a local database.
-- **Never commit `supabase/seed.sql`.** It is a production data dump and is
-  git-ignored. Keep it that way.
+- **Never commit `supabase/seed.sql`**, or a dump saved under any other
+  name. It can hold a production data dump and is git-ignored, as is
+  `supabase/prod_data.sql`. Keep it that way. Only fake data belongs in
+  `supabase/seeds/`.
 - **Do not paste `--dry-run` output anywhere.** `db dump --dry-run` prints
   the generated `pg_dump` script with a live `PGPASSWORD` in it. The CLI
   mints that short-lived role from your `supabase login` session rather than
@@ -336,8 +356,9 @@ refactor(frontend): fetch schedule/gallery/team from API
 chore(backend): replace better-sqlite3 with @supabase/supabase-js
 ```
 
-Types in use: `feat`, `fix`, `refactor`, `chore`, `docs`. Common scopes:
-`frontend`, `backend`, `admin`, `site`, `api`, `db`, `hooks`.
+Types in use: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `perf`.
+Common scopes: `frontend`, `backend`, `admin`, `site`, `api`, `db`, `hooks`,
+`supabase`.
 
 Keep commits **small and logical**: one coherent change per commit, so a
 reviewer can read the history as a story and a bad change can be reverted
@@ -359,9 +380,10 @@ three commits, not one.
 
 - No direct commits to `main`.
 - No force-pushing shared branches (anything someone else may have pulled).
-- Never commit secrets. `backend/.env` and `frontend/.env.local` are
-  git-ignored; keep them that way. If a secret ever lands in a commit,
+- Never commit secrets. `backend/.env`, `frontend/.env.local`, and
+  `supabase/.env` are git-ignored; keep them that way. If a secret ever lands in a commit,
   rotate it. Deleting the commit is not enough.
-- Never commit `supabase/seed.sql` (production data dump).
+- Never commit `supabase/seed.sql` or `supabase/prod_data.sql` (production
+  data dumps).
 - Commit `package-lock.json` together with `package.json`, and never
   hand-edit the lockfile.

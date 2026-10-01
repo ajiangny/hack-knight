@@ -4,17 +4,22 @@ The frontend is a single-page React app for the Queens College Hack Knight
 website, located in `frontend/`. It is written in TypeScript (TSX) with
 strict mode enabled.
 
+For how the frontend fits with the backend, storage, and auth, see
+[architecture.md](architecture.md). For first-time setup, see
+[getting-started.md](getting-started.md).
+
 ## Stack at a glance
 
 | Layer | Technology | Notes |
 |---|---|---|
 | Build tool | [Vite 8](https://vite.dev) | Dev server + production bundler |
-| Language | TypeScript 5 (strict) | `tsc -b` runs before every build; project references in `tsconfig.json` |
+| Language | TypeScript 6 (strict) | `tsc -b` runs before every build; project references in `tsconfig.json` |
 | UI framework | React 19 | With `StrictMode` enabled in `src/main.tsx` |
 | Routing | React Router 7 (`react-router-dom`) | `BrowserRouter` set up in `src/App.tsx` |
 | Styling | Tailwind CSS 4 (via `@tailwindcss/vite`) | Plus hand-written CSS in `src/styles/` |
-| Animation | Motion 12 (`motion/react`) | Successor to Framer Motion; used for page transitions |
+| Animation | Motion 12 (`motion/react`) | Successor to Framer Motion; page transitions, scroll reveals, the hero, admin drag-to-reorder |
 | Images | `browser-image-compression` | Resizes admin uploads to display size and re-encodes as WebP before sending |
+| Auth | `@supabase/supabase-js` | Admin Google sign-in only; never used to read or write data |
 | Markdown | `react-markdown` | Renders admin-written sponsor blurbs; skips raw HTML by default |
 | Linting | ESLint 9 (flat config, `eslint.config.js`) | With `typescript-eslint`, `react-hooks`, and `react-refresh` plugins |
 
@@ -22,21 +27,23 @@ strict mode enabled.
 
 ```
 frontend/
-├── index.html              # Entry HTML. Google Fonts are loaded HERE and only here
-├── vite.config.ts          # Vite + React + Tailwind plugins
+├── index.html              # Entry HTML. Google Fonts (Lexend, JetBrains Mono) are loaded HERE and only here
+├── vite.config.ts          # Vite + React + Tailwind plugins; dev proxy for /photos/*
 ├── eslint.config.js        # ESLint flat config
 ├── tsconfig.json           # Project references → tsconfig.app.json + tsconfig.node.json
 ├── vercel.json             # SPA rewrite: all routes → index.html; /photos/* proxied to Supabase storage
-├── public/                 # Static files served as-is
+├── public/                 # Static files served as-is: favicon, cursors/, fonts/ (self-hosted Space Grotesk)
 └── src/
     ├── main.tsx            # ReactDOM entry point
     ├── App.tsx             # Router, page transitions, auth guard
     ├── types.ts            # Shared domain types (ScheduleEvent, Sponsor, TeamMember, ...)
-    ├── vite-env.d.ts       # import.meta.env typing (VITE_API_URL, VITE_SUPABASE_*, VITE_TURNSTILE_SITE_KEY)
+    ├── vite-env.d.ts       # import.meta.env typing (currently declares VITE_API_URL only)
     ├── index.css           # Tailwind v4 entry: design tokens (@theme) + base layer
-    ├── pages/              # Route-level components (Home, SchedulePage, RegisterPage, AdminPage, ...)
+    ├── pages/              # Route-level components: Home, SchedulePage, SponsorsPage, RegisterPage,
+    │                       #   AdminLogin, AdminPage
     ├── components/
-    │   ├── site/           # Public site components (Navbar, Hero, CountdownTimer, TeamSection,
+    │   ├── site/           # Public site components (Navbar, Hero + Fireworks + MascotEyes,
+    │   │                   #   CountdownTimer, TeamSection, JudgesSection,
     │   │                   #   SponsorsCarousel + SponsorBlurb for sponsors,
     │   │                   #   SchoolCombobox + TurnstileWidget for the registration form, ...)
     │   └── admin/          # Admin dashboard
@@ -45,13 +52,14 @@ frontend/
     │       ├── icons.tsx         # Shared SVG icon set
     │       ├── useObjectUrls.ts  # Object-URL lifecycle for staged image previews
     │       ├── MiscTab.tsx       # Site settings tab (countdown target, MLH badge, registration open/closed, MLH pre-partnership disclaimer, sponsors TBA teaser, event location)
-    │       ├── schedule/         # ScheduleTab + EventModal + scheduleMeta
+    │       ├── schedule/         # ScheduleTab + EventModal + EventTypesPanel + scheduleMeta
     │       ├── gallery/          # GalleryTab + YearPanel
     │       ├── team/             # TeamTab + MemberModal + CompaniesPanel + memberUtils
+    │       ├── judges/           # JudgesTab + JudgeModal + judgeUtils, plus the judges_revealed toggle
     │       ├── sponsors/         # SponsorsTab + SponsorModal + TierPanel + sponsorUtils
     │       └── registrations/    # RegistrationsTab (search, pagination, CSV export, resume links, delete)
-    ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useSponsors,
-    │                       #   useSiteSettings, useCountdown, useRegistrations) + useAuth.
+    ├── hooks/              # Data-fetching hooks (useSchedule, useGallery, useTeam, useJudges,
+    │                       #   useSponsors, useSiteSettings, useCountdown, useRegistrations) + useAuth.
     │                       #   Public hooks are built on useApiData (shared response cache)
     ├── data/               # Static fallback data used when the API is unreachable
     ├── lib/
@@ -59,6 +67,9 @@ frontend/
     │   ├── supabase.ts     # Browser Supabase client. Admin Google sign-in only, never data
     │   ├── location.ts     # Event location defaults + site_settings keys (shared by Hero + Misc tab)
     │   ├── mlh.ts          # MLH trust badge constants (shared by Navbar + admin preview)
+    │   ├── phone.ts        # As-you-type US phone formatting for the registration form
+    │   ├── registration.ts # Label for the Apply buttons ("Apply Now" / "Applications Closed")
+    │   ├── scheduleColors.ts  # Schedule event-type color palette (mirrors the backend's copy)
     │   ├── registrationOptions.ts  # Age/level-of-study/country/demographic/major options (mirrors the backend's copy)
     │   ├── schools.ts      # MLH-verified school list (mirrors the backend's copy)
     │   └── schedulePacking.ts  # Overlap-packing layout math for ScheduleGrid
@@ -74,16 +85,25 @@ sign-in and session. All data goes through the Express API (see
 [backend-stack.md](backend-stack.md)):
 
 - **Public pages** use the hooks in `src/hooks/` (`useSchedule`, `useGallery`,
-  `useTeam`, `useSponsors`, `useSiteSettings`, `useCountdown`). Each hook
-  fetches from the API and **falls back to the static data in `src/data/`**
-  (or a sensible default for site settings) if the API is down or returns
-  nothing. This means the site never renders empty, so keep the static data
-  reasonably fresh. All of these sit on `useApiData`, which keeps an
+  `useTeam`, `useJudges`, `useSponsors`, `useSiteSettings`, `useCountdown`).
+  Each hook fetches from the API and **falls back to the static data in
+  `src/data/`** (or a sensible default for site settings) if the API is down
+  or returns nothing. This means the site never renders empty, so keep the
+  static data reasonably fresh. It also means a broken API is easy to miss:
+  the page looks fine but shows placeholder content, so check the network
+  tab when testing. `useJudges` is the exception with no fallback; an empty
+  or unreachable API shows the "To Be Announced" state. The FAQ is static
+  only (`data/faq.ts`). All of these sit on `useApiData`, which keeps an
   in-memory cache per API path for the session and dedupes concurrent
   requests, so navigating between pages renders instantly from cache
   (the register page in particular gates on `registration_open` without a
   loading gap). Cached responses older than 60 seconds are refreshed in the
   background after render.
+- **Admin tabs stage edits.** Each tab keeps the server state and a draft,
+  and nothing is sent until the admin reviews the changes in a diff modal
+  and confirms. See
+  [architecture.md](architecture.md#an-admin-edits-content) for the flow and
+  `components/admin/adminTypes.ts` for the draft shapes.
 - **Admin pages** use `src/lib/api.ts`, which reads the access token from the
   Supabase session (`useAuth` exposes the same session reactively) and attaches
   it to every request. Supabase refreshes the token in the background, so there
@@ -127,6 +147,12 @@ npm run preview      # serve the production build locally
 npm run lint         # ESLint over the whole frontend
 ```
 
+`npm run build` runs the TypeScript check first, so it is also the
+typecheck. `npm run lint` currently reports one known warning
+(`react-hooks/exhaustive-deps` in `PhotoGallery.tsx`) and no errors.
+
+Requires Node.js 22.12 or newer (Vite 8's minimum); 24 LTS is recommended.
+
 ### Environment variables
 
 Copy the template and fill it in (`frontend/.env.local` is git-ignored):
@@ -149,7 +175,12 @@ Rules to know:
   in a frontend env file is **public**, so never put secrets here. The Supabase
   **secret** key and the Turnstile **secret** key belong in `backend/.env` only.
 - Access them via `import.meta.env.VITE_API_URL` (not `process.env`), and add
-  new ones to the typing in `src/vite-env.d.ts`.
+  new ones to the typing in `src/vite-env.d.ts`. Only `VITE_API_URL` is
+  declared there today, so the other three are untyped.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are **required**:
+  `lib/supabase.ts` throws at load without them, which shows as a blank page.
+- Locally, `VITE_SUPABASE_URL` must be `http://127.0.0.1:54321`, not
+  `localhost`. The `/photos/` image rewrite matches on that exact prefix.
 - **Restart the dev server** after changing env files; they are read at startup.
 - If `VITE_API_URL` is unset, `lib/api.ts` and the hooks fall back to
   same-origin paths, which only works when the API is served from the same
@@ -179,9 +210,10 @@ After any dependency change:
 
 ## Conventions
 
-- **Fonts:** loaded once via the Google Fonts `<link>` in `index.html`
-  (Space Grotesk, Lexend, JetBrains Mono). Do not re-import fonts in
-  component files or CSS.
+- **Fonts:** Lexend and JetBrains Mono load once via the Google Fonts
+  `<link>` in `index.html`. Space Grotesk is self-hosted: the file is in
+  `public/fonts/` and the `@font-face` rule is in `src/index.css`. Do not
+  re-import fonts in component files or other CSS.
 - **Design tokens:** colors like `void`, `surface`, `ultraviolet`, and the
   sponsor tier colors are defined in the `@theme` block of `src/index.css`.
   Use the tokens, not raw hex values. See [MASTER.md](MASTER.md) for the

@@ -4,6 +4,12 @@ The site depends on four outside services: Supabase, Google OAuth, Cloudflare
 Turnstile, and Vercel. This doc covers what each one does, where its keys
 live, and how to work with it locally and in production.
 
+None of these accounts are needed to run the public site locally. Local
+Supabase runs in Docker with built-in keys, the captcha is skipped when its
+keys are unset, and Vercel is only involved once you open a pull request.
+Google credentials are needed only to sign in to the admin dashboard. See
+[getting-started.md](getting-started.md).
+
 ## Supabase
 
 Postgres database, file storage, and auth. The backend is the only client of
@@ -35,14 +41,24 @@ the email. Not on the list means 403. An empty allowlist fails closed.
 
 `supabase/config.toml` already enables the Google provider and points
 `site_url` and the redirect allowlist at `http://localhost:5173`. The client
-ID and secret come from the environment, so set them in the shell **before**
-starting the stack:
+ID and secret are read from the environment when the stack starts. The
+simplest way to supply them, on any operating system, is a file named
+`supabase/.env` (git-ignored):
 
-```powershell
-$env:SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID = "<client id>"
-$env:SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET = "<client secret>"
-npx supabase start
+```bash
+SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=<client id>
+SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=<client secret>
 ```
+
+Setting the same two variables in your shell before `npx supabase start`
+works too. Either way the stack only reads them at startup, so after a
+change run `npx supabase stop` and then `npx supabase start`.
+
+The OAuth client in Google Cloud Console must list the local Supabase
+callback as an authorized redirect URI:
+`http://127.0.0.1:54321/auth/v1/callback`. Ask a maintainer for the
+development credentials, or create your own client as described in
+[getting-started.md](getting-started.md#10-optional-sign-in-to-the-admin-dashboard).
 
 Then put your own Google account in `ADMIN_EMAILS` in `backend/.env` and sign
 in at `http://localhost:5173/admin`.
@@ -89,7 +105,8 @@ server-side check counts, and tokens are single-use.
 ## Vercel
 
 Hosts two separate projects out of one repo: the frontend (static build +
-SPA rewrites) and the backend (Express as a serverless function). Deployment
+SPA rewrites, plus the `/photos/*` rewrite that serves storage images
+through Vercel's CDN) and the backend (Express as a serverless function). Deployment
 details and required env vars are in
 [frontend-stack.md](frontend-stack.md#deployment) and
 [backend-stack.md](backend-stack.md#deployment).

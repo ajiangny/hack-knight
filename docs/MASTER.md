@@ -1,7 +1,7 @@
 # HackKnight - Design System (MASTER)
 
 > Single source of truth for all visual decisions. The canonical tokens live in
-> [`frontend/src/index.css`](frontend/src/index.css) (Tailwind v4 `@theme`); this
+> [`frontend/src/index.css`](../frontend/src/index.css) (Tailwind v4 `@theme`); this
 > document explains how to use them and defines the **Admin (backstage) layer**.
 > No magic numbers, no rogue hex values: every color, spacing, radius, shadow,
 > duration, and easing in the codebase must resolve to a token below.
@@ -114,7 +114,7 @@ already globally zeroes durations in `index.css`; never opt out of it.
 Shared modules live at the `admin/` root: `ui.tsx` (the kit below), `icons.tsx`
 (the SVG glyph set; never inline new SVGs in tabs), and `useObjectUrls.ts`
 (object-URL lifecycle for staged image previews). Each large tab is a folder
-(`schedule/`, `gallery/`, `team/`, `sponsors/`, `registrations/`) holding the
+(`schedule/`, `gallery/`, `team/`, `judges/`, `sponsors/`, `registrations/`) holding the
 tab plus its modals, panels, and utils; `MiscTab.tsx` stays flat.
 
 - **Panel:** `bg-surface border border-border/40 rounded-card p-5 shadow-card`,
