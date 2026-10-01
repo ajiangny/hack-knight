@@ -17,12 +17,14 @@ export default function PhotoGallery() {
     setIndex((prev) => (prev - 1 + galleryData.length) % galleryData.length);
   }
 
-  // Auto-advance every 10 seconds
+  // Auto-advance every 10 seconds. `index` is a dependency so a manual
+  // arrow click restarts the countdown instead of advancing again early.
   useEffect(() => {
     if (activePhoto) return; // Pause slideshow while viewing a photo in focus
-    const timer = setInterval(handleNext, 10000);
+    const count = galleryData.length;
+    const timer = setInterval(() => setIndex((prev) => (prev + 1) % count), 10000);
     return () => clearInterval(timer);
-  }, [index, activePhoto]);
+  }, [index, activePhoto, galleryData.length]);
 
   // Global dismiss interaction (scroll or click anywhere outside)
   useEffect(() => {
@@ -67,15 +69,19 @@ export default function PhotoGallery() {
         {/* Sliding viewport. Every year stays mounted, stacked in the same
             spot, and only the active one is visible — unmounting a year would
             drop its <img> elements and re-request every photo on each switch
-            (including the 10s auto-advance). The inactive wrappers are
-            absolute so the active year alone sets the container height.
+            (including the 10s auto-advance). Every wrapper shares one grid
+            cell, so the cell is as tall as the tallest year still displayed.
             Inactive years end at display: none (gridVariants in Slideshow),
-            so their lazy images are not fetched until the year is shown. */}
-        <div className="relative w-full overflow-hidden py-2">
+            so their lazy images are not fetched until the year is shown.
+            Don't toggle the inactive wrappers to absolute instead: Motion
+            shows the incoming year a frame or two after React swaps the
+            wrappers, and for those frames nothing in flow is visible. The
+            viewport collapses to its padding and the page below jumps. */}
+        <div className="relative w-full overflow-hidden py-2 grid">
           {galleryData.map((slide, i) => (
             <div
               key={slide.year}
-              className={`w-full px-12 md:px-5 ${i === index ? "" : "absolute inset-0 pointer-events-none"}`}
+              className={`[grid-area:1/1] w-full px-12 md:px-5 ${i === index ? "" : "pointer-events-none"}`}
             >
               <Slideshow
                 year={slide.year}
