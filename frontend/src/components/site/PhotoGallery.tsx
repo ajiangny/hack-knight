@@ -17,12 +17,14 @@ export default function PhotoGallery() {
     setIndex((prev) => (prev - 1 + galleryData.length) % galleryData.length);
   }
 
-  // Auto-advance every 10 seconds
+  // Auto-advance every 10 seconds. `index` is a dependency so a manual
+  // arrow click restarts the countdown instead of advancing again early.
   useEffect(() => {
     if (activePhoto) return; // Pause slideshow while viewing a photo in focus
-    const timer = setInterval(handleNext, 10000);
+    const count = galleryData.length;
+    const timer = setInterval(() => setIndex((prev) => (prev + 1) % count), 10000);
     return () => clearInterval(timer);
-  }, [index, activePhoto]);
+  }, [index, activePhoto, galleryData.length]);
 
   // Global dismiss interaction (scroll or click anywhere outside)
   useEffect(() => {
